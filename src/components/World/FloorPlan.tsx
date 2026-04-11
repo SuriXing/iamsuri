@@ -13,7 +13,7 @@ export default function FloorPlan({ onEnterRoom }: FloorPlanProps) {
 
   useEffect(() => {
     document.title = "Suri's Lab";
-    const timer = setTimeout(() => setVisible(true), 100);
+    const timer = setTimeout(() => setVisible(true), 10);
     return () => clearTimeout(timer);
   }, []);
 

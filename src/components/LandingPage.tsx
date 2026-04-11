@@ -21,9 +21,9 @@ const MentorTableIcon: React.FC = () => (
   </svg>
 );
 
-// TODO: Update these URLs once the separate sites are deployed
-const PROBLEM_SOLVER_URL = 'https://surixing.github.io/Problem_solver/';
-const MENTOR_TABLE_URL = 'https://surixing.github.io/MentorTable/';
+// TODO: Update these URLs after Vercel deployment with actual domains
+const PROBLEM_SOLVER_URL = 'https://problem-solver.vercel.app';
+const MENTOR_TABLE_URL = 'https://mentor-table.vercel.app';
 
 const LandingPage: React.FC = () => {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {

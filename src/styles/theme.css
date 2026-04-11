@@ -1,0 +1,75 @@
+:root {
+  /* Dark mode (default) */
+  --bg-primary: #0a0a10;
+  --bg-secondary: #12121e;
+  --bg-hallway: #16162a;
+  --text-primary: #e0e0e0;
+  --text-secondary: #888;
+  --text-muted: #444;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --grid-line: rgba(255, 255, 255, 0.015);
+  --shadow-room: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-room-hover: 0 8px 32px rgba(0, 0, 0, 0.6);
+
+  /* Room colors */
+  --room-purple: #a78bfa;
+  --room-purple-bg: #1e1a2e;
+  --room-purple-border: rgba(167, 139, 250, 0.25);
+  --room-purple-glow: rgba(167, 139, 250, 0.08);
+
+  --room-blue: #60a5fa;
+  --room-blue-bg: #1a1e2e;
+  --room-blue-border: rgba(96, 165, 250, 0.25);
+  --room-blue-glow: rgba(96, 165, 250, 0.08);
+
+  --room-green: #4ade80;
+  --room-green-bg: #1a2e1e;
+  --room-green-border: rgba(74, 222, 128, 0.25);
+  --room-green-glow: rgba(74, 222, 128, 0.08);
+
+  --room-yellow: #fbbf24;
+  --room-yellow-bg: #2a2a1e;
+  --room-yellow-border: rgba(251, 191, 36, 0.25);
+  --room-yellow-glow: rgba(251, 191, 36, 0.08);
+
+  /* Character */
+  --character-gradient: linear-gradient(135deg, #7c5cfc, #ff6b9d);
+  --speech-bg: #ffffff;
+  --speech-text: #1a1a2e;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f0ede6;
+  --bg-secondary: #e8e4dc;
+  --bg-hallway: #e0dcd4;
+  --text-primary: #1a1a2e;
+  --text-secondary: #666;
+  --text-muted: #aaa;
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --grid-line: rgba(0, 0, 0, 0.03);
+  --shadow-room: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-room-hover: 0 8px 28px rgba(0, 0, 0, 0.12);
+
+  --room-purple: #7c5cfc;
+  --room-purple-bg: #f5f0ff;
+  --room-purple-border: #d4ccff;
+  --room-purple-glow: rgba(124, 92, 252, 0.06);
+
+  --room-blue: #3b82f6;
+  --room-blue-bg: #f0f5ff;
+  --room-blue-border: #bfdbfe;
+  --room-blue-glow: rgba(59, 130, 246, 0.06);
+
+  --room-green: #16a34a;
+  --room-green-bg: #f0fdf4;
+  --room-green-border: #bbf7d0;
+  --room-green-glow: rgba(74, 222, 128, 0.06);
+
+  --room-yellow: #d97706;
+  --room-yellow-bg: #fffbeb;
+  --room-yellow-border: #fde68a;
+  --room-yellow-glow: rgba(251, 191, 36, 0.06);
+
+  --speech-bg: #1a1a2e;
+  --speech-text: #ffffff;
+}

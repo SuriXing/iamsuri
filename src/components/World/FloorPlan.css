@@ -43,10 +43,14 @@
 }
 
 .floor-plan__title-text {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 800;
-  letter-spacing: 4px;
+  letter-spacing: 6px;
   color: var(--text-muted);
+  background: linear-gradient(135deg, var(--text-muted), var(--text-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Room rows */

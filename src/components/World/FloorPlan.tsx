@@ -13,8 +13,11 @@ export default function FloorPlan({ onEnterRoom }: FloorPlanProps) {
 
   useEffect(() => {
     document.title = "Suri's Lab";
-    const timer = setTimeout(() => setVisible(true), 10);
-    return () => clearTimeout(timer);
+    let raf: number;
+    raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setVisible(true));
+    });
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   // Split rooms into top row and bottom row

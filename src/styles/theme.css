@@ -11,26 +11,26 @@
   --shadow-room: 0 4px 20px rgba(0, 0, 0, 0.4);
   --shadow-room-hover: 0 8px 32px rgba(0, 0, 0, 0.6);
 
-  /* Room colors */
-  --room-purple: #a78bfa;
-  --room-purple-bg: #1e1a2e;
-  --room-purple-border: rgba(167, 139, 250, 0.25);
-  --room-purple-glow: rgba(167, 139, 250, 0.08);
+  /* Room colors — muted, deep tones for dark mode */
+  --room-purple: #8b7ac8;
+  --room-purple-bg: #1a1726;
+  --room-purple-border: rgba(139, 122, 200, 0.22);
+  --room-purple-glow: rgba(139, 122, 200, 0.08);
 
-  --room-blue: #60a5fa;
-  --room-blue-bg: #1a1e2e;
-  --room-blue-border: rgba(96, 165, 250, 0.25);
-  --room-blue-glow: rgba(96, 165, 250, 0.08);
+  --room-blue: #6b8db5;
+  --room-blue-bg: #171c26;
+  --room-blue-border: rgba(107, 141, 181, 0.22);
+  --room-blue-glow: rgba(107, 141, 181, 0.08);
 
-  --room-green: #4ade80;
-  --room-green-bg: #1a2e1e;
-  --room-green-border: rgba(74, 222, 128, 0.25);
-  --room-green-glow: rgba(74, 222, 128, 0.08);
+  --room-green: #5aad70;
+  --room-green-bg: #172619;
+  --room-green-border: rgba(90, 173, 112, 0.22);
+  --room-green-glow: rgba(90, 173, 112, 0.08);
 
-  --room-yellow: #fbbf24;
-  --room-yellow-bg: #2a2a1e;
-  --room-yellow-border: rgba(251, 191, 36, 0.25);
-  --room-yellow-glow: rgba(251, 191, 36, 0.08);
+  --room-yellow: #c9a84c;
+  --room-yellow-bg: #24221a;
+  --room-yellow-border: rgba(201, 168, 76, 0.22);
+  --room-yellow-glow: rgba(201, 168, 76, 0.08);
 
   /* Character */
   --character-gradient: linear-gradient(135deg, #7c5cfc, #ff6b9d);

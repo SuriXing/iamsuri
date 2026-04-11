@@ -1,0 +1,37 @@
+.idea-lab { display: flex; flex-direction: column; gap: 20px; }
+
+.idea-lab__whiteboard {
+  padding: 20px; border-radius: 12px;
+  background: var(--bg-secondary); border: 1px solid var(--border-subtle);
+}
+.idea-lab__whiteboard-header {
+  font-size: 16px; font-weight: 800; color: var(--room-yellow);
+  display: flex; align-items: center; gap: 8px;
+}
+.idea-lab__whiteboard-sub {
+  font-size: 13px; color: var(--text-secondary); margin: 6px 0 0; line-height: 1.5;
+}
+
+.idea-lab__grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;
+}
+
+.idea-card {
+  padding: 20px; border-radius: 12px;
+  border: 1.5px dashed var(--room-yellow-border);
+  background: var(--room-yellow-glow);
+  transition: transform 0.2s, border-color 0.2s;
+}
+.idea-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--room-yellow);
+}
+
+.idea-card__icon { font-size: 24px; }
+.idea-card__title {
+  font-size: 15px; font-weight: 800; color: var(--text-primary);
+  margin: 8px 0 4px;
+}
+.idea-card__why {
+  font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;
+}

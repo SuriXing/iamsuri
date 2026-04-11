@@ -1,0 +1,46 @@
+.book-room__shelf { display: flex; flex-direction: column; gap: 12px; }
+
+.book-card {
+  position: relative;
+  padding: 20px 20px 20px 28px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  transition: transform 0.2s, border-color 0.2s;
+  cursor: pointer;
+}
+.book-card:hover {
+  transform: translateX(4px);
+  border-color: var(--room-green);
+}
+
+.book-card__spine {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  border-radius: 12px 0 0 12px;
+  background: var(--room-green);
+}
+
+.book-card__tag {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--room-green);
+  margin-bottom: 6px;
+}
+
+.book-card__title {
+  font-size: 17px; font-weight: 800; color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.book-card__excerpt {
+  font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 0;
+}
+
+.book-card__meta {
+  display: flex; gap: 6px; margin-top: 10px;
+  font-size: 11px; color: var(--text-muted);
+}
+
+.book-room__hint {
+  text-align: center; margin-top: 24px;
+  font-size: 13px; color: var(--text-muted); font-style: italic;
+}

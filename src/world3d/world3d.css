@@ -9,29 +9,33 @@
   width: 100% !important;
   height: 100% !important;
 }
-.world3d-hud {
+
+/* ── Title overlay (top-left) ─────────────────────────── */
+#overlay {
   position: fixed;
   top: 28px;
   left: 32px;
-  pointer-events: none;
-  font-family: 'Courier New', monospace;
   z-index: 10;
+  pointer-events: none;
+  user-select: none;
+  font-family: 'Courier New', monospace;
 }
-.world3d-title {
+#overlay h1 {
   font-size: 2rem;
   color: #ffd700;
   letter-spacing: 2px;
-  text-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.6), 0 0 40px rgba(255, 215, 0, 0.2);
   margin: 0;
 }
-.world3d-subtitle {
+#overlay p {
   font-size: 0.85rem;
   color: #e5e7eb;
   opacity: 0.7;
+  margin-top: 4px;
   letter-spacing: 1px;
-  margin: 4px 0 0;
 }
 
+/* ── Room labels (3D-anchored) ────────────────────────── */
 .room-label {
   font-family: 'Courier New', monospace;
   font-size: 0.85rem;
@@ -46,4 +50,371 @@
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
+}
+
+/* ── Bottom hint ──────────────────────────────────────── */
+#hint {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  color: #e5e7eb;
+  opacity: 0.35;
+  font-size: 0.7rem;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+
+/* ── Room overlays — kept hidden but in DOM for legacy tests ── */
+.room-overlay {
+  display: none !important;
+  position: fixed;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 320px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: rgba(20, 23, 34, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  border-radius: 8px;
+  padding: 28px;
+  font-family: 'Courier New', monospace;
+  color: #e5e7eb;
+  z-index: 50;
+}
+
+/* ── Back button ──────────────────────────────────────── */
+.back-btn {
+  display: none;
+  position: fixed;
+  top: 28px;
+  left: 32px;
+  z-index: 60;
+  background: rgba(233, 69, 96, 0.9);
+  color: #ffffff;
+  border: 2px solid rgba(255, 215, 0, 0.6);
+  padding: 12px 24px;
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 6px;
+  letter-spacing: 2px;
+  transition: all 0.2s;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 20px rgba(233, 69, 96, 0.4), 0 0 0 4px rgba(255, 215, 0, 0.1);
+  animation: backBtnPulse 2s ease-in-out infinite;
+}
+@keyframes backBtnPulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(233, 69, 96, 0.4), 0 0 0 4px rgba(255, 215, 0, 0.1); }
+  50%      { box-shadow: 0 4px 28px rgba(233, 69, 96, 0.7), 0 0 0 8px rgba(255, 215, 0, 0.2); }
+}
+.back-btn:hover {
+  background: rgba(255, 215, 0, 0.9);
+  color: #1a1a2e;
+  transform: scale(1.05);
+}
+.back-btn.active { display: block; }
+
+/* ── Exit hint banner ─────────────────────────────────── */
+.exit-hint {
+  display: none;
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 55;
+  background: rgba(20, 23, 34, 0.88);
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  letter-spacing: 1.5px;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+}
+.exit-hint.active { display: block; }
+.exit-hint kbd {
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  padding: 2px 8px;
+  border-radius: 3px;
+  color: #ffd700;
+  margin: 0 4px;
+  font-family: inherit;
+}
+
+/* ── Enter prompt (anchored in 3D via drei Html) ──────── */
+.enter-prompt {
+  display: none;
+  background: rgba(20, 23, 34, 0.92);
+  color: #ffd700;
+  border: 2px solid rgba(255, 215, 0, 0.6);
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  letter-spacing: 1.5px;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.3);
+  white-space: nowrap;
+}
+.enter-prompt.active { display: block; }
+.enter-prompt kbd {
+  background: rgba(255, 215, 0, 0.2);
+  border: 1px solid rgba(255, 215, 0, 0.6);
+  padding: 2px 8px;
+  border-radius: 3px;
+  color: #ffffff;
+  margin: 0 4px;
+  font-family: inherit;
+  font-weight: bold;
+}
+.enter-prompt.locked {
+  color: #ff7080;
+  border-color: rgba(255, 80, 100, 0.7);
+  box-shadow: 0 0 18px rgba(255, 80, 100, 0.4);
+}
+.enter-prompt.locked::before {
+  content: '🔒 ';
+}
+.enter-prompt.locked kbd {
+  background: rgba(255, 80, 100, 0.25);
+  border-color: rgba(255, 80, 100, 0.8);
+}
+
+/* ── Theme toggle + view switcher ─────────────────────── */
+#theme-toggle {
+  position: fixed;
+  top: 28px;
+  right: 80px;
+  z-index: 60;
+  background: rgba(20, 23, 34, 0.85);
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all 0.2s;
+}
+#view-switcher {
+  position: fixed;
+  top: 28px;
+  right: 128px;
+  z-index: 60;
+  background: rgba(20, 23, 34, 0.85);
+  color: #e5e7eb;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1.5px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+#view-switcher:hover {
+  background: rgba(255, 215, 0, 0.15);
+  color: #ffd700;
+}
+
+/* ── Speech bubble (anchored in 3D) ───────────────────── */
+#speech-bubble {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: #ffd700;
+  background: rgba(20, 23, 34, 0.88);
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  border-radius: 6px;
+  padding: 8px 14px;
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
+}
+#speech-bubble.visible { opacity: 1; }
+
+/* ── Interact modal ───────────────────────────────────── */
+.interact-modal {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 70;
+  background: rgba(20, 23, 34, 0.96);
+  backdrop-filter: blur(12px);
+  border: 2px solid rgba(255, 215, 0, 0.5);
+  border-radius: 10px;
+  padding: 32px 40px;
+  max-width: 420px;
+  color: #e5e7eb;
+  font-family: 'Courier New', monospace;
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.2), 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+.interact-modal.active { display: block; }
+.interact-modal h3 {
+  color: #ffd700;
+  font-size: 1.3rem;
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+.interact-modal p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 16px;
+  color: #ccc;
+}
+.interact-modal a {
+  display: inline-block;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.1);
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  border-radius: 4px;
+  text-decoration: none;
+  margin-top: 8px;
+}
+.interact-modal a:hover {
+  background: rgba(255, 215, 0, 0.25);
+}
+.interact-modal .close-hint {
+  font-size: 0.7rem;
+  color: #666;
+  margin-top: 20px;
+  text-align: center;
+  letter-spacing: 1.5px;
+}
+
+/* ── Interact tooltip ─────────────────────────────────── */
+.interact-tooltip {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 40px);
+  z-index: 50;
+  background: rgba(20, 23, 34, 0.85);
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+.interact-tooltip.active { display: block; }
+.interact-tooltip kbd {
+  background: rgba(255, 215, 0, 0.2);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  padding: 2px 8px;
+  border-radius: 3px;
+  color: #fff;
+  margin: 0 4px;
+}
+
+/* ── Crosshair ────────────────────────────────────────── */
+.crosshair {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 215, 0, 0.8);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 4px rgba(255, 215, 0, 0.6);
+  z-index: 45;
+  pointer-events: none;
+}
+.crosshair.active { display: block; }
+
+/* ── FP intro hint ────────────────────────────────────── */
+.fp-intro-hint {
+  display: none;
+  position: fixed;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 55;
+  background: rgba(20, 23, 34, 0.92);
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  padding: 12px 22px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  letter-spacing: 1.2px;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+  text-align: center;
+}
+.fp-intro-hint.active {
+  display: block;
+  animation: fpIntroFade 4s ease-out forwards;
+}
+@keyframes fpIntroFade {
+  0%   { opacity: 0; }
+  15%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ── Light theme overrides ────────────────────────────── */
+body.world3d-light-theme {
+  background: #f0ede6;
+}
+body.world3d-light-theme .world3d-root {
+  background: #f0ede6;
+}
+body.world3d-light-theme #overlay h1 {
+  color: #b8860b;
+  text-shadow: 0 0 12px rgba(184, 134, 11, 0.4);
+}
+body.world3d-light-theme #overlay p {
+  color: #444;
+}
+body.world3d-light-theme #hint {
+  color: #1a1a2e;
+}
+body.world3d-light-theme #theme-toggle {
+  background: rgba(240, 237, 230, 0.9);
+  color: #b8860b;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+body.world3d-light-theme #view-switcher {
+  background: rgba(240, 237, 230, 0.9);
+  color: #1a1a2e;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+body.world3d-light-theme #speech-bubble {
+  background: rgba(240, 237, 230, 0.92);
+  color: #b8860b;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+body.world3d-light-theme .back-btn {
+  background: rgba(240, 237, 230, 0.9);
+  color: #b8860b;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+body.world3d-light-theme .room-label {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.1);
 }

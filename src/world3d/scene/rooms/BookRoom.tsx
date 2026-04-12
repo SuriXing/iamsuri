@@ -1,9 +1,15 @@
 import { ROOM_BY_ID } from '../../data/rooms';
 import { Bookshelf } from '../parts/Bookshelf';
+import type { InteractableData } from '../../store/worldStore';
 
 const SHELF_BOOK_COLORS: ReadonlyArray<string> = [
   '#e94560', '#3b82f6', '#ffd700', '#22c55e', '#a78bfa', '#f97316',
 ];
+
+const BLOG_INTERACTABLE: InteractableData = {
+  title: 'Blog',
+  body: 'Why I Build Things · Apr 2026. Learning by Shipping · Mar 2026. (Coming soon)',
+};
 
 export function BookRoom() {
   const { center } = ROOM_BY_ID.book;
@@ -28,6 +34,16 @@ export function BookRoom() {
         frameBoxHeight={2.0}
         frameBoxY={1.1}
       />
+      {/* Invisible interactable plane on the front face of the left bookshelf */}
+      <mesh
+        position={[ox - 0.8, 1.1, oz - 0.79]}
+        onUpdate={(m) => {
+          m.userData.interactable = BLOG_INTERACTABLE;
+        }}
+      >
+        <boxGeometry args={[1.6, 2.0, 0.02]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
       <Bookshelf
         x={ox + 1.0}
         z={oz - 1.0}

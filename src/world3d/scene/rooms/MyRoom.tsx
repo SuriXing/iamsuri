@@ -1,6 +1,16 @@
 import { ROOM_BY_ID } from '../../data/rooms';
 import { Bookshelf } from '../parts/Bookshelf';
 import { DeskLamp } from '../parts/DeskLamp';
+import type { InteractableData } from '../../store/worldStore';
+
+const HEADBOARD_INTERACTABLE: InteractableData = {
+  title: 'My Bed',
+  body: 'A cozy corner. Sometimes the best ideas come right before sleep.',
+};
+const MONITOR_INTERACTABLE: InteractableData = {
+  title: 'About Suri',
+  body: 'Suri Xing, Grade 8 — Math · Design · Debate · Building. Check back for more.',
+};
 
 const PINK = '#f4a8b8';
 const PINK_SOFT = '#f8c4d0';
@@ -64,7 +74,14 @@ export function MyRoom() {
         <meshPhongMaterial color={PINK_SOFT} emissive={PINK_SOFT} emissiveIntensity={0.1} flatShading />
       </mesh>
       {/* Headboard */}
-      <mesh position={[bedX, 0.65, bedZ - 1.05]} castShadow receiveShadow>
+      <mesh
+        position={[bedX, 0.65, bedZ - 1.05]}
+        castShadow
+        receiveShadow
+        onUpdate={(m) => {
+          m.userData.interactable = HEADBOARD_INTERACTABLE;
+        }}
+      >
         <boxGeometry args={[1.5, 0.7, 0.12]} />
         <meshPhongMaterial color={WOOD} flatShading />
       </mesh>
@@ -105,7 +122,12 @@ export function MyRoom() {
         <meshPhongMaterial color="#eeeeee" flatShading />
       </mesh>
       {/* Screen */}
-      <mesh position={[deskX, 1.22, deskZ - 0.47]}>
+      <mesh
+        position={[deskX, 1.22, deskZ - 0.47]}
+        onUpdate={(m) => {
+          m.userData.interactable = MONITOR_INTERACTABLE;
+        }}
+      >
         <boxGeometry args={[0.85, 0.5, 0.02]} />
         <meshPhongMaterial color="#1a1a3e" emissive="#ffb6c1" emissiveIntensity={1.2} flatShading />
       </mesh>

@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 test.describe('3D World Landing Page', () => {
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/3d-world.html');
+    await page.goto('/iamsuri/3d-world.html');
     await page.waitForTimeout(3000); // Wait for Three.js to render
   });
 
@@ -117,7 +117,7 @@ test.describe('3D World Landing Page', () => {
   test('page loads in reasonable time', async ({ page }) => {
     // Threshold generous for headless chromium (real browsers load in <1s)
     const start = Date.now();
-    await page.goto('/3d-world.html');
+    await page.goto('/iamsuri/3d-world.html');
     await page.waitForSelector('canvas');
     const elapsed = Date.now() - start;
     expect(elapsed).toBeLessThan(5000);

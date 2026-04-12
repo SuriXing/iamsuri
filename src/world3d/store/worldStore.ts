@@ -5,6 +5,12 @@ import { FP, STORAGE_KEYS } from '../constants';
 
 export type ViewMode = 'overview' | RoomId;
 
+export interface InteractableData {
+  title: string;
+  body: string;
+  link?: string;
+}
+
 export interface WorldState {
   // View
   viewMode: ViewMode;
@@ -19,6 +25,10 @@ export interface WorldState {
   unlockedDoors: Set<RoomId>;
   // Theme
   theme: 'dark' | 'light';
+  // Proximity / interactables
+  nearbyRoom: RoomId | null;
+  focusedInteractable: InteractableData | null;
+  modalInteractable: InteractableData | null;
 
   // Actions
   setViewMode: (v: ViewMode) => void;
@@ -28,6 +38,10 @@ export interface WorldState {
   addFpDelta: (dYaw: number, dPitch: number) => void;
   unlockDoor: (id: RoomId) => void;
   toggleTheme: () => void;
+  setNearbyRoom: (id: RoomId | null) => void;
+  setFocusedInteractable: (i: InteractableData | null) => void;
+  openModal: (i: InteractableData) => void;
+  closeModal: () => void;
 }
 
 // localStorage persistence for unlocked doors
@@ -70,6 +84,9 @@ export const useWorldStore = create<WorldState>((set) => ({
   fpPitch: 0,
   unlockedDoors: loadUnlocks(),
   theme: loadTheme(),
+  nearbyRoom: null,
+  focusedInteractable: null,
+  modalInteractable: null,
 
   setViewMode: (v) => set({ viewMode: v }),
   setCharPos: (x, z) => set({ charPos: { x, z } }),
@@ -102,6 +119,16 @@ export const useWorldStore = create<WorldState>((set) => ({
       }
       return { theme: next };
     }),
+  setNearbyRoom: (id) => set((s) => (s.nearbyRoom === id ? s : { nearbyRoom: id })),
+  setFocusedInteractable: (i) =>
+    set((s) => (s.focusedInteractable === i ? s : { focusedInteractable: i })),
+  openModal: (i) => {
+    if (typeof document !== 'undefined' && document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+    set({ modalInteractable: i });
+  },
+  closeModal: () => set({ modalInteractable: null }),
 }));
 
 // Test/dev seam: expose store on window (typed via global.d.ts)

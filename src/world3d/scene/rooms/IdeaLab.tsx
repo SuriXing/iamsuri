@@ -3,6 +3,12 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
 import { FLOOR_Y } from '../../constants';
+import type { InteractableData } from '../../store/worldStore';
+
+const IDEA_BOARD_INTERACTABLE: InteractableData = {
+  title: 'Idea Board',
+  body: 'AI Study Buddy · Debate Trainer · Visual Math. Ideas brewing in the lab.',
+};
 
 const MONET = {
   cream:    '#ead9b8',
@@ -176,7 +182,12 @@ export function IdeaLab() {
         <boxGeometry args={[2.6, 1.7, 0.08]} />
         <meshPhongMaterial color="#8a8a8a" flatShading />
       </mesh>
-      <mesh position={[ox, 1.25, oz - 2.03]}>
+      <mesh
+        position={[ox, 1.25, oz - 2.03]}
+        onUpdate={(m) => {
+          m.userData.interactable = IDEA_BOARD_INTERACTABLE;
+        }}
+      >
         <boxGeometry args={[2.4, 1.5, 0.02]} />
         <meshPhongMaterial color="#f5f1e8" flatShading />
       </mesh>

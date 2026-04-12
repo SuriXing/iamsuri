@@ -13,6 +13,15 @@ import { MyRoom } from './rooms/MyRoom';
 import { ProductRoom } from './rooms/ProductRoom';
 import { BookRoom } from './rooms/BookRoom';
 import { IdeaLab } from './rooms/IdeaLab';
+import { CameraController } from './CameraController';
+import { PlayerController } from './PlayerController';
+import { MouseOrbitController } from './MouseOrbitController';
+import { InteractionManager } from './InteractionManager';
+import { InteractionRaycaster } from './InteractionRaycaster';
+import { ThemeEffect } from './ThemeEffect';
+import { EnterPrompt3D } from './EnterPrompt3D';
+import { SpeechBubble3D } from './SpeechBubble3D';
+import { useWorldStore } from '../store/worldStore';
 
 const ROOM_LIGHTS: ReadonlyArray<{ pos: [number, number, number]; color: string }> = [
   { pos: [ROOMS[0].center.x, 4, ROOMS[0].center.z], color: '#ffb6c1' },
@@ -21,11 +30,17 @@ const ROOM_LIGHTS: ReadonlyArray<{ pos: [number, number, number]; color: string 
   { pos: [ROOMS[3].center.x, 4, ROOMS[3].center.z], color: '#fbbf24' },
 ];
 
+const LIGHT_BG = '#f0ede6';
+
 export function World() {
+  const viewMode = useWorldStore((s) => s.viewMode);
+  const theme = useWorldStore((s) => s.theme);
+  const showLabels = viewMode === 'overview';
+  const bgColor = theme === 'light' ? LIGHT_BG : COLORS.bg;
   return (
     <>
-      <color attach="background" args={[COLORS.bg]} />
-      <fogExp2 attach="fog" args={[COLORS.bg, FOG_DENSITY]} />
+      <color key={`bg-${theme}`} attach="background" args={[bgColor]} />
+      <fogExp2 key={`fog-${theme}`} attach="fog" args={[bgColor, FOG_DENSITY]} />
 
       {/* Lights */}
       <ambientLight intensity={LIGHTS.ambient.intensity} color={LIGHTS.ambient.color} />
@@ -87,20 +102,37 @@ export function World() {
       {/* Character */}
       <Character />
 
+      {/* Controllers / managers — invisible, but render null and run logic */}
+      <CameraController />
+      <PlayerController />
+      <MouseOrbitController />
+      <InteractionManager />
+      <InteractionRaycaster />
+      <ThemeEffect />
+
+      {/* Floating prompts anchored to world positions */}
+      <EnterPrompt3D />
+      <SpeechBubble3D />
+
       {/* Room labels — projected from 3D space via drei Html (fixed-pixel size) */}
-      {ROOMS.map((r) => (
-        <Html
-          key={r.id}
-          position={[r.center.x, 3.0, r.center.z]}
-          center
-          zIndexRange={[10, 0]}
-          pointerEvents="none"
-        >
-          <div className="room-label" style={{ color: r.accentColor }}>
-            {r.label}
-          </div>
-        </Html>
-      ))}
+      {showLabels &&
+        ROOMS.map((r) => (
+          <Html
+            key={r.id}
+            position={[r.center.x, 3.0, r.center.z]}
+            center
+            zIndexRange={[10, 0]}
+            pointerEvents="none"
+          >
+            <div
+              id={`label-${r.id}`}
+              className="room-label"
+              style={{ color: r.accentColor }}
+            >
+              {r.label}
+            </div>
+          </Html>
+        ))}
     </>
   );
 }

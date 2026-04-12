@@ -5,12 +5,14 @@ module.exports = defineConfig({
   testMatch: '**/*.test.cjs',
   timeout: 30000,
   use: {
-    baseURL: 'http://localhost:3003',
+    // Vite serves the app under the `/iamsuri/` base path defined in vite.config.ts.
+    baseURL: 'http://localhost:5173',
     viewport: { width: 1280, height: 720 },
   },
   webServer: {
-    command: 'python3 -m http.server 3003 --directory public',
-    port: 3003,
+    command: 'npx vite --port 5173 --strictPort',
+    port: 5173,
     reuseExistingServer: true,
+    timeout: 30000,
   },
 });

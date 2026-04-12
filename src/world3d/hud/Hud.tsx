@@ -1,8 +1,33 @@
+import { BackButton } from './BackButton';
+import { BottomHint } from './BottomHint';
+import { Crosshair } from './Crosshair';
+import { ExitHint } from './ExitHint';
+import { IntroHint } from './IntroHint';
+import { InteractModal } from './InteractModal';
+import { InteractTooltip } from './InteractTooltip';
+import { RoomOverlays } from './RoomOverlays';
+import { ThemeToggle } from './ThemeToggle';
+import { ViewSwitcher } from './ViewSwitcher';
+
 export function Hud() {
   return (
-    <div className="world3d-hud" aria-hidden>
-      <h1 className="world3d-title">Suri's Lab</h1>
-      <p className="world3d-subtitle">A 3D Explorable World</p>
-    </div>
+    <>
+      {/* Title — kept top-left like the legacy #overlay */}
+      <div id="overlay">
+        <h1>Suri's Lab</h1>
+        <p>A 3D Explorable World</p>
+      </div>
+
+      <BottomHint />
+      <RoomOverlays />
+      <BackButton />
+      <ExitHint />
+      <Crosshair />
+      <InteractTooltip />
+      <InteractModal />
+      <IntroHint />
+      <ThemeToggle />
+      <ViewSwitcher />
+    </>
   );
 }

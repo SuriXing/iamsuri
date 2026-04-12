@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
+import type { InteractableData } from '../../store/worldStore';
 
 const TABLE_LEGS: ReadonlyArray<readonly [number, number]> = [
   [-0.8, -0.3],
@@ -12,14 +13,26 @@ const TABLE_LEGS: ReadonlyArray<readonly [number, number]> = [
 
 const PRODUCT_COLORS = ['#e94560', '#ffd700', '#22c55e'];
 
+const PROBLEM_SOLVER: InteractableData = {
+  title: 'Problem Solver',
+  body: 'Drop your worry in, get help thinking it through.',
+  link: 'https://problem-solver.vercel.app',
+};
+const MENTOR_TABLE: InteractableData = {
+  title: 'Mentor Table',
+  body: 'Chat with great minds — practice thinking with AI versions of historical figures.',
+  link: 'https://mentor-table.vercel.app',
+};
+
 interface ScreenStandProps {
   ox: number;
   oz: number;
   side: -1 | 1;
   liveDotRef: React.RefObject<THREE.Mesh | null>;
+  interactable: InteractableData;
 }
 
-function ScreenStand({ ox, oz, side, liveDotRef }: ScreenStandProps) {
+function ScreenStand({ ox, oz, side, liveDotRef, interactable }: ScreenStandProps) {
   const x = ox + 0.9 * side;
   return (
     <group>
@@ -31,7 +44,12 @@ function ScreenStand({ ox, oz, side, liveDotRef }: ScreenStandProps) {
         <boxGeometry args={[1.0, 0.7, 0.06]} />
         <meshPhongMaterial color="#222222" flatShading />
       </mesh>
-      <mesh position={[x, 1.92, oz - 0.27]}>
+      <mesh
+        position={[x, 1.92, oz - 0.27]}
+        onUpdate={(m) => {
+          m.userData.interactable = interactable;
+        }}
+      >
         <boxGeometry args={[0.85, 0.55, 0.02]} />
         <meshPhongMaterial color="#112211" emissive="#22c55e" emissiveIntensity={2.5} flatShading />
       </mesh>
@@ -68,8 +86,8 @@ export function ProductRoom() {
         <meshPhongMaterial color="#1e293b" emissive="#3b82f6" emissiveIntensity={0.08} flatShading />
       </mesh>
 
-      <ScreenStand ox={ox} oz={oz} side={-1} liveDotRef={dot1Ref} />
-      <ScreenStand ox={ox} oz={oz} side={1} liveDotRef={dot2Ref} />
+      <ScreenStand ox={ox} oz={oz} side={-1} liveDotRef={dot1Ref} interactable={PROBLEM_SOLVER} />
+      <ScreenStand ox={ox} oz={oz} side={1} liveDotRef={dot2Ref} interactable={MENTOR_TABLE} />
 
       {/* Product table */}
       <mesh position={[ox, 0.55, oz + 1.0]} castShadow receiveShadow>

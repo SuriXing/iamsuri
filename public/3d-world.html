@@ -1209,6 +1209,16 @@
   // Back button
   document.getElementById('back-btn').addEventListener('click', navigateToOverview);
 
+  // ── Keyboard Navigation ──────────────────────────────────
+  window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && currentView !== 'overview') {
+      navigateToOverview();
+    } else if (currentView === 'overview') {
+      var roomKeys = { '1': 'myroom', '2': 'product', '3': 'book', '4': 'idealab' };
+      if (roomKeys[e.key]) navigateToRoom(roomKeys[e.key]);
+    }
+  });
+
   // ── Theme Toggle ─────────────────────────────────────────
   var isDarkTheme = localStorage.getItem('suri-theme') !== 'light';
   var themeBtn = document.getElementById('theme-toggle');

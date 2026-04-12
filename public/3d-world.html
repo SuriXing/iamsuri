@@ -71,8 +71,8 @@
       0deg,
       transparent,
       transparent 2px,
-      rgba(0,0,0,0.03) 2px,
-      rgba(0,0,0,0.03) 4px
+      rgba(0,0,0,0.012) 2px,
+      rgba(0,0,0,0.012) 4px
     );
     pointer-events: none;
     z-index: 999;
@@ -220,6 +220,36 @@
     transition: all 0.2s;
   }
 
+  #view-switcher {
+    position: fixed;
+    top: 28px;
+    right: 128px;
+    z-index: 60;
+    background: rgba(20,23,34,0.85);
+    color: #e5e7eb;
+    border: 1px solid rgba(255,215,0,0.2);
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1.5px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+  }
+  #view-switcher:hover {
+    background: rgba(255,215,0,0.15);
+    color: #ffd700;
+  }
+  body.light-theme #view-switcher {
+    background: rgba(255,255,255,0.85);
+    color: #1a1a2e;
+    border-color: rgba(0,0,0,0.2);
+  }
+
   /* ── Speech bubble ────────────────────────────────────── */
   #speech-bubble {
     position: fixed;
@@ -287,7 +317,7 @@
 <div id="label-book" class="room-label">Book Room</div>
 <div id="label-idealab" class="room-label">Idea Lab</div>
 
-<div id="hint">scroll to zoom · drag to orbit · click a room to explore</div>
+<div id="hint">WASD / arrows to walk · drag to orbit · scroll to zoom · click a room to explore</div>
 
 <div id="overlay-myroom" class="room-overlay">
   <h2>My Room</h2>
@@ -345,6 +375,7 @@
 </div>
 
 <button id="back-btn" class="back-btn">&larr; Back</button>
+<a id="view-switcher" href="./" title="Switch to 2D world">2D</a>
 <button id="theme-toggle">&#9788;</button>
 <div id="speech-bubble"></div>
 
@@ -363,7 +394,7 @@
   document.body.appendChild(renderer.domElement);
 
   var scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x1a1a2e, 0.004);
+  scene.fog = new THREE.FogExp2(0x1a1a2e, 0.002);
 
   var animatables = { liveDots: [], steamCubes: [], ideaBulb: null, ideaBulbLight: null, scanline: null };
   var wallMeshes = [];
@@ -375,13 +406,13 @@
   camera.lookAt(0, 0, 0);
 
   // ── Lights ────────────────────────────────────────────────
-  var ambient = new THREE.AmbientLight(0x8888aa, 1.8);
+  var ambient = new THREE.AmbientLight(0xffd8a8, 1.2);
   scene.add(ambient);
 
-  var hemiLight = new THREE.HemisphereLight(0xffd700, 0x1a1a2e, 0.5);
+  var hemiLight = new THREE.HemisphereLight(0xffc88a, 0x4a3020, 0.5);
   scene.add(hemiLight);
 
-  var dirLight = new THREE.DirectionalLight(0xffd700, 1.2);
+  var dirLight = new THREE.DirectionalLight(0xffeab0, 1.0);
   dirLight.position.set(-10, 18, 8);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.set(2048, 2048);
@@ -394,16 +425,16 @@
   dirLight.shadow.bias = -0.001;
   scene.add(dirLight);
 
-  var pointGreen = new THREE.PointLight(0x22c55e, 0.5, 30);
+  var pointGreen = new THREE.PointLight(0xffb060, 0.4, 30);
   pointGreen.position.set(0, 3, 0);
   scene.add(pointGreen);
 
   // Subtle rim lights for depth
-  var rimLight1 = new THREE.PointLight(0xe94560, 0.4, 30);
+  var rimLight1 = new THREE.PointLight(0xff8844, 0.3, 30);
   rimLight1.position.set(-8, 5, -8);
   scene.add(rimLight1);
 
-  var rimLight2 = new THREE.PointLight(0x3b82f6, 0.4, 30);
+  var rimLight2 = new THREE.PointLight(0xffaa66, 0.3, 30);
   rimLight2.position.set(8, 5, -8);
   scene.add(rimLight2);
 
@@ -531,16 +562,71 @@
 
   // Thin wall borders between rooms
   function wallStrip(x, z, w, d) {
-    var s = box(w, 1.8, d, mat(0x1e2233, { emissive: 0x64477d, emissiveIntensity: 0.08 }));
+    var s = box(w, 1.8, d, mat(0x3d2817, { emissive: 0x6b4e1f, emissiveIntensity: 0.15 }));
     s.position.set(x, 1.0, z);
     scene.add(s);
     wallMeshes.push(s);
   }
-  // Horizontal dividers
-  wallStrip(-(ROOM/2 + GAP), GAP + 0.05, ROOM + 0.2, 0.1);
-  wallStrip(-(ROOM/2 + GAP), -(GAP + 0.05), ROOM + 0.2, 0.1);
-  wallStrip((ROOM/2 + GAP), GAP + 0.05, ROOM + 0.2, 0.1);
-  wallStrip((ROOM/2 + GAP), -(GAP + 0.05), ROOM + 0.2, 0.1);
+
+  // Create a door frame (two posts + lintel)
+  function doorFrame(x, z, horizontal) {
+    var frameMat = mat(0x6b4e1f, { emissive: 0x4a2c0a, emissiveIntensity: 0.3 });
+    var frameHeight = 1.9;
+    var postW = 0.15;
+    var doorW = 1.2;
+    var yMid = frameHeight / 2;
+
+    if (horizontal) {
+      // Wall runs along X, door opens in X direction
+      var postL = box(postW, frameHeight, 0.18, frameMat);
+      postL.position.set(x - doorW/2, yMid, z);
+      scene.add(postL); wallMeshes.push(postL);
+      var postR = box(postW, frameHeight, 0.18, frameMat);
+      postR.position.set(x + doorW/2, yMid, z);
+      scene.add(postR); wallMeshes.push(postR);
+      var lintel = box(doorW + postW*2, 0.18, 0.22, frameMat);
+      lintel.position.set(x, frameHeight + 0.02, z);
+      scene.add(lintel); wallMeshes.push(lintel);
+      // Small warm lantern above door
+      var lantern = box(0.15, 0.15, 0.15, mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 2.0 }));
+      lantern.position.set(x, frameHeight + 0.25, z);
+      scene.add(lantern);
+      var lanternLight = new THREE.PointLight(0xffb366, 0.6, 5);
+      lanternLight.position.set(x, frameHeight + 0.25, z);
+      scene.add(lanternLight);
+    } else {
+      var postL = box(0.18, frameHeight, postW, frameMat);
+      postL.position.set(x, yMid, z - doorW/2);
+      scene.add(postL); wallMeshes.push(postL);
+      var postR = box(0.18, frameHeight, postW, frameMat);
+      postR.position.set(x, yMid, z + doorW/2);
+      scene.add(postR); wallMeshes.push(postR);
+      var lintel = box(0.22, 0.18, doorW + postW*2, frameMat);
+      lintel.position.set(x, frameHeight + 0.02, z);
+      scene.add(lintel); wallMeshes.push(lintel);
+      var lantern = box(0.15, 0.15, 0.15, mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 2.0 }));
+      lantern.position.set(x, frameHeight + 0.25, z);
+      scene.add(lantern);
+      var lanternLight = new THREE.PointLight(0xffb366, 0.6, 5);
+      lanternLight.position.set(x, frameHeight + 0.25, z);
+      scene.add(lanternLight);
+    }
+  }
+  // Horizontal walls with doors (split into 2 segments + door frame)
+  [
+    { x: -(ROOM/2 + GAP), z:  (GAP + 0.05) }, // bottom-left (Book Room) — door faces north (hallway center)
+    { x:  (ROOM/2 + GAP), z:  (GAP + 0.05) }, // bottom-right (Idea Lab)
+    { x: -(ROOM/2 + GAP), z: -(GAP + 0.05) }, // top-left (My Room) — door faces south
+    { x:  (ROOM/2 + GAP), z: -(GAP + 0.05) }, // top-right (Product Room)
+  ].forEach(function(d) {
+    var segLen = (ROOM + 0.2 - 1.2) / 2; // 2.0 units each
+    // Left segment
+    wallStrip(d.x - 1.2/2 - segLen/2 - 0.075, d.z, segLen, 0.1);
+    // Right segment
+    wallStrip(d.x + 1.2/2 + segLen/2 + 0.075, d.z, segLen, 0.1);
+    // Door frame
+    doorFrame(d.x, d.z, true);
+  });
   // Vertical dividers
   wallStrip(GAP + 0.05, -(ROOM/2 + GAP), 0.1, ROOM + 0.2);
   wallStrip(-(GAP + 0.05), -(ROOM/2 + GAP), 0.1, ROOM + 0.2);
@@ -915,6 +1001,26 @@
       strip.position.set(x, 2.8, 0);
       scene.add(strip);
     });
+
+    // Cozy hanging lanterns in hallway corners
+    [[-1.5, -1.5], [1.5, -1.5], [-1.5, 1.5], [1.5, 1.5]].forEach(function(p) {
+      // String
+      var string = cyl(0.02, 0.02, 1.0, 4, mat(0x222222));
+      string.position.set(p[0], 2.3, p[1]);
+      scene.add(string);
+      // Lantern body
+      var lbody = box(0.22, 0.3, 0.22, mat(0xa0522d));
+      lbody.position.set(p[0], 1.65, p[1]);
+      scene.add(lbody);
+      // Lantern glow
+      var lglow = box(0.16, 0.2, 0.16, mat(0xffe090, { emissive: 0xffe090, emissiveIntensity: 3.5, transparent: true, opacity: 0.95 }));
+      lglow.position.set(p[0], 1.65, p[1]);
+      scene.add(lglow);
+      // Point light
+      var lpt = new THREE.PointLight(0xffcc80, 0.9, 6);
+      lpt.position.set(p[0], 1.55, p[1]);
+      scene.add(lpt);
+    });
   })();
 
   // ── ANIMATED CHARACTER ────────────────────────────────────
@@ -966,9 +1072,11 @@
     // Legs
     var legL = box(0.14, 0.4, 0.14, mat(0x333333));
     legL.position.set(-0.1, 0.6, 0);
+    legL.userData = { isLeg: true, side: 'left' };
     character.add(legL);
     var legR = box(0.14, 0.4, 0.14, mat(0x333333));
     legR.position.set(0.1, 0.6, 0);
+    legR.userData = { isLeg: true, side: 'right' };
     character.add(legR);
 
     // Shoes
@@ -1023,6 +1131,26 @@
   var targetAngle = camAngle;
   var targetPitch = camPitch;
   var targetDist = camDist;
+
+  // ── Character movement state ──────────────────────────────
+  var charPos = { x: 0, z: 0 };
+  var charFacing = 0; // radians, 0 = +Z
+  var keys = {};
+  var lastFrameTime = 0;
+  window.addEventListener('keydown', function(e) {
+    var k = e.key.toLowerCase();
+    if (['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].indexOf(k) !== -1) {
+      keys[k] = true;
+      e.preventDefault();
+    }
+  });
+  window.addEventListener('keyup', function(e) {
+    var k = e.key.toLowerCase();
+    if (['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].indexOf(k) !== -1) {
+      keys[k] = false;
+      e.preventDefault();
+    }
+  });
 
   renderer.domElement.addEventListener('mousedown', function(e) {
     if (!orbitEnabled) return;
@@ -1103,6 +1231,7 @@
     cameraTween.active = true;
     cameraTween.onHalf = onHalfway || null;
     cameraTween.halfFired = false;
+    cameraTween.lastT = null; // reset time tracker
   }
 
   // Ease in-out
@@ -1317,7 +1446,9 @@
 
     // Camera tween (room navigation)
     if (cameraTween.active) {
-      cameraTween.progress += 0.018; // ~1s at 60fps
+      var tweenDt = Math.min(0.1, t - (cameraTween.lastT || t));
+      cameraTween.lastT = t;
+      cameraTween.progress += tweenDt / 1.0; // 1 second duration, FPS-independent
       if (cameraTween.progress >= 1) {
         cameraTween.progress = 1;
         cameraTween.active = false;
@@ -1333,28 +1464,64 @@
         cameraTween.halfFired = true;
       }
     } else if (orbitEnabled) {
-      // Smooth camera orbit (overview mode)
+      // ── Character movement (WASD / arrows) ────────────────
+      var dt = Math.min(0.05, t - lastFrameTime);
+      lastFrameTime = t;
+      var moveX = 0, moveZ = 0;
+      if (keys['w'] || keys['arrowup'])    moveZ -= 1;
+      if (keys['s'] || keys['arrowdown'])  moveZ += 1;
+      if (keys['a'] || keys['arrowleft'])  moveX -= 1;
+      if (keys['d'] || keys['arrowright']) moveX += 1;
+      var isMoving = (moveX !== 0 || moveZ !== 0);
+
+      if (isMoving) {
+        // Normalize diagonal + rotate relative to camera angle so WASD matches view
+        var len = Math.sqrt(moveX * moveX + moveZ * moveZ);
+        moveX /= len; moveZ /= len;
+        var cosA = Math.cos(camAngle), sinA = Math.sin(camAngle);
+        var worldX = moveX * cosA - moveZ * sinA;
+        var worldZ = moveX * sinA + moveZ * cosA;
+        var speed = 4.5;
+        charPos.x += worldX * speed * dt;
+        charPos.z += worldZ * speed * dt;
+        // Clamp to ground bounds
+        charPos.x = Math.max(-13, Math.min(13, charPos.x));
+        charPos.z = Math.max(-13, Math.min(13, charPos.z));
+        charFacing = Math.atan2(worldX, worldZ);
+      }
+
+      // Smooth camera orbit (overview mode) — centered on character
       camAngle += (targetAngle - camAngle) * 0.08;
       camPitch += (targetPitch - camPitch) * 0.08;
       camDist += (targetDist - camDist) * 0.08;
 
       var camBobY = Math.sin(t * 1.57) * 0.05;
-      camera.position.x = Math.cos(camAngle) * Math.cos(camPitch) * camDist;
+      camera.position.x = charPos.x + Math.cos(camAngle) * Math.cos(camPitch) * camDist;
       camera.position.y = Math.sin(camPitch) * camDist + camBobY;
-      camera.position.z = Math.sin(camAngle) * Math.cos(camPitch) * camDist;
-      cameraTween.currentLook.set(0, 1, 0);
-      camera.lookAt(0, 1, 0);
+      camera.position.z = charPos.z + Math.sin(camAngle) * Math.cos(camPitch) * camDist;
+      cameraTween.currentLook.set(charPos.x, 1, charPos.z);
+      camera.lookAt(charPos.x, 1, charPos.z);
     }
 
-    // Character idle animation
-    character.position.y = Math.sin(t * 3.14) * 0.15;
-    character.rotation.y = Math.sin(t * 0.5) * 0.3;
+    // ── Character position & animation ───────────────────────
+    var charIsMoving = orbitEnabled && (keys['w']||keys['a']||keys['s']||keys['d']||keys['arrowup']||keys['arrowdown']||keys['arrowleft']||keys['arrowright']);
+    character.position.x = charPos.x;
+    character.position.z = charPos.z;
+    character.position.y = charIsMoving ? Math.abs(Math.sin(t * 8)) * 0.08 : Math.sin(t * 3.14) * 0.15;
+    character.rotation.y = charIsMoving
+      ? charFacing
+      : charFacing + Math.sin(t * 0.5) * 0.3;
 
-    // Arm swing animation
+    // Arm & leg swing (faster when walking)
+    var swingSpeed = charIsMoving ? 6 : 2;
+    var swingAmp = charIsMoving ? 0.7 : 0.3;
     character.children.forEach(function(child) {
       if (child.userData.isArm) {
-        var swing = Math.sin(t * 2) * 0.3;
-        child.rotation.x = child.userData.side === 'left' ? swing : -swing;
+        var s = Math.sin(t * swingSpeed) * swingAmp;
+        child.rotation.x = child.userData.side === 'left' ? s : -s;
+      } else if (child.userData.isLeg) {
+        var s = Math.sin(t * swingSpeed) * (charIsMoving ? 0.6 : 0);
+        child.rotation.x = child.userData.side === 'left' ? -s : s;
       }
     });
 
@@ -1428,7 +1595,7 @@
     });
 
     // Position speech bubble above character
-    var charWorldPos = new THREE.Vector3(0, character.position.y + 3.0, 0);
+    var charWorldPos = new THREE.Vector3(charPos.x, character.position.y + 3.0, charPos.z);
     var projChar = charWorldPos.clone().project(camera);
     if (projChar.z < 1) {
       var sx = (projChar.x * 0.5 + 0.5) * window.innerWidth;

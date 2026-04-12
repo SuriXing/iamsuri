@@ -7,6 +7,7 @@ import ProductRoom from './components/Rooms/ProductRoom';
 import BookRoom from './components/Rooms/BookRoom';
 import IdeaLab from './components/Rooms/IdeaLab';
 import ThemeToggle from './components/shared/ThemeToggle';
+import ViewSwitcher from './components/shared/ViewSwitcher';
 
 const roomComponents: Record<string, React.ComponentType> = {
   'my-room': MyRoom,
@@ -32,6 +33,7 @@ export default function App() {
   return (
     <>
       <ThemeToggle />
+      <ViewSwitcher />
       {activeRoom && ActiveComponent ? (
         <RoomView room={activeRoom} onBack={handleBack}>
           <ActiveComponent />

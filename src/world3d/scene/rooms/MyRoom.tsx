@@ -1,4 +1,6 @@
 import { ROOM_BY_ID } from '../../data/rooms';
+import { Bookshelf } from '../parts/Bookshelf';
+import { DeskLamp } from '../parts/DeskLamp';
 
 const PINK = '#f4a8b8';
 const PINK_SOFT = '#f8c4d0';
@@ -22,8 +24,7 @@ const DESK_LEGS: ReadonlyArray<readonly [number, number]> = [
   [0.6, 0.7],
 ];
 
-const SHELF_BOOK_COLORS = ['#e94560', '#3b82f6', '#f4a8b8', '#f8c4d0', '#ffd700'];
-const SHELF_LEVELS = [0.45, 0.95, 1.45];
+const SHELF_BOOK_COLORS: ReadonlyArray<string> = ['#e94560', '#3b82f6', '#f4a8b8', '#f8c4d0', '#ffd700'];
 
 export function MyRoom() {
   const { center } = ROOM_BY_ID.myroom;
@@ -135,47 +136,31 @@ export function MyRoom() {
       </mesh>
 
       {/* Desk lamp */}
-      <mesh position={[deskX + 0.5, 0.84, deskZ - 0.3]}>
-        <cylinderGeometry args={[0.1, 0.13, 0.05, 8]} />
-        <meshPhongMaterial color={WHITE_OFF} flatShading />
-      </mesh>
-      <mesh position={[deskX + 0.5, 1.06, deskZ - 0.3]}>
-        <cylinderGeometry args={[0.02, 0.02, 0.4, 6]} />
-        <meshPhongMaterial color={WHITE_OFF} flatShading />
-      </mesh>
-      <mesh position={[deskX + 0.5, 1.3, deskZ - 0.3]}>
-        <boxGeometry args={[0.16, 0.08, 0.12]} />
-        <meshPhongMaterial color="#ffd700" emissive="#ffd700" emissiveIntensity={1.8} flatShading />
-      </mesh>
-      <pointLight position={[deskX + 0.5, 1.2, deskZ - 0.3]} color="#ffd6a8" intensity={1.0} distance={6} />
+      <DeskLamp
+        x={deskX + 0.5}
+        y={0.82}
+        z={deskZ - 0.3}
+        color="#ffd700"
+        lightColor="#ffd6a8"
+        intensity={1.0}
+        distance={6}
+        bodyColor={WHITE_OFF}
+      />
 
       {/* Bookshelf */}
-      {SHELF_LEVELS.map((y, levelIdx) => (
-        <group key={y}>
-          <mesh position={[shelfX, y, shelfZ]} castShadow receiveShadow>
-            <boxGeometry args={[1.2, 0.05, 0.3]} />
-            <meshPhongMaterial color={WOOD} flatShading />
-          </mesh>
-          {[0, 1, 2, 3].map((i) => {
-            const colorIdx = (i + Math.floor(y * 3)) % SHELF_BOOK_COLORS.length;
-            const h = 0.22 + ((levelIdx * 4 + i) % 5) * 0.016;
-            return (
-              <mesh
-                key={i}
-                position={[shelfX - 0.35 + i * 0.22, y + 0.16, shelfZ]}
-                castShadow
-              >
-                <boxGeometry args={[0.09, h, 0.22]} />
-                <meshPhongMaterial color={SHELF_BOOK_COLORS[colorIdx]} flatShading />
-              </mesh>
-            );
-          })}
-        </group>
-      ))}
-      <mesh position={[shelfX, 0.95, shelfZ - 0.16]} receiveShadow>
-        <boxGeometry args={[1.25, 1.55, 0.04]} />
-        <meshPhongMaterial color={SHELF_BACK} flatShading />
-      </mesh>
+      <Bookshelf
+        x={shelfX}
+        z={shelfZ}
+        rows={3}
+        booksPerRow={4}
+        width={1.2}
+        depth={0.3}
+        rowSpacing={0.5}
+        baseY={0.45}
+        backPanelColor={SHELF_BACK}
+        plankColor={WOOD}
+        bookColors={SHELF_BOOK_COLORS}
+      />
 
       {/* Pink rug */}
       <mesh position={[bedX, 0.13, bedZ + 0.7]} receiveShadow>

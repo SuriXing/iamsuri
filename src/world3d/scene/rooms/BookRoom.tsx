@@ -1,48 +1,9 @@
 import { ROOM_BY_ID } from '../../data/rooms';
+import { Bookshelf } from '../parts/Bookshelf';
 
-const SHELF_BOOK_COLORS = ['#e94560', '#3b82f6', '#ffd700', '#22c55e', '#a78bfa', '#f97316'];
-
-interface BookshelfProps {
-  bx: number;
-  bz: number;
-}
-
-function Bookshelf({ bx, bz }: BookshelfProps) {
-  const rows = [0, 1, 2, 3];
-  const cols = [0, 1, 2, 3, 4];
-  return (
-    <group>
-      {/* Frame */}
-      <mesh position={[bx, 1.1, bz]} castShadow receiveShadow>
-        <boxGeometry args={[1.6, 2.0, 0.4]} />
-        <meshPhongMaterial color="#6b3410" flatShading />
-      </mesh>
-      {rows.map((row) => (
-        <group key={row}>
-          {/* Shelf plank */}
-          <mesh position={[bx, 0.3 + row * 0.5, bz]} castShadow receiveShadow>
-            <boxGeometry args={[1.5, 0.05, 0.38]} />
-            <meshPhongMaterial color="#8B4513" flatShading />
-          </mesh>
-          {cols.map((b) => {
-            const colorIdx = (row * 3 + b) % SHELF_BOOK_COLORS.length;
-            const h = 0.3 + ((row * 5 + b) % 6) * 0.02;
-            return (
-              <mesh
-                key={b}
-                position={[bx - 0.55 + b * 0.26, 0.5 + row * 0.5, bz]}
-                castShadow
-              >
-                <boxGeometry args={[0.1, h, 0.28]} />
-                <meshPhongMaterial color={SHELF_BOOK_COLORS[colorIdx]} flatShading />
-              </mesh>
-            );
-          })}
-        </group>
-      ))}
-    </group>
-  );
-}
+const SHELF_BOOK_COLORS: ReadonlyArray<string> = [
+  '#e94560', '#3b82f6', '#ffd700', '#22c55e', '#a78bfa', '#f97316',
+];
 
 export function BookRoom() {
   const { center } = ROOM_BY_ID.book;
@@ -51,8 +12,38 @@ export function BookRoom() {
 
   return (
     <group>
-      <Bookshelf bx={ox - 0.8} bz={oz - 1.0} />
-      <Bookshelf bx={ox + 1.0} bz={oz - 1.0} />
+      <Bookshelf
+        x={ox - 0.8}
+        z={oz - 1.0}
+        rows={4}
+        booksPerRow={5}
+        width={1.5}
+        depth={0.38}
+        rowSpacing={0.5}
+        baseY={0.3}
+        plankColor="#8B4513"
+        bookColors={SHELF_BOOK_COLORS}
+        withFrameBox
+        frameBoxColor="#6b3410"
+        frameBoxHeight={2.0}
+        frameBoxY={1.1}
+      />
+      <Bookshelf
+        x={ox + 1.0}
+        z={oz - 1.0}
+        rows={4}
+        booksPerRow={5}
+        width={1.5}
+        depth={0.38}
+        rowSpacing={0.5}
+        baseY={0.3}
+        plankColor="#8B4513"
+        bookColors={SHELF_BOOK_COLORS}
+        withFrameBox
+        frameBoxColor="#6b3410"
+        frameBoxHeight={2.0}
+        frameBoxY={1.1}
+      />
 
       {/* Reading chair */}
       <mesh position={[ox - 0.5, 0.35, oz + 1.0]} castShadow receiveShadow>

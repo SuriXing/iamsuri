@@ -9,18 +9,22 @@ export function Character() {
   const headRef = useRef<THREE.Group>(null);
   const armLRef = useRef<THREE.Mesh>(null);
   const armRRef = useRef<THREE.Mesh>(null);
+  const shadowRef = useRef<THREE.Mesh>(null);
 
-  const charPos = useWorldStore((s) => s.charPos);
-  const charFacing = useWorldStore((s) => s.charFacing);
-
+  // No selectors — read store imperatively in useFrame to avoid re-renders.
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
+    const { charPos, charFacing } = useWorldStore.getState();
     const g = groupRef.current;
     if (g) {
       g.position.x = charPos.x;
       g.position.z = charPos.z;
       g.position.y = Math.sin(t * CHARACTER.bobFreq) * CHARACTER.bobAmp;
       g.rotation.y = charFacing + Math.sin(t * CHARACTER.swayFreq) * CHARACTER.swayAmp;
+    }
+    if (shadowRef.current) {
+      shadowRef.current.position.x = charPos.x;
+      shadowRef.current.position.z = charPos.z;
     }
     // Idle arm sway
     const swing = Math.sin(t * 2) * 0.3;
@@ -31,9 +35,10 @@ export function Character() {
 
   return (
     <>
-      {/* Shadow disc — separate from group so it stays on the ground */}
+      {/* Shadow disc — separate ref, mutated in useFrame to track the body. */}
       <mesh
-        position={[charPos.x, 0.08, charPos.z]}
+        ref={shadowRef}
+        position={[0, 0.08, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
       >
         <circleGeometry args={[CHARACTER.shadowRadius, 16]} />

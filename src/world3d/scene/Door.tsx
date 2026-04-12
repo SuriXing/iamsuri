@@ -28,9 +28,11 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
   const lockRef = useRef<THREE.Mesh>(null);
   const angleRef = useRef<number>(unlocked ? DOOR.openAngle : 0);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     const target = unlocked ? DOOR.openAngle : 0;
-    angleRef.current += (target - angleRef.current) * DOOR.hingeLerp;
+    // Framerate-independent lerp: factor = 1 - exp(-k * delta) where k = hingeLerp * 60.
+    const factor = 1 - Math.exp(-DOOR.hingeLerp * 60 * delta);
+    angleRef.current += (target - angleRef.current) * factor;
     if (hingeRef.current) hingeRef.current.rotation.y = angleRef.current;
     if (!unlocked && lockRef.current) {
       const mat = lockRef.current.material as THREE.MeshPhongMaterial;

@@ -31,7 +31,7 @@ export const CAMERA = {
 } as const;
 
 export const LIGHTS = {
-  ambient:      { color: '#ffd8a8', intensity: 1.2 },
+  ambient:      { color: '#ffd8a8', intensity: 1.8 },
   directional:  { color: '#ffeab0', intensity: 1.0, position: [-10, 18, 8] as const },
   hemisphere:   { sky: '#ffc88a', ground: '#4a3020', intensity: 0.5 },
 } as const;
@@ -42,7 +42,7 @@ export const GROUND = {
   y: -0.01,
 } as const;
 
-export const FOG_DENSITY = 0.004;
+export const FOG_DENSITY = 0.002;
 export const SHADOW_MAP_SIZE = 1024;
 
 // World counts

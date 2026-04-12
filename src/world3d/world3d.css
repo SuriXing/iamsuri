@@ -31,3 +31,19 @@
   letter-spacing: 1px;
   margin: 4px 0 0;
 }
+
+.room-label {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 3px;
+  background: rgba(20, 23, 34, 0.75);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-shadow: 0 0 8px currentColor;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}

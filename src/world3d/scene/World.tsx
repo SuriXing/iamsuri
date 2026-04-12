@@ -1,3 +1,4 @@
+import { Html } from '@react-three/drei';
 import { ROOMS } from '../data/rooms';
 import { COLORS, LIGHTS, SHADOW_MAP_SIZE, FOG_DENSITY } from '../constants';
 import { Ground } from './Ground';
@@ -47,7 +48,7 @@ export function World() {
         color={LIGHTS.hemisphere.sky}
         groundColor={LIGHTS.hemisphere.ground}
       />
-      <pointLight position={[0, 3, 0]} color="#ffb060" intensity={0.4} distance={30} />
+      <pointLight position={[0, 3, 0]} color="#ffb060" intensity={0.5} distance={30} />
       <pointLight position={[-8, 5, -8]} color="#ff8844" intensity={0.3} distance={30} />
       <pointLight position={[8, 5, -8]} color="#ffaa66" intensity={0.3} distance={30} />
       {ROOM_LIGHTS.map((l, i) => (
@@ -85,6 +86,21 @@ export function World() {
 
       {/* Character */}
       <Character />
+
+      {/* Room labels — projected from 3D space via drei Html (fixed-pixel size) */}
+      {ROOMS.map((r) => (
+        <Html
+          key={r.id}
+          position={[r.center.x, 3.0, r.center.z]}
+          center
+          zIndexRange={[10, 0]}
+          pointerEvents="none"
+        >
+          <div className="room-label" style={{ color: r.accentColor }}>
+            {r.label}
+          </div>
+        </Html>
+      ))}
     </>
   );
 }

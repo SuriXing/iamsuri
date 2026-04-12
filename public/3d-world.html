@@ -50,7 +50,7 @@
     border: 1px solid rgba(255,255,255,0.08);
     text-shadow: 0 0 8px currentColor;
   }
-  #label-myroom    { color: #a78bfa; }
+  #label-myroom    { color: #f4a8b8; }
   #label-product   { color: #60a5fa; }
   #label-book      { color: #4ade80; }
   #label-idealab   { color: #fbbf24; }
@@ -557,7 +557,7 @@
 
   // Per-room warm overhead lights
   var roomLights = [];
-  [{x: cx.tl.x, z: cx.tl.z, c: 0xa78bfa}, {x: cx.tr.x, z: cx.tr.z, c: 0x60a5fa},
+  [{x: cx.tl.x, z: cx.tl.z, c: 0xffb6c1}, {x: cx.tr.x, z: cx.tr.z, c: 0x60a5fa},
    {x: cx.bl.x, z: cx.bl.z, c: 0x4ade80}, {x: cx.br.x, z: cx.br.z, c: 0xfbbf24}].forEach(function(r) {
     var roomLight = new THREE.PointLight(r.c, 1.0, 10);
     roomLight.position.set(r.x, 4, r.z);
@@ -610,7 +610,7 @@
   }
 
   var roomFloors = {};
-  var floorMyroom = roomFloor(0x64477d, cx.tl.x, cx.tl.z, 0.85);
+  var floorMyroom = roomFloor(0x8B5A2B, cx.tl.x, cx.tl.z, 0.95);
   floorMyroom.userData.room = 'myroom';
   roomFloors.myroom = floorMyroom;
 
@@ -712,94 +712,144 @@
   wallStrip(GAP + 0.05, (ROOM/2 + GAP), 0.1, ROOM + 0.2);
   wallStrip(-(GAP + 0.05), (ROOM/2 + GAP), 0.1, ROOM + 0.2);
 
-  // ── MY ROOM (top-left, purple) ────────────────────────────
+  // ── MY ROOM (top-left, brown wood floor — bedroom) ────────
   (function() {
     var ox = cx.tl.x, oz = cx.tl.z;
+    var pink     = 0xf4a8b8; // Monet pink
+    var pinkSoft = 0xf8c4d0; // softer pillow
+    var pinkDark = 0xd87890; // sheet shadow
+    var white    = 0xf8f8f8;
+    var whiteOff = 0xe8e8e8;
+    var wood     = 0x6b4423;
 
-    // Desk
-    var deskTop = box(2.2, 0.12, 1.1, mat(0x8B4513));
-    deskTop.position.set(ox - 0.3, 0.7, oz - 0.5);
-    scene.add(deskTop);
-    // Legs
-    [[-1, -0.4], [1, -0.4], [-1, 0.4], [1, 0.4]].forEach(function(p) {
-      var leg = box(0.08, 0.58, 0.08, mat(0x6b3410));
-      leg.position.set(ox - 0.3 + p[0], 0.35, oz - 0.5 + p[1]);
+    // ── Bed (Monet pink) — left side of room ─────────────
+    var bedX = ox - 1.0, bedZ = oz - 0.3;
+    // Bed base (wooden frame)
+    var bedFrame = box(1.5, 0.25, 2.1, mat(wood));
+    bedFrame.position.set(bedX, 0.18, bedZ);
+    scene.add(bedFrame);
+    // Mattress (pink)
+    var mattress = box(1.4, 0.2, 2.0, mat(pink, { emissive: pink, emissiveIntensity: 0.12 }));
+    mattress.position.set(bedX, 0.42, bedZ);
+    scene.add(mattress);
+    // Sheet (slightly darker pink, draped)
+    var sheet = box(1.42, 0.05, 1.4, mat(pinkDark, { emissive: pinkDark, emissiveIntensity: 0.08 }));
+    sheet.position.set(bedX, 0.55, bedZ + 0.25);
+    scene.add(sheet);
+    // Pillow 1 (soft pink)
+    var pillow1 = box(0.55, 0.13, 0.35, mat(pinkSoft, { emissive: pinkSoft, emissiveIntensity: 0.1 }));
+    pillow1.position.set(bedX - 0.3, 0.58, bedZ - 0.75);
+    pillow1.rotation.y = 0.05;
+    scene.add(pillow1);
+    // Pillow 2
+    var pillow2 = box(0.55, 0.13, 0.35, mat(pinkSoft, { emissive: pinkSoft, emissiveIntensity: 0.1 }));
+    pillow2.position.set(bedX + 0.3, 0.58, bedZ - 0.75);
+    pillow2.rotation.y = -0.05;
+    scene.add(pillow2);
+    // Headboard
+    var headboard = box(1.5, 0.7, 0.12, mat(wood));
+    headboard.position.set(bedX, 0.65, bedZ - 1.05);
+    scene.add(headboard);
+    // Bed legs (4)
+    [[-0.7, -0.95], [0.7, -0.95], [-0.7, 0.95], [0.7, 0.95]].forEach(function(p) {
+      var leg = box(0.08, 0.18, 0.08, mat(wood));
+      leg.position.set(bedX + p[0], 0.09, bedZ + p[1]);
       scene.add(leg);
     });
 
-    // Monitor
-    var monFrame = box(1.2, 0.8, 0.06, mat(0x222222));
-    monFrame.position.set(ox - 0.3, 1.2, oz - 0.9);
+    // ── White Desk (beside the bed) ───────────────────────
+    var deskX = ox + 1.0, deskZ = oz - 0.3;
+    // Desk top (white)
+    var deskTop = box(1.4, 0.08, 1.6, mat(white, { emissive: white, emissiveIntensity: 0.05 }));
+    deskTop.position.set(deskX, 0.78, deskZ);
+    scene.add(deskTop);
+    // Desk legs (white)
+    [[-0.6, -0.7], [0.6, -0.7], [-0.6, 0.7], [0.6, 0.7]].forEach(function(p) {
+      var leg = box(0.08, 0.74, 0.08, mat(whiteOff));
+      leg.position.set(deskX + p[0], 0.37, deskZ + p[1]);
+      scene.add(leg);
+    });
+    // Drawer (white with handle)
+    var drawer = box(1.3, 0.18, 0.5, mat(whiteOff));
+    drawer.position.set(deskX, 0.6, deskZ + 0.5);
+    scene.add(drawer);
+    var handle = box(0.2, 0.03, 0.04, mat(0xc0a060));
+    handle.position.set(deskX, 0.6, deskZ + 0.78);
+    scene.add(handle);
+
+    // Monitor on white desk
+    var monFrame = box(1.0, 0.65, 0.06, mat(0xeeeeee));
+    monFrame.position.set(deskX, 1.2, deskZ - 0.5);
     scene.add(monFrame);
-    var monScreen = box(1.0, 0.6, 0.02, mat(0x1a1a3e, { emissive: 0x4466ff, emissiveIntensity: 2.0 }));
-    monScreen.position.set(ox - 0.3, 1.22, oz - 0.87);
+    var monScreen = box(0.85, 0.5, 0.02, mat(0x1a1a3e, { emissive: 0xffb6c1, emissiveIntensity: 1.2 }));
+    monScreen.position.set(deskX, 1.22, deskZ - 0.47);
     scene.add(monScreen);
-    // Monitor stand
-    var stand = box(0.08, 0.38, 0.08, mat(0x333333));
-    stand.position.set(ox - 0.3, 0.9, oz - 0.85);
-    scene.add(stand);
-    // Screen scanline effect (subtle glowing bar)
-    var scanline = box(0.95, 0.02, 0.01, mat(0x6699ff, { emissive: 0x6699ff, emissiveIntensity: 3.0 }));
-    scanline.position.set(ox - 0.3, 1.22, oz - 0.85);
+    var monStand = box(0.08, 0.32, 0.08, mat(whiteOff));
+    monStand.position.set(deskX, 0.96, deskZ - 0.45);
+    scene.add(monStand);
+    var monBase = box(0.32, 0.04, 0.18, mat(whiteOff));
+    monBase.position.set(deskX, 0.82, deskZ - 0.45);
+    scene.add(monBase);
+    // Subtle scanline (kept for animation)
+    var scanline = box(0.8, 0.02, 0.01, mat(0xffd0e0, { emissive: 0xffd0e0, emissiveIntensity: 2.0 }));
+    scanline.position.set(deskX, 1.22, deskZ - 0.45);
     scene.add(scanline);
     animatables.scanline = scanline;
 
-    // Keyboard
-    var kb = box(0.7, 0.03, 0.25, mat(0x333333, { emissive: 0x22c55e, emissiveIntensity: 0.1 }));
-    kb.position.set(ox - 0.3, 0.78, oz - 0.2);
-    scene.add(kb);
+    // Notebook + pen on desk
+    var notebook = box(0.4, 0.04, 0.3, mat(pinkSoft, { emissive: pinkSoft, emissiveIntensity: 0.1 }));
+    notebook.position.set(deskX - 0.4, 0.82, deskZ + 0.1);
+    notebook.rotation.y = 0.15;
+    scene.add(notebook);
+    var pen = cyl(0.015, 0.015, 0.3, 6, mat(0xffd700));
+    pen.position.set(deskX - 0.1, 0.82, deskZ + 0.05);
+    pen.rotation.z = Math.PI / 2;
+    pen.rotation.y = 0.3;
+    scene.add(pen);
 
-    // Chair
-    var seat = box(0.7, 0.08, 0.7, mat(0x444444));
-    seat.position.set(ox - 0.3, 0.45, oz + 0.3);
-    scene.add(seat);
-    var back = box(0.7, 0.6, 0.08, mat(0x555555));
-    back.position.set(ox - 0.3, 0.75, oz + 0.62);
-    scene.add(back);
-    // Chair legs
-    [[-0.25, -0.25], [0.25, -0.25], [-0.25, 0.25], [0.25, 0.25]].forEach(function(p) {
-      var cl = cyl(0.03, 0.03, 0.35, 6, mat(0x333333));
-      cl.position.set(ox - 0.3 + p[0], 0.22, oz + 0.3 + p[1]);
-      scene.add(cl);
-    });
+    // ── Desk lamp (warm light) ────────────────────────────
+    var lampBase = cyl(0.1, 0.13, 0.05, 8, mat(whiteOff));
+    lampBase.position.set(deskX + 0.5, 0.84, deskZ - 0.3);
+    scene.add(lampBase);
+    var lampArm = cyl(0.02, 0.02, 0.4, 6, mat(whiteOff));
+    lampArm.position.set(deskX + 0.5, 1.06, deskZ - 0.3);
+    scene.add(lampArm);
+    var lampHead = box(0.16, 0.08, 0.12, mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 1.8 }));
+    lampHead.position.set(deskX + 0.5, 1.3, deskZ - 0.3);
+    scene.add(lampHead);
+    var lampGlow = new THREE.PointLight(0xffd6a8, 1.0, 6);
+    lampGlow.position.set(deskX + 0.5, 1.2, deskZ - 0.3);
+    scene.add(lampGlow);
 
-    // Bookshelf on "wall" side
-    var shelfX = ox + 1.8;
-    [0.4, 0.85, 1.3].forEach(function(y) {
-      var plank = box(1.2, 0.06, 0.35, mat(0x8B4513));
-      plank.position.set(shelfX, y, oz - 0.8);
+    // ── Bookshelf (back wall, brown wood) ────────────────
+    var shelfX = ox - 0.1, shelfZ = oz - 1.7;
+    [0.45, 0.95, 1.45].forEach(function(y) {
+      var plank = box(1.2, 0.05, 0.3, mat(wood));
+      plank.position.set(shelfX, y, shelfZ);
       scene.add(plank);
-      // Books
-      var colors = [0xe94560, 0x3b82f6, 0xffd700, 0x22c55e, 0xa78bfa];
+      var bookColors = [0xe94560, 0x3b82f6, 0xf4a8b8, 0xf8c4d0, 0xffd700];
       for (var i = 0; i < 4; i++) {
-        var book = box(0.08, 0.2 + Math.random() * 0.1, 0.25, mat(colors[i % colors.length]));
-        book.position.set(shelfX - 0.35 + i * 0.22, y + 0.16, oz - 0.8);
+        var book = box(0.09, 0.22 + Math.random() * 0.08, 0.22, mat(bookColors[(i + Math.floor(y * 3)) % bookColors.length]));
+        book.position.set(shelfX - 0.35 + i * 0.22, y + 0.16, shelfZ);
         scene.add(book);
       }
     });
-    // Shelf back
-    var shelfBack = box(0.06, 1.2, 0.35, mat(0x6b3410));
-    shelfBack.position.set(shelfX + 0.6, 0.7, oz - 0.8);
+    var shelfBack = box(1.25, 1.55, 0.04, mat(0x4a3018));
+    shelfBack.position.set(shelfX, 0.95, shelfZ - 0.16);
     scene.add(shelfBack);
 
-    // Desk lamp
-    var lampBase = cyl(0.12, 0.15, 0.06, 8, mat(0x333333));
-    lampBase.position.set(ox + 0.7, 0.79, oz - 0.8);
-    scene.add(lampBase);
-    var lampArm = cyl(0.02, 0.02, 0.5, 6, mat(0x555555));
-    lampArm.position.set(ox + 0.7, 1.04, oz - 0.8);
-    scene.add(lampArm);
-    var lampHead = box(0.18, 0.08, 0.12, mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 1.5 }));
-    lampHead.position.set(ox + 0.7, 1.32, oz - 0.8);
-    scene.add(lampHead);
-    var lampGlow = new THREE.PointLight(0xffd700, 0.8, 8);
-    lampGlow.position.set(ox + 0.7, 1.25, oz - 0.8);
-    scene.add(lampGlow);
-
-    // Small rug
-    var rug = box(1.5, 0.02, 1.0, mat(0x64477d, { emissive: 0x64477d, emissiveIntensity: 0.2 }));
-    rug.position.set(ox - 0.3, 0.13, oz + 0.1);
+    // ── Soft pink rug under bed ──────────────────────────
+    var rug = box(1.7, 0.02, 1.4, mat(pinkSoft, { transparent: true, opacity: 0.6, emissive: pinkSoft, emissiveIntensity: 0.15 }));
+    rug.position.set(bedX, 0.13, bedZ + 0.7);
     scene.add(rug);
+
+    // ── Tiny potted plant on desk ────────────────────────
+    var pot = cyl(0.07, 0.06, 0.1, 8, mat(0xc06850));
+    pot.position.set(deskX - 0.5, 0.87, deskZ - 0.3);
+    scene.add(pot);
+    var plant = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), mat(0x4ade80, { emissive: 0x22c55e, emissiveIntensity: 0.15 }));
+    plant.position.set(deskX - 0.5, 0.99, deskZ - 0.3);
+    scene.add(plant);
   })();
 
   // ── PRODUCT ROOM (top-right, blue) ────────────────────────
@@ -1340,18 +1390,14 @@
       newHovered = intersects[0].object.userData.room;
     }
     if (newHovered !== hoveredRoom) {
-      // Revert old
+      // Revert old (no floor color change — only edge glow + cursor)
       if (hoveredRoom) {
-        roomFloors[hoveredRoom].material.emissiveIntensity = originalEmissive[hoveredRoom];
-        roomFloors[hoveredRoom].scale.set(1, 1, 1);
         var oldLine = roomFloors[hoveredRoom].userData.edgeLine;
         if (oldLine) { oldLine.material.opacity = 0.5; oldLine.material.color.copy(roomFloors[hoveredRoom].material.color); }
         renderer.domElement.style.cursor = 'default';
       }
       hoveredRoom = newHovered;
       if (hoveredRoom) {
-        roomFloors[hoveredRoom].material.emissiveIntensity = originalEmissive[hoveredRoom] + 1.2;
-        roomFloors[hoveredRoom].scale.set(1.02, 1, 1.02);
         var newLine = roomFloors[hoveredRoom].userData.edgeLine;
         if (newLine) { newLine.material.opacity = 1.0; newLine.material.color.setHex(0xffd700); }
         renderer.domElement.style.cursor = 'pointer';

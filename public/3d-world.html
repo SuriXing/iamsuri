@@ -60,6 +60,190 @@
     font-family: 'Courier New', monospace; letter-spacing: 1px;
     pointer-events: none;
   }
+
+  /* ── Scanline overlay ─────────────────────────────────── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* ── Room content overlays ────────────────────────────── */
+  .room-overlay {
+    display: none;
+    position: fixed;
+    right: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 320px;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: rgba(20, 23, 34, 0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 8px;
+    padding: 28px;
+    font-family: 'Courier New', monospace;
+    color: #e5e7eb;
+    z-index: 50;
+    animation: fadeSlideIn 0.4s ease-out;
+  }
+  .room-overlay.active { display: block; }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(-50%) translateX(20px); }
+    to { opacity: 1; transform: translateY(-50%) translateX(0); }
+  }
+  .room-overlay h2 {
+    color: #ffd700;
+    font-size: 1.3rem;
+    margin-bottom: 16px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 0 8px rgba(255,215,0,0.4);
+  }
+  .bio { font-size: 1rem; margin-bottom: 12px; }
+  .tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tag {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+  }
+  .tag.purple { background: rgba(100,71,125,0.4); color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); }
+  .product-card, .book-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .product-card h3, .book-card h3 { color: #e5e7eb; font-size: 1rem; margin-bottom: 6px; }
+  .product-card p, .book-card p { color: #9ca3af; font-size: 0.85rem; margin-bottom: 8px; }
+  .product-card a {
+    color: #ffd700;
+    text-decoration: none;
+    font-size: 0.85rem;
+  }
+  .product-card a:hover { text-decoration: underline; }
+  .live-badge {
+    display: inline-block;
+    background: rgba(34,197,94,0.2);
+    color: #22c55e;
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 3px;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(34,197,94,0.3);
+  }
+  .idea-card {
+    border: 1px dashed rgba(251,191,36,0.4);
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .idea-card h3 { color: #fbbf24; font-size: 0.95rem; margin-bottom: 4px; }
+  .idea-card p { color: #9ca3af; font-size: 0.8rem; }
+  .meta { color: #6b7280; font-size: 0.75rem; }
+
+  /* ── Back button ──────────────────────────────────────── */
+  .back-btn {
+    display: none;
+    position: fixed;
+    top: 28px;
+    right: 32px;
+    z-index: 60;
+    background: rgba(20,23,34,0.85);
+    color: #ffd700;
+    border: 1px solid rgba(255,215,0,0.3);
+    padding: 8px 18px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border-radius: 4px;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+  .back-btn:hover { background: rgba(255,215,0,0.15); }
+  .back-btn.active { display: block; }
+
+  /* ── Theme toggle ─────────────────────────────────────── */
+  #theme-toggle {
+    position: fixed;
+    top: 28px;
+    right: 80px;
+    z-index: 60;
+    background: rgba(20,23,34,0.85);
+    color: #ffd700;
+    border: 1px solid rgba(255,215,0,0.2);
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+  }
+
+  /* ── Speech bubble ────────────────────────────────────── */
+  #speech-bubble {
+    position: fixed;
+    z-index: 20;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: #ffd700;
+    background: rgba(20,23,34,0.88);
+    border: 2px solid rgba(255,215,0,0.4);
+    border-radius: 6px;
+    padding: 8px 14px;
+    pointer-events: none;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+    text-shadow: 0 0 6px rgba(255,215,0,0.3);
+  }
+  #speech-bubble.visible { opacity: 1; }
+
+  /* ── Light theme overrides ────────────────────────────── */
+  body.light-theme .room-overlay {
+    background: rgba(240,237,230,0.92);
+    color: #1a1a2e;
+    border-color: rgba(0,0,0,0.12);
+  }
+  body.light-theme .room-overlay h2 {
+    color: #b8860b;
+    text-shadow: none;
+  }
+  body.light-theme .product-card h3,
+  body.light-theme .book-card h3 { color: #1a1a2e; }
+  body.light-theme .product-card p,
+  body.light-theme .book-card p,
+  body.light-theme .idea-card p { color: #555; }
+  body.light-theme .product-card a { color: #b8860b; }
+  body.light-theme .back-btn {
+    background: rgba(240,237,230,0.9);
+    color: #b8860b;
+    border-color: rgba(0,0,0,0.15);
+  }
+  body.light-theme #theme-toggle {
+    background: rgba(240,237,230,0.9);
+    color: #b8860b;
+    border-color: rgba(0,0,0,0.15);
+  }
+  body.light-theme #speech-bubble {
+    background: rgba(240,237,230,0.92);
+    color: #b8860b;
+    border-color: rgba(0,0,0,0.15);
+  }
+  body.light-theme .meta { color: #888; }
 </style>
 </head>
 <body>
@@ -76,7 +260,66 @@
 <div id="label-book" class="room-label">Book Room</div>
 <div id="label-idealab" class="room-label">Idea Lab</div>
 
-<div id="hint">scroll to zoom · drag to orbit</div>
+<div id="hint">scroll to zoom · drag to orbit · click a room to explore</div>
+
+<div id="overlay-myroom" class="room-overlay">
+  <h2>My Room</h2>
+  <p class="bio">Suri Xing, Grade 8</p>
+  <div class="tags">
+    <span class="tag purple">Math</span>
+    <span class="tag purple">Design</span>
+    <span class="tag purple">Debate</span>
+    <span class="tag purple">Building</span>
+  </div>
+</div>
+
+<div id="overlay-product" class="room-overlay">
+  <h2>Product Room</h2>
+  <div class="product-card">
+    <span class="live-badge">LIVE</span>
+    <h3>Problem Solver</h3>
+    <p>Drop your worry in</p>
+    <a href="https://problem-solver.vercel.app" target="_blank" rel="noopener">Visit &rarr;</a>
+  </div>
+  <div class="product-card">
+    <span class="live-badge">LIVE</span>
+    <h3>Mentor Table</h3>
+    <p>Chat with great minds</p>
+    <a href="https://mentor-table.vercel.app" target="_blank" rel="noopener">Visit &rarr;</a>
+  </div>
+</div>
+
+<div id="overlay-book" class="room-overlay">
+  <h2>Book Room</h2>
+  <div class="book-card">
+    <h3>Why I Build Things</h3>
+    <span class="meta">Apr 2026 &middot; 3 min read</span>
+  </div>
+  <div class="book-card">
+    <h3>Learning by Shipping</h3>
+    <span class="meta">Mar 2026 &middot; 5 min read</span>
+  </div>
+</div>
+
+<div id="overlay-idealab" class="room-overlay">
+  <h2>Idea Lab</h2>
+  <div class="idea-card">
+    <h3>AI Study Buddy</h3>
+    <p>Personalized practice questions that adapt to what you struggle with</p>
+  </div>
+  <div class="idea-card">
+    <h3>Debate Trainer</h3>
+    <p>Practice arguments against an AI that plays devil's advocate</p>
+  </div>
+  <div class="idea-card">
+    <h3>Visual Math</h3>
+    <p>See calculus and algebra concepts as interactive 3D animations</p>
+  </div>
+</div>
+
+<button id="back-btn" class="back-btn">&larr; Back</button>
+<button id="theme-toggle">&#9788;</button>
+<div id="speech-bubble"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
@@ -103,8 +346,11 @@
   camera.lookAt(0, 0, 0);
 
   // ── Lights ────────────────────────────────────────────────
-  var ambient = new THREE.AmbientLight(0x8888aa, 1.2);
+  var ambient = new THREE.AmbientLight(0x8888aa, 1.8);
   scene.add(ambient);
+
+  var hemiLight = new THREE.HemisphereLight(0xffd700, 0x1a1a2e, 0.5);
+  scene.add(hemiLight);
 
   var dirLight = new THREE.DirectionalLight(0xffd700, 1.2);
   dirLight.position.set(-10, 18, 8);
@@ -171,11 +417,13 @@
   };
 
   // Per-room warm overhead lights
+  var roomLights = [];
   [{x: cx.tl.x, z: cx.tl.z, c: 0xa78bfa}, {x: cx.tr.x, z: cx.tr.z, c: 0x60a5fa},
    {x: cx.bl.x, z: cx.bl.z, c: 0x4ade80}, {x: cx.br.x, z: cx.br.z, c: 0xfbbf24}].forEach(function(r) {
-    var roomLight = new THREE.PointLight(r.c, 0.6, 10);
+    var roomLight = new THREE.PointLight(r.c, 1.0, 10);
     roomLight.position.set(r.x, 4, r.z);
     scene.add(roomLight);
+    roomLights.push(roomLight);
   });
 
   // ── Ground ────────────────────────────────────────────────
@@ -204,10 +452,24 @@
     return m;
   }
 
-  roomFloor(0x64477d, cx.tl.x, cx.tl.z, 0.85);
-  roomFloor(0x3b82f6, cx.tr.x, cx.tr.z, 0.8);
-  roomFloor(0x22c55e, cx.bl.x, cx.bl.z, 0.55);
-  roomFloor(0xffd700, cx.br.x, cx.br.z, 0.5);
+  var roomFloors = {};
+  var floorMyroom = roomFloor(0x64477d, cx.tl.x, cx.tl.z, 0.85);
+  floorMyroom.userData.room = 'myroom';
+  roomFloors.myroom = floorMyroom;
+
+  var floorProduct = roomFloor(0x3b82f6, cx.tr.x, cx.tr.z, 0.8);
+  floorProduct.userData.room = 'product';
+  roomFloors.product = floorProduct;
+
+  var floorBook = roomFloor(0x22c55e, cx.bl.x, cx.bl.z, 0.55);
+  floorBook.userData.room = 'book';
+  roomFloors.book = floorBook;
+
+  var floorIdealab = roomFloor(0xffd700, cx.br.x, cx.br.z, 0.5);
+  floorIdealab.userData.room = 'idealab';
+  roomFloors.idealab = floorIdealab;
+
+  var roomFloorArray = [floorMyroom, floorProduct, floorBook, floorIdealab];
 
   // Hallway cross
   var hallMat = mat(0x1e2233, { emissive: 0x1e2233, emissiveIntensity: 0.1 });
@@ -656,6 +918,7 @@
     character.add(shoeR);
 
     character.position.set(0, 0, 0);
+    character.scale.set(1.5, 1.5, 1.5);
     scene.add(character);
   })();
 
@@ -692,13 +955,14 @@
   var targetDist = camDist;
 
   renderer.domElement.addEventListener('mousedown', function(e) {
+    if (!orbitEnabled) return;
     isDragging = true;
     lastMouse.x = e.clientX;
     lastMouse.y = e.clientY;
   });
   window.addEventListener('mouseup', function() { isDragging = false; });
   window.addEventListener('mousemove', function(e) {
-    if (!isDragging) return;
+    if (!isDragging || !orbitEnabled) return;
     var dx = e.clientX - lastMouse.x;
     var dy = e.clientY - lastMouse.y;
     targetAngle -= dx * 0.005;
@@ -707,12 +971,14 @@
     lastMouse.y = e.clientY;
   });
   renderer.domElement.addEventListener('wheel', function(e) {
+    if (!orbitEnabled) return;
     targetDist = Math.max(8, Math.min(35, targetDist + e.deltaY * 0.02));
     e.preventDefault();
   }, { passive: false });
 
   // Touch support
   renderer.domElement.addEventListener('touchstart', function(e) {
+    if (!orbitEnabled) return;
     if (e.touches.length === 1) {
       isDragging = true;
       lastMouse.x = e.touches[0].clientX;
@@ -721,7 +987,7 @@
   });
   window.addEventListener('touchend', function() { isDragging = false; });
   window.addEventListener('touchmove', function(e) {
-    if (!isDragging || e.touches.length !== 1) return;
+    if (!isDragging || !orbitEnabled || e.touches.length !== 1) return;
     var dx = e.touches[0].clientX - lastMouse.x;
     var dy = e.touches[0].clientY - lastMouse.y;
     targetAngle -= dx * 0.005;
@@ -730,6 +996,192 @@
     lastMouse.y = e.touches[0].clientY;
   });
 
+  // ── Interaction: Raycaster, View State, Overlays ──────────
+  var raycaster = new THREE.Raycaster();
+  var mouse = new THREE.Vector2();
+  var currentView = 'overview';
+  var orbitEnabled = true;
+
+  // Camera targets for each room (position + lookAt)
+  var roomCameraTargets = {
+    myroom:  { pos: new THREE.Vector3(cx.tl.x + 4, 5, cx.tl.z + 4), look: new THREE.Vector3(cx.tl.x, 0.5, cx.tl.z) },
+    product: { pos: new THREE.Vector3(cx.tr.x + 4, 5, cx.tr.z + 4), look: new THREE.Vector3(cx.tr.x, 0.5, cx.tr.z) },
+    book:    { pos: new THREE.Vector3(cx.bl.x + 4, 5, cx.bl.z + 4), look: new THREE.Vector3(cx.bl.x, 0.5, cx.bl.z) },
+    idealab: { pos: new THREE.Vector3(cx.br.x + 4, 5, cx.br.z + 4), look: new THREE.Vector3(cx.br.x, 0.5, cx.br.z) },
+  };
+  var overviewCamState = { pos: new THREE.Vector3(14, 16, 14), look: new THREE.Vector3(0, 1, 0) };
+
+  // Tween state
+  var cameraTween = {
+    active: false,
+    startPos: new THREE.Vector3(),
+    targetPos: new THREE.Vector3(),
+    startLook: new THREE.Vector3(),
+    targetLook: new THREE.Vector3(),
+    currentLook: new THREE.Vector3(0, 1, 0),
+    progress: 0,
+    onHalf: null,
+    halfFired: false
+  };
+
+  function startCameraTween(targetPos, targetLook, onHalfway) {
+    cameraTween.startPos.copy(camera.position);
+    cameraTween.targetPos.copy(targetPos);
+    cameraTween.startLook.copy(cameraTween.currentLook);
+    cameraTween.targetLook.copy(targetLook);
+    cameraTween.progress = 0;
+    cameraTween.active = true;
+    cameraTween.onHalf = onHalfway || null;
+    cameraTween.halfFired = false;
+  }
+
+  // Ease in-out
+  function easeInOut(t) {
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  }
+
+  // Store original emissive intensities for hover
+  var originalEmissive = {};
+  Object.keys(roomFloors).forEach(function(key) {
+    originalEmissive[key] = roomFloors[key].material.emissiveIntensity;
+  });
+  var hoveredRoom = null;
+
+  // Click handler
+  renderer.domElement.addEventListener('click', function(e) {
+    if (currentView !== 'overview') return;
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    var intersects = raycaster.intersectObjects(roomFloorArray);
+    if (intersects.length > 0) {
+      var room = intersects[0].object.userData.room;
+      if (room) navigateToRoom(room);
+    }
+  });
+
+  // Hover handler
+  renderer.domElement.addEventListener('mousemove', function(e) {
+    if (currentView !== 'overview') return;
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    var intersects = raycaster.intersectObjects(roomFloorArray);
+    var newHovered = null;
+    if (intersects.length > 0 && intersects[0].object.userData.room) {
+      newHovered = intersects[0].object.userData.room;
+    }
+    if (newHovered !== hoveredRoom) {
+      // Revert old
+      if (hoveredRoom) {
+        roomFloors[hoveredRoom].material.emissiveIntensity = originalEmissive[hoveredRoom];
+        renderer.domElement.style.cursor = 'default';
+      }
+      hoveredRoom = newHovered;
+      if (hoveredRoom) {
+        roomFloors[hoveredRoom].material.emissiveIntensity = originalEmissive[hoveredRoom] + 0.4;
+        renderer.domElement.style.cursor = 'pointer';
+      }
+    }
+  });
+
+  window.navigateToRoom = navigateToRoom;
+  function navigateToRoom(room) {
+    currentView = room;
+    orbitEnabled = false;
+    // Hide room labels
+    ['label-myroom', 'label-product', 'label-book', 'label-idealab'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
+    });
+    var target = roomCameraTargets[room];
+    startCameraTween(target.pos, target.look, function() {
+      // Show overlay at 50%
+      showOverlay(room);
+    });
+    document.getElementById('back-btn').classList.add('active');
+  }
+
+  function navigateToOverview() {
+    // Hide overlay immediately
+    hideAllOverlays();
+    document.getElementById('back-btn').classList.remove('active');
+    startCameraTween(overviewCamState.pos, overviewCamState.look, null);
+    // Re-derive orbit angles from overview position after tween
+    setTimeout(function() {
+      currentView = 'overview';
+      orbitEnabled = true;
+      // Reset orbit targets to match overview
+      targetAngle = Math.PI / 4;
+      targetPitch = 0.85;
+      targetDist = 14;
+      camAngle = targetAngle;
+      camPitch = targetPitch;
+      camDist = targetDist;
+    }, 1100);
+  }
+
+  function showOverlay(room) {
+    document.getElementById('overlay-' + room).classList.add('active');
+  }
+
+  function hideAllOverlays() {
+    ['overlay-myroom', 'overlay-product', 'overlay-book', 'overlay-idealab'].forEach(function(id) {
+      document.getElementById(id).classList.remove('active');
+    });
+  }
+
+  // Back button
+  document.getElementById('back-btn').addEventListener('click', navigateToOverview);
+
+  // ── Theme Toggle ─────────────────────────────────────────
+  var isDarkTheme = localStorage.getItem('suri-theme') !== 'light';
+  var themeBtn = document.getElementById('theme-toggle');
+
+  function applyTheme() {
+    if (isDarkTheme) {
+      document.body.classList.remove('light-theme');
+      renderer.setClearColor(0x1a1a2e);
+      scene.fog = new THREE.FogExp2(0x1a1a2e, 0.004);
+      ambient.intensity = 1.8;
+      hemiLight.intensity = 0.5;
+      themeBtn.textContent = '\u2600'; // sun
+    } else {
+      document.body.classList.add('light-theme');
+      renderer.setClearColor(0xf0ede6);
+      scene.fog = new THREE.FogExp2(0xf0ede6, 0.004);
+      ambient.intensity = 2.0;
+      hemiLight.intensity = 0.8;
+      themeBtn.textContent = '\u263D'; // moon
+    }
+    localStorage.setItem('suri-theme', isDarkTheme ? 'dark' : 'light');
+  }
+  applyTheme();
+
+  themeBtn.addEventListener('click', function() {
+    isDarkTheme = !isDarkTheme;
+    applyTheme();
+  });
+
+  // ── Speech Bubble (typewriter) ───────────────────────────
+  var speechBubble = document.getElementById('speech-bubble');
+  var speechText = "Welcome to Suri's Lab!";
+  var speechIndex = 0;
+  speechBubble.classList.add('visible');
+
+  function typeSpeech() {
+    if (speechIndex <= speechText.length) {
+      speechBubble.textContent = speechText.slice(0, speechIndex);
+      speechIndex++;
+      setTimeout(typeSpeech, 50);
+    } else {
+      // Fade out after 3 seconds
+      setTimeout(function() {
+        speechBubble.classList.remove('visible');
+      }, 3000);
+    }
+  }
+  setTimeout(typeSpeech, 800);
+
   // ── Animation Loop ────────────────────────────────────────
   var clock = new THREE.Clock();
 
@@ -737,16 +1189,36 @@
     requestAnimationFrame(animate);
     var t = clock.getElapsedTime();
 
-    // Smooth camera orbit
-    camAngle += (targetAngle - camAngle) * 0.08;
-    camPitch += (targetPitch - camPitch) * 0.08;
-    camDist += (targetDist - camDist) * 0.08;
+    // Camera tween (room navigation)
+    if (cameraTween.active) {
+      cameraTween.progress += 0.018; // ~1s at 60fps
+      if (cameraTween.progress >= 1) {
+        cameraTween.progress = 1;
+        cameraTween.active = false;
+      }
+      var ease = easeInOut(Math.min(cameraTween.progress, 1));
+      camera.position.lerpVectors(cameraTween.startPos, cameraTween.targetPos, ease);
+      cameraTween.currentLook.lerpVectors(cameraTween.startLook, cameraTween.targetLook, ease);
+      camera.lookAt(cameraTween.currentLook);
 
-    var camBobY = Math.sin(t * 1.57) * 0.05;
-    camera.position.x = Math.cos(camAngle) * Math.cos(camPitch) * camDist;
-    camera.position.y = Math.sin(camPitch) * camDist + camBobY;
-    camera.position.z = Math.sin(camAngle) * Math.cos(camPitch) * camDist;
-    camera.lookAt(0, 1, 0);
+      // Fire halfway callback
+      if (!cameraTween.halfFired && cameraTween.progress >= 0.5 && cameraTween.onHalf) {
+        cameraTween.onHalf();
+        cameraTween.halfFired = true;
+      }
+    } else if (orbitEnabled) {
+      // Smooth camera orbit (overview mode)
+      camAngle += (targetAngle - camAngle) * 0.08;
+      camPitch += (targetPitch - camPitch) * 0.08;
+      camDist += (targetDist - camDist) * 0.08;
+
+      var camBobY = Math.sin(t * 1.57) * 0.05;
+      camera.position.x = Math.cos(camAngle) * Math.cos(camPitch) * camDist;
+      camera.position.y = Math.sin(camPitch) * camDist + camBobY;
+      camera.position.z = Math.sin(camAngle) * Math.cos(camPitch) * camDist;
+      cameraTween.currentLook.set(0, 1, 0);
+      camera.lookAt(0, 1, 0);
+    }
 
     // Character idle animation
     character.position.y = Math.sin(t * 3.14) * 0.15;
@@ -812,6 +1284,24 @@
         el.style.display = projected.z > 1 ? 'none' : 'block';
       }
     });
+
+    // Position speech bubble above character
+    var charWorldPos = new THREE.Vector3(0, character.position.y + 3.0, 0);
+    var projChar = charWorldPos.clone().project(camera);
+    if (projChar.z < 1) {
+      var sx = (projChar.x * 0.5 + 0.5) * window.innerWidth;
+      var sy = (-projChar.y * 0.5 + 0.5) * window.innerHeight;
+      speechBubble.style.left = sx + 'px';
+      speechBubble.style.top = (sy - 20) + 'px';
+      speechBubble.style.transform = 'translate(-50%, -100%)';
+    }
+
+    // Hide labels when in room view
+    if (currentView !== 'overview') {
+      ['label-myroom', 'label-product', 'label-book', 'label-idealab'].forEach(function(id) {
+        document.getElementById(id).style.display = 'none';
+      });
+    }
 
     renderer.render(scene, camera);
   }

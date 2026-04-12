@@ -1,25 +1,29 @@
 import { Ground } from './Ground';
 import { RoomFloor } from './RoomFloor';
 import { ROOMS } from '../data/rooms';
-import { COLORS } from '../constants';
+import { COLORS, LIGHTS, SHADOW_MAP_SIZE, FOG_DENSITY } from '../constants';
 
 export function World() {
   return (
     <>
       {/* Lights */}
-      <ambientLight intensity={1.2} color="#ffd8a8" />
+      <ambientLight intensity={LIGHTS.ambient.intensity} color={LIGHTS.ambient.color} />
       <directionalLight
-        position={[-10, 18, 8]}
-        intensity={1.0}
-        color="#ffeab0"
+        position={[...LIGHTS.directional.position]}
+        intensity={LIGHTS.directional.intensity}
+        color={LIGHTS.directional.color}
         castShadow
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={[SHADOW_MAP_SIZE, SHADOW_MAP_SIZE]}
       />
-      <hemisphereLight intensity={0.5} color="#ffc88a" groundColor="#4a3020" />
+      <hemisphereLight
+        intensity={LIGHTS.hemisphere.intensity}
+        color={LIGHTS.hemisphere.sky}
+        groundColor={LIGHTS.hemisphere.ground}
+      />
 
       {/* Scene */}
       <color attach="background" args={[COLORS.bg]} />
-      <fogExp2 attach="fog" args={[COLORS.bg, 0.004]} />
+      <fogExp2 attach="fog" args={[COLORS.bg, FOG_DENSITY]} />
 
       <Ground />
       {ROOMS.map((r) => (

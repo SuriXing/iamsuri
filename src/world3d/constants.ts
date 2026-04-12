@@ -9,11 +9,43 @@ export const COLORS = {
   red:      '#e94560',
   purple:   '#64477d',
   pink:     '#f4a8b8',
-  wood:     '#6b4423',
-  panelBg:  '#141722',
 } as const;
 
 export const SPEEDS = {
   walk: 4.5,
   cameraLerp: 0.08,
+} as const;
+
+export const FP = {
+  pitchMin: -1.3,
+  pitchMax: 1.3,
+  eyeHeight: 1.5,
+  lookSensitivity: 0.003,
+} as const;
+
+export const CAMERA = {
+  position: [14, 16, 14] as const,
+  fov: 50,
+  near: 0.1,
+  far: 200,
+} as const;
+
+export const LIGHTS = {
+  ambient:      { color: '#ffd8a8', intensity: 1.2 },
+  directional:  { color: '#ffeab0', intensity: 1.0, position: [-10, 18, 8] as const },
+  hemisphere:   { sky: '#ffc88a', ground: '#4a3020', intensity: 0.5 },
+} as const;
+
+export const GROUND = {
+  size: 30,
+  color: '#111827',
+  y: -0.01,
+} as const;
+
+export const FOG_DENSITY = 0.004;
+export const SHADOW_MAP_SIZE = 1024;
+
+export const STORAGE_KEYS = {
+  unlocks: 'suri-3d-doors-unlocked-v2',
+  theme:   'suri-theme',
 } as const;

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import type { RoomId } from '../data/rooms';
+import { ROOM_BY_ID } from '../data/rooms';
+import { FP, STORAGE_KEYS } from '../constants';
 
 export type ViewMode = 'overview' | RoomId;
 
@@ -17,8 +19,6 @@ export interface WorldState {
   unlockedDoors: Set<RoomId>;
   // Theme
   theme: 'dark' | 'light';
-  // Keyboard (for debug/test)
-  keys: Record<string, boolean>;
 
   // Actions
   setViewMode: (v: ViewMode) => void;
@@ -27,26 +27,27 @@ export interface WorldState {
   setFp: (active: boolean, yaw?: number, pitch?: number) => void;
   addFpDelta: (dYaw: number, dPitch: number) => void;
   unlockDoor: (id: RoomId) => void;
-  isDoorUnlocked: (id: RoomId) => boolean;
   toggleTheme: () => void;
-  setKey: (key: string, down: boolean) => void;
 }
 
 // localStorage persistence for unlocked doors
-const LS_KEY = 'suri-3d-doors-unlocked-v2';
 function loadUnlocks(): Set<RoomId> {
   try {
-    const raw = localStorage.getItem(LS_KEY);
+    const raw = localStorage.getItem(STORAGE_KEYS.unlocks);
     if (!raw) return new Set();
-    const arr = JSON.parse(raw) as RoomId[];
-    return new Set(arr);
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    const validIds = parsed.filter(
+      (id): id is RoomId => typeof id === 'string' && id in ROOM_BY_ID,
+    );
+    return new Set(validIds);
   } catch {
     return new Set();
   }
 }
 function saveUnlocks(set: Set<RoomId>) {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify([...set]));
+    localStorage.setItem(STORAGE_KEYS.unlocks, JSON.stringify([...set]));
   } catch {
     /* ignore */
   }
@@ -54,13 +55,13 @@ function saveUnlocks(set: Set<RoomId>) {
 
 function loadTheme(): 'dark' | 'light' {
   try {
-    return localStorage.getItem('suri-theme') === 'light' ? 'light' : 'dark';
+    return localStorage.getItem(STORAGE_KEYS.theme) === 'light' ? 'light' : 'dark';
   } catch {
     return 'dark';
   }
 }
 
-export const useWorldStore = create<WorldState>((set, get) => ({
+export const useWorldStore = create<WorldState>((set) => ({
   viewMode: 'overview',
   charPos: { x: 0, z: 0 },
   charFacing: 0,
@@ -69,7 +70,6 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   fpPitch: 0,
   unlockedDoors: loadUnlocks(),
   theme: loadTheme(),
-  keys: {},
 
   setViewMode: (v) => set({ viewMode: v }),
   setCharPos: (x, z) => set({ charPos: { x, z } }),
@@ -83,7 +83,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   addFpDelta: (dYaw, dPitch) =>
     set((s) => ({
       fpYaw: s.fpYaw + dYaw,
-      fpPitch: Math.max(-1.3, Math.min(1.3, s.fpPitch + dPitch)),
+      fpPitch: Math.max(FP.pitchMin, Math.min(FP.pitchMax, s.fpPitch + dPitch)),
     })),
   unlockDoor: (id) =>
     set((s) => {
@@ -92,21 +92,19 @@ export const useWorldStore = create<WorldState>((set, get) => ({
       saveUnlocks(next);
       return { unlockedDoors: next };
     }),
-  isDoorUnlocked: (id) => get().unlockedDoors.has(id),
   toggleTheme: () =>
     set((s) => {
       const next = s.theme === 'dark' ? 'light' : 'dark';
       try {
-        localStorage.setItem('suri-theme', next);
+        localStorage.setItem(STORAGE_KEYS.theme, next);
       } catch {
         /* ignore */
       }
       return { theme: next };
     }),
-  setKey: (key, down) => set((s) => ({ keys: { ...s.keys, [key]: down } })),
 }));
 
-// Test/dev seam: expose store on window
+// Test/dev seam: expose store on window (typed via global.d.ts)
 if (typeof window !== 'undefined') {
-  (window as unknown as { __worldStore?: typeof useWorldStore }).__worldStore = useWorldStore;
+  window.__worldStore = useWorldStore;
 }

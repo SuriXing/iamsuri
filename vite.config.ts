@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   base: '/iamsuri/',
   build: {
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),

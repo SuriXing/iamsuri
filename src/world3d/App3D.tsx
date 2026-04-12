@@ -1,6 +1,7 @@
 import { Canvas } from '@react-three/fiber';
 import { World } from './scene/World';
 import { Hud } from './hud/Hud';
+import { CAMERA } from './constants';
 import './world3d.css';
 
 export default function App3D() {
@@ -8,7 +9,12 @@ export default function App3D() {
     <div className="world3d-root">
       <Canvas
         shadows
-        camera={{ position: [14, 16, 14], fov: 50, near: 0.1, far: 200 }}
+        camera={{
+          position: [...CAMERA.position],
+          fov: CAMERA.fov,
+          near: CAMERA.near,
+          far: CAMERA.far,
+        }}
         gl={{ antialias: true }}
       >
         <World />

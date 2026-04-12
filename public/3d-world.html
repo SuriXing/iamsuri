@@ -279,6 +279,18 @@
     font-family: inherit;
     font-weight: bold;
   }
+  .enter-prompt.locked {
+    color: #ff7080;
+    border-color: rgba(255, 80, 100, 0.7);
+    box-shadow: 0 0 18px rgba(255,80,100,0.4);
+  }
+  .enter-prompt.locked::before {
+    content: '🔒 ';
+  }
+  .enter-prompt.locked kbd {
+    background: rgba(255, 80, 100, 0.25);
+    border-color: rgba(255, 80, 100, 0.8);
+  }
 
   /* ── Theme toggle ─────────────────────────────────────── */
   #theme-toggle {
@@ -394,7 +406,7 @@
 <div id="label-book" class="room-label">Book Room</div>
 <div id="label-idealab" class="room-label">Idea Lab</div>
 
-<div id="hint">WASD / arrows to walk · walk to a room and press <b>E</b> to enter · drag to orbit · scroll to zoom</div>
+<div id="hint">WASD / arrows to walk · walk to a door, press <b>U</b> to unlock then <b>E</b> to enter · drag to orbit</div>
 
 <div id="overlay-myroom" class="room-overlay">
   <h2>My Room</h2>
@@ -453,7 +465,7 @@
 
 <button id="back-btn" class="back-btn">&times; EXIT ROOM</button>
 <div id="exit-hint" class="exit-hint">Press <kbd>ESC</kbd> or click <kbd>&times; EXIT ROOM</kbd> to leave</div>
-<div id="enter-prompt" class="enter-prompt">Press <kbd>E</kbd> to enter <span id="enter-prompt-name">Room</span></div>
+<div id="enter-prompt" class="enter-prompt">Press <kbd id="enter-prompt-key">E</kbd> to <span id="enter-prompt-verb">enter</span> <span id="enter-prompt-name">Room</span></div>
 <a id="view-switcher" href="./" title="Switch to 2D world">2D</a>
 <button id="theme-toggle">&#9788;</button>
 <div id="speech-bubble"></div>
@@ -648,15 +660,32 @@
   }
 
   // Create a door frame (two posts + lintel)
-  function doorFrame(x, z, horizontal) {
+  // ── Door state (per room) ────────────────────────────────
+  var doors = {}; // { roomId: { panelGroup, lockMesh, lantern, lanternLight, accentColor, openTarget, openCurrent } }
+  var savedUnlocks = (function() {
+    try { return JSON.parse(localStorage.getItem('suri-3d-doors-unlocked') || '[]'); }
+    catch (e) { return []; }
+  })();
+  function isUnlocked(roomId) { return savedUnlocks.indexOf(roomId) !== -1; }
+  function persistUnlock(roomId) {
+    if (!isUnlocked(roomId)) {
+      savedUnlocks.push(roomId);
+      try { localStorage.setItem('suri-3d-doors-unlocked', JSON.stringify(savedUnlocks)); } catch (e) {}
+    }
+  }
+
+  function doorFrame(x, z, horizontal, roomId, accentColor) {
     var frameMat = mat(0x6b4e1f, { emissive: 0x4a2c0a, emissiveIntensity: 0.3 });
+    var doorMat = mat(0x4a2c0a, { emissive: accentColor, emissiveIntensity: 0.15 });
     var frameHeight = 1.9;
     var postW = 0.15;
     var doorW = 1.2;
+    var doorH = 1.75;
     var yMid = frameHeight / 2;
+    var initiallyUnlocked = isUnlocked(roomId);
 
+    // Frame posts + lintel
     if (horizontal) {
-      // Wall runs along X, door opens in X direction
       var postL = box(postW, frameHeight, 0.18, frameMat);
       postL.position.set(x - doorW/2, yMid, z);
       scene.add(postL); wallMeshes.push(postL);
@@ -666,13 +695,6 @@
       var lintel = box(doorW + postW*2, 0.18, 0.22, frameMat);
       lintel.position.set(x, frameHeight + 0.02, z);
       scene.add(lintel); wallMeshes.push(lintel);
-      // Small warm lantern above door
-      var lantern = box(0.15, 0.15, 0.15, mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 2.0 }));
-      lantern.position.set(x, frameHeight + 0.25, z);
-      scene.add(lantern);
-      var lanternLight = new THREE.PointLight(0xffb366, 0.6, 5);
-      lanternLight.position.set(x, frameHeight + 0.25, z);
-      scene.add(lanternLight);
     } else {
       var postL = box(0.18, frameHeight, postW, frameMat);
       postL.position.set(x, yMid, z - doorW/2);
@@ -683,28 +705,110 @@
       var lintel = box(0.22, 0.18, doorW + postW*2, frameMat);
       lintel.position.set(x, frameHeight + 0.02, z);
       scene.add(lintel); wallMeshes.push(lintel);
-      var lantern = box(0.15, 0.15, 0.15, mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 2.0 }));
-      lantern.position.set(x, frameHeight + 0.25, z);
-      scene.add(lantern);
-      var lanternLight = new THREE.PointLight(0xffb366, 0.6, 5);
-      lanternLight.position.set(x, frameHeight + 0.25, z);
-      scene.add(lanternLight);
     }
+
+    // ── Door panel (hinged on left post) ────────────────
+    var hinge = new THREE.Group();
+    if (horizontal) {
+      hinge.position.set(x - doorW/2, 0, z);
+    } else {
+      hinge.position.set(x, 0, z - doorW/2);
+    }
+    var doorPanel = box(doorW, doorH, 0.06, doorMat);
+    if (horizontal) {
+      doorPanel.position.set(doorW/2, doorH/2, 0);
+    } else {
+      doorPanel.position.set(0, doorH/2, doorW/2);
+      doorPanel.rotation.y = Math.PI / 2;
+    }
+    hinge.add(doorPanel);
+    // Accent stripe across door (room theme color)
+    var stripe = box(doorW * 0.8, 0.06, 0.07, mat(accentColor, { emissive: accentColor, emissiveIntensity: 0.6 }));
+    if (horizontal) {
+      stripe.position.set(doorW/2, doorH/2, 0);
+    } else {
+      stripe.position.set(0, doorH/2, doorW/2);
+      stripe.rotation.y = Math.PI / 2;
+    }
+    hinge.add(stripe);
+    // Door handle (small gold knob)
+    var handle = cyl(0.05, 0.05, 0.06, 8, mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 0.4 }));
+    handle.rotation.x = Math.PI / 2;
+    if (horizontal) {
+      handle.position.set(doorW * 0.85, doorH/2, 0.06);
+    } else {
+      handle.position.set(0.06, doorH/2, doorW * 0.85);
+    }
+    hinge.add(handle);
+    scene.add(hinge);
+
+    // ── Lock indicator (red square above door) ─────────
+    var lockMat = mat(0xff2244, { emissive: 0xff2244, emissiveIntensity: 2.5 });
+    var lockMesh = box(0.18, 0.18, 0.06, lockMat);
+    lockMesh.position.set(x, frameHeight + 0.45, z);
+    scene.add(lockMesh);
+    // Tiny lock loop on top
+    var lockLoop = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.02, 4, 8, Math.PI), lockMat);
+    lockLoop.position.set(x, frameHeight + 0.55, z);
+    lockLoop.rotation.x = -Math.PI / 2;
+    scene.add(lockLoop);
+    if (initiallyUnlocked) { lockMesh.visible = false; lockLoop.visible = false; }
+
+    // ── Lantern (red when locked, gold when unlocked) ──
+    var lantColor = initiallyUnlocked ? 0xffd700 : 0xff5544;
+    var lantern = box(0.15, 0.15, 0.15, mat(lantColor, { emissive: lantColor, emissiveIntensity: 2.5 }));
+    lantern.position.set(x, frameHeight + 0.2, z);
+    scene.add(lantern);
+    var lanternLight = new THREE.PointLight(initiallyUnlocked ? 0xffb366 : 0xff6644, 0.7, 5);
+    lanternLight.position.set(x, frameHeight + 0.2, z);
+    scene.add(lanternLight);
+
+    // Store door state
+    doors[roomId] = {
+      hinge: hinge,
+      lockMesh: lockMesh,
+      lockLoop: lockLoop,
+      lantern: lantern,
+      lanternLight: lanternLight,
+      accentColor: accentColor,
+      openTarget: initiallyUnlocked ? -Math.PI * 0.55 : 0,
+      openCurrent: initiallyUnlocked ? -Math.PI * 0.55 : 0,
+      unlocked: initiallyUnlocked,
+      horizontal: horizontal,
+    };
+    hinge.rotation.y = doors[roomId].openCurrent;
   }
+
+  function unlockDoor(roomId) {
+    var d = doors[roomId];
+    if (!d || d.unlocked) return;
+    d.unlocked = true;
+    d.openTarget = -Math.PI * 0.55; // swing open ~100°
+    // Lantern shifts red → gold
+    d.lantern.material.color.setHex(0xffd700);
+    d.lantern.material.emissive.setHex(0xffd700);
+    d.lanternLight.color.setHex(0xffb366);
+    // Hide lock indicator
+    d.lockMesh.visible = false;
+    d.lockLoop.visible = false;
+    persistUnlock(roomId);
+  }
+
   // Horizontal walls with doors (split into 2 segments + door frame)
+  // Each room gets its own door theme color
   [
-    { x: -(ROOM/2 + GAP), z:  (GAP + 0.05) }, // bottom-left (Book Room) — door faces north (hallway center)
-    { x:  (ROOM/2 + GAP), z:  (GAP + 0.05) }, // bottom-right (Idea Lab)
-    { x: -(ROOM/2 + GAP), z: -(GAP + 0.05) }, // top-left (My Room) — door faces south
-    { x:  (ROOM/2 + GAP), z: -(GAP + 0.05) }, // top-right (Product Room)
+    { x: -(ROOM/2 + GAP), z:  (GAP + 0.05), id: 'book',    color: 0x4ade80 },
+    { x:  (ROOM/2 + GAP), z:  (GAP + 0.05), id: 'idealab', color: 0xfbbf24 },
+    { x: -(ROOM/2 + GAP), z: -(GAP + 0.05), id: 'myroom',  color: 0xf4a8b8 },
+    { x:  (ROOM/2 + GAP), z: -(GAP + 0.05), id: 'product', color: 0x60a5fa },
   ].forEach(function(d) {
     var segLen = (ROOM + 0.2 - 1.2) / 2; // 2.0 units each
     // Left segment
     wallStrip(d.x - 1.2/2 - segLen/2 - 0.075, d.z, segLen, 0.1);
     // Right segment
     wallStrip(d.x + 1.2/2 + segLen/2 + 0.075, d.z, segLen, 0.1);
-    // Door frame
-    doorFrame(d.x, d.z, true);
+    // Door frame with door panel + lock
+    doorFrame(d.x, d.z, true, d.id, d.color);
   });
   // Vertical dividers
   wallStrip(GAP + 0.05, -(ROOM/2 + GAP), 0.1, ROOM + 0.2);
@@ -1464,14 +1568,32 @@
     if (e.key === 'Escape' && currentView !== 'overview') {
       navigateToOverview();
     } else if (currentView === 'overview') {
-      // E or Enter: enter the nearby room
+      // U: unlock nearby door
+      if ((e.key === 'u' || e.key === 'U') && nearbyRoom && doors[nearbyRoom] && !doors[nearbyRoom].unlocked) {
+        unlockDoor(nearbyRoom);
+        return;
+      }
+      // E or Enter: enter the nearby room (only if unlocked)
       if ((e.key === 'e' || e.key === 'E' || e.key === 'Enter') && nearbyRoom) {
+        if (doors[nearbyRoom] && !doors[nearbyRoom].unlocked) {
+          // Locked: visually shake the lock
+          var lm = doors[nearbyRoom].lockMesh;
+          if (lm) {
+            lm.material.emissiveIntensity = 5.0;
+            setTimeout(function() { lm.material.emissiveIntensity = 2.5; }, 200);
+          }
+          return;
+        }
         navigateToRoom(nearbyRoom);
         return;
       }
-      // Number keys: direct jump
+      // Number keys: direct jump (only if unlocked)
       var roomKeys = { '1': 'myroom', '2': 'product', '3': 'book', '4': 'idealab' };
-      if (roomKeys[e.key]) navigateToRoom(roomKeys[e.key]);
+      if (roomKeys[e.key]) {
+        var rid = roomKeys[e.key];
+        if (doors[rid] && !doors[rid].unlocked) return;
+        navigateToRoom(rid);
+      }
     }
   });
 
@@ -1656,8 +1778,21 @@
     // Head bob (gentle tilt) — head is first child
     character.children[0].rotation.z = Math.sin(t * 1.5) * 0.05;
 
-    // ── Proximity detection: nearby room enter prompt ───────
+    // ── Door swing animation ─────────────────────────────────
+    Object.keys(doors).forEach(function(rid) {
+      var d = doors[rid];
+      d.openCurrent += (d.openTarget - d.openCurrent) * 0.12;
+      d.hinge.rotation.y = d.openCurrent;
+      // Lock pulse animation when locked
+      if (!d.unlocked) {
+        d.lockMesh.material.emissiveIntensity = 2.0 + Math.sin(t * 3) * 0.8;
+      }
+    });
+
+    // ── Proximity detection: nearby room enter/unlock prompt ─
     var enterPromptEl = document.getElementById('enter-prompt');
+    var enterPromptKey = document.getElementById('enter-prompt-key');
+    var enterPromptVerb = document.getElementById('enter-prompt-verb');
     if (currentView === 'overview') {
       var roomList = [
         { id: 'myroom',  label: 'My Room',     x: cx.tl.x, z: cx.tl.z },
@@ -1675,8 +1810,13 @@
       });
       if (nearest) {
         nearbyRoom = nearest.id;
+        var locked = doors[nearest.id] && !doors[nearest.id].unlocked;
         document.getElementById('enter-prompt-name').textContent = nearest.label;
+        enterPromptKey.textContent = locked ? 'U' : 'E';
+        enterPromptVerb.textContent = locked ? 'unlock' : 'enter';
         enterPromptEl.classList.add('active');
+        if (locked) enterPromptEl.classList.add('locked');
+        else enterPromptEl.classList.remove('locked');
         // Position above the room center
         var pp = new THREE.Vector3(nearest.x, 3.0, nearest.z).project(camera);
         if (pp.z < 1) {
@@ -1688,10 +1828,12 @@
       } else {
         nearbyRoom = null;
         enterPromptEl.classList.remove('active');
+        enterPromptEl.classList.remove('locked');
       }
     } else {
       nearbyRoom = null;
       enterPromptEl.classList.remove('active');
+      enterPromptEl.classList.remove('locked');
     }
 
     // Particles

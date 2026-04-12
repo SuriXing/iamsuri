@@ -1,13 +1,14 @@
 import { useFrame } from '@react-three/fiber';
 import { useWorldStore } from '../store/worldStore';
 import { useKeyboard } from '../hooks/useKeyboard';
-import { SPEEDS, ROOM } from '../constants';
+import { SPEEDS, ROOM, CHARACTER } from '../constants';
 import { ROOM_BY_ID } from '../data/rooms';
 import { camAngleRef } from './cameraRefs';
+import { hitTest } from './colliders';
 
 const FP_SPEED = 2.8;
 const GROUND_LIMIT = 13;
-const ROOM_MARGIN = 0.5;
+const ROOM_MARGIN = 0.35;
 
 export function PlayerController(): null {
   const keys = useKeyboard();
@@ -63,9 +64,25 @@ export function PlayerController(): null {
     }
 
     const speed = s.fpActive ? FP_SPEED : SPEEDS.walk;
-    let nx = s.charPos.x + worldX * speed * dt;
-    let nz = s.charPos.z + worldZ * speed * dt;
+    const radius = CHARACTER.colliderRadius;
 
+    // Attempt X and Z moves independently so the player slides along walls
+    // and doors instead of stopping dead against them.
+    const curX = s.charPos.x;
+    const curZ = s.charPos.z;
+    let nx = curX + worldX * speed * dt;
+    let nz = curZ + worldZ * speed * dt;
+
+    // Collision: try X-only move first
+    if (hitTest(nx, curZ, radius)) {
+      nx = curX;
+    }
+    // Then try Z-only from the (possibly reverted) X position
+    if (hitTest(nx, nz, radius)) {
+      nz = curZ;
+    }
+
+    // Bounds clamp (room or ground)
     if (s.fpActive && s.viewMode !== 'overview') {
       const rc = ROOM_BY_ID[s.viewMode].center;
       nx = Math.max(rc.x - ROOM / 2 + ROOM_MARGIN, Math.min(rc.x + ROOM / 2 - ROOM_MARGIN, nx));
@@ -74,6 +91,8 @@ export function PlayerController(): null {
       nx = Math.max(-GROUND_LIMIT, Math.min(GROUND_LIMIT, nx));
       nz = Math.max(-GROUND_LIMIT, Math.min(GROUND_LIMIT, nz));
     }
+
+    if (nx === curX && nz === curZ) return;
 
     s.setCharPos(nx, nz);
     if (!s.fpActive) {

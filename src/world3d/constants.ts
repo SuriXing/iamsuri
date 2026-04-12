@@ -61,12 +61,14 @@ export const DOOR = {
 
 // Character
 export const CHARACTER = {
-  scale: 1.5,
-  bobAmp: 0.15,
+  scale: 0.9,
+  bobAmp: 0.09,
   bobFreq: 3.14,
   swayAmp: 0.3,
   swayFreq: 0.5,
-  shadowRadius: 0.4,
+  shadowRadius: 0.28,
+  // Collision radius (XZ, world units). Used by PlayerController sweep test.
+  colliderRadius: 0.28,
 } as const;
 
 // Particle bounds

@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { ROOM, GAP, COLORS, DOOR } from '../constants';
 import { Door } from './Door';
 import type { RoomId } from '../data/rooms';
+import { registerCollider, unregisterCollider } from './colliders';
 
 const WALL_COLOR = '#3d2817';
 const WALL_EMISSIVE = '#6b4e1f';
@@ -22,13 +24,20 @@ const HORIZONTAL_DOORS: ReadonlyArray<DoorSpec> = [
 ];
 
 interface WallStripProps {
+  id: string;
   x: number;
   z: number;
   w: number;
   d: number;
 }
 
-function WallStrip({ x, z, w, d }: WallStripProps) {
+function WallStrip({ id, x, z, w, d }: WallStripProps) {
+  // Register as a collider so PlayerController blocks movement into it.
+  useEffect(() => {
+    registerCollider({ id, x, z, hx: w / 2, hz: d / 2 });
+    return () => unregisterCollider(id);
+  }, [id, x, z, w, d]);
+
   return (
     <mesh position={[x, 1.0, z]} castShadow receiveShadow>
       <boxGeometry args={[w, 1.8, d]} />
@@ -52,6 +61,7 @@ export function Walls() {
         <group key={d.id}>
           {/* Left segment */}
           <WallStrip
+            id={`wall-h-${d.id}-L`}
             x={d.x - DOOR.width / 2 - segLen / 2 - 0.075}
             z={d.z}
             w={segLen}
@@ -59,6 +69,7 @@ export function Walls() {
           />
           {/* Right segment */}
           <WallStrip
+            id={`wall-h-${d.id}-R`}
             x={d.x + DOOR.width / 2 + segLen / 2 + 0.075}
             z={d.z}
             w={segLen}
@@ -69,10 +80,10 @@ export function Walls() {
       ))}
 
       {/* Vertical solid dividers (4) */}
-      <WallStrip x={GAP + 0.05} z={-HALF} w={0.1} d={ROOM + 0.2} />
-      <WallStrip x={-(GAP + 0.05)} z={-HALF} w={0.1} d={ROOM + 0.2} />
-      <WallStrip x={GAP + 0.05} z={HALF} w={0.1} d={ROOM + 0.2} />
-      <WallStrip x={-(GAP + 0.05)} z={HALF} w={0.1} d={ROOM + 0.2} />
+      <WallStrip id="wall-v-tl" x={GAP + 0.05}  z={-HALF} w={0.1} d={ROOM + 0.2} />
+      <WallStrip id="wall-v-tr" x={-(GAP + 0.05)} z={-HALF} w={0.1} d={ROOM + 0.2} />
+      <WallStrip id="wall-v-bl" x={GAP + 0.05}  z={HALF}  w={0.1} d={ROOM + 0.2} />
+      <WallStrip id="wall-v-br" x={-(GAP + 0.05)} z={HALF}  w={0.1} d={ROOM + 0.2} />
     </group>
   );
 }

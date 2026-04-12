@@ -1,9 +1,10 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { DOOR } from '../constants';
 import { useWorldStore } from '../store/worldStore';
 import type { RoomId } from '../data/rooms';
+import { registerCollider, unregisterCollider } from './colliders';
 
 interface DoorProps {
   x: number;
@@ -27,6 +28,25 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
   const hingeRef = useRef<THREE.Group>(null);
   const lockRef = useRef<THREE.Mesh>(null);
   const angleRef = useRef<number>(unlocked ? DOOR.openAngle : 0);
+
+  // Door panel acts as a collider ONLY while locked. Once unlocked, the
+  // panel swings out of the way and players can walk through the doorway.
+  useEffect(() => {
+    const colliderId = `door-${roomId}`;
+    if (!unlocked) {
+      registerCollider({
+        id: colliderId,
+        x,
+        z,
+        hx: horizontal ? DOOR.width / 2 : 0.09,
+        hz: horizontal ? 0.09 : DOOR.width / 2,
+      });
+      return () => unregisterCollider(colliderId);
+    }
+    // Unlocked — ensure no stale collider remains.
+    unregisterCollider(colliderId);
+    return undefined;
+  }, [unlocked, roomId, x, z, horizontal]);
 
   useFrame(({ clock }, delta) => {
     const target = unlocked ? DOOR.openAngle : 0;

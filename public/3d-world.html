@@ -158,6 +158,30 @@
   .idea-card p { color: #9ca3af; font-size: 0.8rem; }
   .meta { color: #6b7280; font-size: 0.75rem; }
 
+  /* ── Card stagger animation ──────────────────────────── */
+  .room-overlay .product-card,
+  .room-overlay .book-card,
+  .room-overlay .idea-card {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: cardSlideIn 0.3s ease-out forwards;
+  }
+  .room-overlay .product-card:nth-child(2) { animation-delay: 0.1s; }
+  .room-overlay .product-card:nth-child(3) { animation-delay: 0.2s; }
+  .room-overlay .book-card:nth-child(2) { animation-delay: 0.1s; }
+  .room-overlay .book-card:nth-child(3) { animation-delay: 0.2s; }
+  .room-overlay .idea-card:nth-child(2) { animation-delay: 0.1s; }
+  .room-overlay .idea-card:nth-child(3) { animation-delay: 0.2s; }
+  .room-overlay .idea-card:nth-child(4) { animation-delay: 0.3s; }
+  @keyframes cardSlideIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .product-card:hover, .book-card:hover, .idea-card:hover {
+    border-color: rgba(255,215,0,0.3);
+    transform: translateY(-2px);
+    transition: all 0.2s;
+  }
+
   /* ── Back button ──────────────────────────────────────── */
   .back-btn {
     display: none;
@@ -342,6 +366,8 @@
   scene.fog = new THREE.FogExp2(0x1a1a2e, 0.004);
 
   var animatables = { liveDots: [], steamCubes: [], ideaBulb: null, ideaBulbLight: null, scanline: null };
+  var wallMeshes = [];
+  var stars = [];
 
   // ── Camera ────────────────────────────────────────────────
   var camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
@@ -430,8 +456,8 @@
   });
 
   // ── Star field background ─────────────────────────────────
-  for (var si = 0; si < 200; si++) {
-    var starSize = 0.02 + Math.random() * 0.05;
+  for (var si = 0; si < 500; si++) {
+    var starSize = 0.03 + Math.random() * 0.08;
     var star = new THREE.Mesh(
       new THREE.SphereGeometry(starSize, 4, 4),
       new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 + Math.random() * 0.7 })
@@ -442,6 +468,7 @@
       (Math.random() - 0.5) * 60
     );
     scene.add(star);
+    stars.push(star);
   }
 
   // ── Ground ────────────────────────────────────────────────
@@ -454,6 +481,7 @@
   scene.add(ground);
 
   // ── Room Floor Tiles ──────────────────────────────────────
+  var roomEdgeLines = {};
   function roomFloor(color, x, z, opacity) {
     var m = box(ROOM, 0.12, ROOM, mat(color, {
       transparent: opacity < 1, opacity: opacity,
@@ -467,6 +495,7 @@
     var line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.5 }));
     line.position.copy(m.position);
     scene.add(line);
+    m.userData.edgeLine = line;
     return m;
   }
 
@@ -505,6 +534,7 @@
     var s = box(w, 1.8, d, mat(0x1e2233, { emissive: 0x64477d, emissiveIntensity: 0.08 }));
     s.position.set(x, 1.0, z);
     scene.add(s);
+    wallMeshes.push(s);
   }
   // Horizontal dividers
   wallStrip(-(ROOM/2 + GAP), GAP + 0.05, ROOM + 0.2, 0.1);
@@ -894,13 +924,25 @@
     var head = box(0.4, 0.4, 0.4, mat(0xffcc99));
     head.position.y = 1.5;
     character.add(head);
-    // Eyes
-    var eyeL = box(0.06, 0.06, 0.02, mat(0x222222));
+    // Eyes (slightly larger)
+    var eyeL = box(0.08, 0.08, 0.02, mat(0x222222));
     eyeL.position.set(-0.08, 1.48, 0.16);
     character.add(eyeL);
-    var eyeR = box(0.06, 0.06, 0.02, mat(0x222222));
+    var eyeR = box(0.08, 0.08, 0.02, mat(0x222222));
     eyeR.position.set(0.08, 1.48, 0.16);
     character.add(eyeR);
+    // Mouth
+    var mouth = box(0.1, 0.03, 0.02, mat(0xe94560));
+    mouth.position.set(0, 1.38, 0.16);
+    character.add(mouth);
+    // Blush left
+    var blushL = box(0.08, 0.04, 0.02, mat(0xffaaaa, { emissive: 0xffaaaa, emissiveIntensity: 0.3 }));
+    blushL.position.set(-0.12, 1.4, 0.16);
+    character.add(blushL);
+    // Blush right
+    var blushR = box(0.08, 0.04, 0.02, mat(0xffaaaa, { emissive: 0xffaaaa, emissiveIntensity: 0.3 }));
+    blushR.position.set(0.12, 1.4, 0.16);
+    character.add(blushR);
     // Hair
     var hair = box(0.42, 0.14, 0.42, mat(0x222222));
     hair.position.y = 1.74;
@@ -1104,12 +1146,16 @@
       if (hoveredRoom) {
         roomFloors[hoveredRoom].material.emissiveIntensity = originalEmissive[hoveredRoom];
         roomFloors[hoveredRoom].scale.set(1, 1, 1);
+        var oldLine = roomFloors[hoveredRoom].userData.edgeLine;
+        if (oldLine) { oldLine.material.opacity = 0.5; oldLine.material.color.copy(roomFloors[hoveredRoom].material.color); }
         renderer.domElement.style.cursor = 'default';
       }
       hoveredRoom = newHovered;
       if (hoveredRoom) {
-        roomFloors[hoveredRoom].material.emissiveIntensity = originalEmissive[hoveredRoom] + 0.8;
+        roomFloors[hoveredRoom].material.emissiveIntensity = originalEmissive[hoveredRoom] + 1.2;
         roomFloors[hoveredRoom].scale.set(1.02, 1, 1.02);
+        var newLine = roomFloors[hoveredRoom].userData.edgeLine;
+        if (newLine) { newLine.material.opacity = 1.0; newLine.material.color.setHex(0xffd700); }
         renderer.domElement.style.cursor = 'pointer';
       }
     }
@@ -1180,6 +1226,11 @@
       Object.keys(roomFloors).forEach(function(key) {
         roomFloors[key].material.opacity = key === 'myroom' ? 0.85 : key === 'product' ? 0.8 : key === 'book' ? 0.55 : 0.5;
       });
+      // Revert wall colors to dark
+      wallMeshes.forEach(function(w) {
+        w.material.color.setHex(0x1e2233);
+        w.material.emissive.setHex(0x64477d);
+      });
       // Revert overlay backgrounds and text
       document.querySelectorAll('.room-overlay').forEach(function(el) {
         el.style.background = '';
@@ -1200,7 +1251,12 @@
       ground.material.color.setHex(0xd4cfc4);
       // More opaque room floors in light theme
       Object.keys(roomFloors).forEach(function(key) {
-        roomFloors[key].material.opacity = 0.9;
+        roomFloors[key].material.opacity = 0.95;
+      });
+      // Light wall colors
+      wallMeshes.forEach(function(w) {
+        w.material.color.setHex(0xc4b8a8);
+        w.material.emissive.setHex(0x8B7355);
       });
       // Light overlay backgrounds with dark text
       document.querySelectorAll('.room-overlay').forEach(function(el) {
@@ -1292,6 +1348,9 @@
       }
     });
 
+    // Head bob (gentle tilt) — head is first child
+    character.children[0].rotation.z = Math.sin(t * 1.5) * 0.05;
+
     // Particles
     for (var i = 0; i < particles.length; i++) {
       var p = particles[i];
@@ -1307,6 +1366,11 @@
         p.position.z = (Math.random() - 0.5) * 28;
       }
     }
+
+    // Star twinkle
+    stars.forEach(function(star, i) {
+      star.material.opacity = 0.3 + Math.sin(t * (0.5 + i * 0.01) + i) * 0.3;
+    });
 
     // Subtle pulsing on green point light
     pointGreen.intensity = 0.5 + Math.sin(t * 2) * 0.15;

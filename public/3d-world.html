@@ -49,10 +49,10 @@
     background: rgba(20,23,34,0.75); backdrop-filter: blur(4px);
     border: 1px solid rgba(255,255,255,0.08);
   }
-  #label-myroom    { top: 28%; left: 22%; color: #a78bfa; }
-  #label-product   { top: 28%; right: 22%; color: #60a5fa; }
-  #label-book      { bottom: 28%; left: 22%; color: #4ade80; }
-  #label-idealab   { bottom: 28%; right: 22%; color: #fbbf24; }
+  #label-myroom    { color: #a78bfa; }
+  #label-product   { color: #60a5fa; }
+  #label-book      { color: #4ade80; }
+  #label-idealab   { color: #fbbf24; }
 
   #hint {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -93,7 +93,9 @@
   document.body.appendChild(renderer.domElement);
 
   var scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x1a1a2e, 0.012);
+  scene.fog = new THREE.FogExp2(0x1a1a2e, 0.004);
+
+  var animatables = { liveDots: [], steamCubes: [], ideaBulb: null, ideaBulbLight: null, scanline: null };
 
   // ── Camera ────────────────────────────────────────────────
   var camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
@@ -101,10 +103,10 @@
   camera.lookAt(0, 0, 0);
 
   // ── Lights ────────────────────────────────────────────────
-  var ambient = new THREE.AmbientLight(0x404060, 0.6);
+  var ambient = new THREE.AmbientLight(0x8888aa, 1.2);
   scene.add(ambient);
 
-  var dirLight = new THREE.DirectionalLight(0xffd700, 0.8);
+  var dirLight = new THREE.DirectionalLight(0xffd700, 1.2);
   dirLight.position.set(-10, 18, 8);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.set(2048, 2048);
@@ -117,22 +119,22 @@
   dirLight.shadow.bias = -0.001;
   scene.add(dirLight);
 
-  var pointGreen = new THREE.PointLight(0x22c55e, 0.3, 20);
+  var pointGreen = new THREE.PointLight(0x22c55e, 0.5, 30);
   pointGreen.position.set(0, 3, 0);
   scene.add(pointGreen);
 
   // Subtle rim lights for depth
-  var rimLight1 = new THREE.PointLight(0xe94560, 0.15, 25);
+  var rimLight1 = new THREE.PointLight(0xe94560, 0.4, 30);
   rimLight1.position.set(-8, 5, -8);
   scene.add(rimLight1);
 
-  var rimLight2 = new THREE.PointLight(0x3b82f6, 0.15, 25);
+  var rimLight2 = new THREE.PointLight(0x3b82f6, 0.4, 30);
   rimLight2.position.set(8, 5, -8);
   scene.add(rimLight2);
 
   // ── Helpers ───────────────────────────────────────────────
   function mat(color, opts) {
-    var params = { color: color };
+    var params = { color: color, flatShading: true };
     if (opts) {
       if (opts.emissive) params.emissive = opts.emissive;
       if (opts.emissiveIntensity !== undefined) params.emissiveIntensity = opts.emissiveIntensity;
@@ -168,6 +170,14 @@
     br: { x:  (ROOM/2 + GAP), z:  (ROOM/2 + GAP) },
   };
 
+  // Per-room warm overhead lights
+  [{x: cx.tl.x, z: cx.tl.z, c: 0xa78bfa}, {x: cx.tr.x, z: cx.tr.z, c: 0x60a5fa},
+   {x: cx.bl.x, z: cx.bl.z, c: 0x4ade80}, {x: cx.br.x, z: cx.br.z, c: 0xfbbf24}].forEach(function(r) {
+    var roomLight = new THREE.PointLight(r.c, 0.6, 10);
+    roomLight.position.set(r.x, 4, r.z);
+    scene.add(roomLight);
+  });
+
   // ── Ground ────────────────────────────────────────────────
   var groundGeo = new THREE.PlaneGeometry(30, 30);
   var groundMat = new THREE.MeshPhongMaterial({ color: 0x111827 });
@@ -181,7 +191,7 @@
   function roomFloor(color, x, z, opacity) {
     var m = box(ROOM, 0.12, ROOM, mat(color, {
       transparent: opacity < 1, opacity: opacity,
-      emissive: color, emissiveIntensity: 0.15
+      emissive: color, emissiveIntensity: 0.3
     }));
     m.position.set(x, FLOOR_Y, z);
     m.receiveShadow = true;
@@ -212,8 +222,8 @@
 
   // Thin wall borders between rooms
   function wallStrip(x, z, w, d) {
-    var s = box(w, 0.35, d, mat(0x141722, { emissive: 0x64477d, emissiveIntensity: 0.05 }));
-    s.position.set(x, 0.2, z);
+    var s = box(w, 1.8, d, mat(0x1e2233, { emissive: 0x64477d, emissiveIntensity: 0.08 }));
+    s.position.set(x, 1.0, z);
     scene.add(s);
   }
   // Horizontal dividers
@@ -246,7 +256,7 @@
     var monFrame = box(1.2, 0.8, 0.06, mat(0x222222));
     monFrame.position.set(ox - 0.3, 1.2, oz - 0.9);
     scene.add(monFrame);
-    var monScreen = box(1.0, 0.6, 0.02, mat(0x1a1a3e, { emissive: 0x4466ff, emissiveIntensity: 0.9 }));
+    var monScreen = box(1.0, 0.6, 0.02, mat(0x1a1a3e, { emissive: 0x4466ff, emissiveIntensity: 2.0 }));
     monScreen.position.set(ox - 0.3, 1.22, oz - 0.87);
     scene.add(monScreen);
     // Monitor stand
@@ -254,9 +264,10 @@
     stand.position.set(ox - 0.3, 0.9, oz - 0.85);
     scene.add(stand);
     // Screen scanline effect (subtle glowing bar)
-    var scanline = box(0.95, 0.02, 0.01, mat(0x6699ff, { emissive: 0x6699ff, emissiveIntensity: 1.5 }));
+    var scanline = box(0.95, 0.02, 0.01, mat(0x6699ff, { emissive: 0x6699ff, emissiveIntensity: 3.0 }));
     scanline.position.set(ox - 0.3, 1.22, oz - 0.85);
     scene.add(scanline);
+    animatables.scanline = scanline;
 
     // Keyboard
     var kb = box(0.7, 0.03, 0.25, mat(0x333333, { emissive: 0x22c55e, emissiveIntensity: 0.1 }));
@@ -303,10 +314,10 @@
     var lampArm = cyl(0.02, 0.02, 0.5, 6, mat(0x555555));
     lampArm.position.set(ox + 0.7, 1.04, oz - 0.8);
     scene.add(lampArm);
-    var lampHead = box(0.18, 0.08, 0.12, mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 0.6 }));
+    var lampHead = box(0.18, 0.08, 0.12, mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 1.5 }));
     lampHead.position.set(ox + 0.7, 1.32, oz - 0.8);
     scene.add(lampHead);
-    var lampGlow = new THREE.PointLight(0xffd700, 0.25, 4);
+    var lampGlow = new THREE.PointLight(0xffd700, 0.8, 8);
     lampGlow.position.set(ox + 0.7, 1.25, oz - 0.8);
     scene.add(lampGlow);
 
@@ -332,11 +343,11 @@
     var screen1Frame = box(1.0, 0.7, 0.06, mat(0x222222));
     screen1Frame.position.set(ox - 0.9, 1.9, oz - 0.3);
     scene.add(screen1Frame);
-    var screen1 = box(0.85, 0.55, 0.02, mat(0x112211, { emissive: 0x22c55e, emissiveIntensity: 1.0 }));
+    var screen1 = box(0.85, 0.55, 0.02, mat(0x112211, { emissive: 0x22c55e, emissiveIntensity: 2.5 }));
     screen1.position.set(ox - 0.9, 1.92, oz - 0.27);
     scene.add(screen1);
     // "LIVE" indicator dot
-    var liveDot1 = box(0.06, 0.06, 0.02, mat(0x22c55e, { emissive: 0x22c55e, emissiveIntensity: 2.0 }));
+    var liveDot1 = box(0.06, 0.06, 0.02, mat(0x22c55e, { emissive: 0x22c55e, emissiveIntensity: 4.0 }));
     liveDot1.position.set(ox - 0.5, 2.18, oz - 0.25);
     scene.add(liveDot1);
 
@@ -347,12 +358,13 @@
     var screen2Frame = box(1.0, 0.7, 0.06, mat(0x222222));
     screen2Frame.position.set(ox + 0.9, 1.9, oz - 0.3);
     scene.add(screen2Frame);
-    var screen2 = box(0.85, 0.55, 0.02, mat(0x112211, { emissive: 0x22c55e, emissiveIntensity: 1.0 }));
+    var screen2 = box(0.85, 0.55, 0.02, mat(0x112211, { emissive: 0x22c55e, emissiveIntensity: 2.5 }));
     screen2.position.set(ox + 0.9, 1.92, oz - 0.27);
     scene.add(screen2);
-    var liveDot2 = box(0.06, 0.06, 0.02, mat(0x22c55e, { emissive: 0x22c55e, emissiveIntensity: 2.0 }));
+    var liveDot2 = box(0.06, 0.06, 0.02, mat(0x22c55e, { emissive: 0x22c55e, emissiveIntensity: 4.0 }));
     liveDot2.position.set(ox + 1.3, 2.18, oz - 0.25);
     scene.add(liveDot2);
+    animatables.liveDots.push(liveDot1, liveDot2);
 
     // Product display table
     var table = box(2.0, 0.08, 0.8, mat(0x334155));
@@ -374,7 +386,7 @@
     });
 
     // Glow light under stage
-    var stageGlow = new THREE.PointLight(0x3b82f6, 0.3, 6);
+    var stageGlow = new THREE.PointLight(0x3b82f6, 0.6, 10);
     stageGlow.position.set(ox, 0.3, oz);
     scene.add(stageGlow);
   })();
@@ -425,10 +437,10 @@
     var lampStem = cyl(0.03, 0.04, 1.2, 6, mat(0x888888));
     lampStem.position.set(ox + 0.5, 0.72, oz + 1.0);
     scene.add(lampStem);
-    var lampShade = cyl(0.02, 0.2, 0.18, 8, mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 0.5 }));
+    var lampShade = cyl(0.02, 0.2, 0.18, 8, mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 1.5 }));
     lampShade.position.set(ox + 0.5, 1.38, oz + 1.0);
     scene.add(lampShade);
-    var readLight = new THREE.PointLight(0xffeebb, 0.35, 5);
+    var readLight = new THREE.PointLight(0xffeebb, 0.8, 8);
     readLight.position.set(ox + 0.5, 1.3, oz + 1.0);
     scene.add(readLight);
 
@@ -477,7 +489,7 @@
       { c: 0xf472b6, x: -0.6, y: 0.8 },
     ];
     stickyColors.forEach(function(s) {
-      var note = box(0.25, 0.25, 0.01, mat(s.c, { emissive: s.c, emissiveIntensity: 0.2 }));
+      var note = box(0.25, 0.25, 0.01, mat(s.c, { emissive: s.c, emissiveIntensity: 0.6 }));
       note.position.set(ox + s.x, s.y, oz - 1.71);
       note.rotation.z = (Math.random() - 0.5) * 0.15;
       scene.add(note);
@@ -520,12 +532,14 @@
     });
 
     // Idea light bulb (floating)
-    var bulb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 1.5 }));
+    var bulb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 3.0 }));
     bulb.position.set(ox, 2.2, oz + 0.3);
     scene.add(bulb);
-    var bulbGlow = new THREE.PointLight(0xffd700, 0.2, 4);
+    var bulbGlow = new THREE.PointLight(0xffd700, 0.6, 8);
     bulbGlow.position.set(ox, 2.2, oz + 0.3);
     scene.add(bulbGlow);
+    animatables.ideaBulb = bulb;
+    animatables.ideaBulbLight = bulbGlow;
   })();
 
   // ── HALLWAY CENTER ────────────────────────────────────────
@@ -537,7 +551,7 @@
     var coffeeTop = box(0.38, 0.1, 0.33, mat(0x333333));
     coffeeTop.position.set(-1.5, 0.75, 0);
     scene.add(coffeeTop);
-    var coffeeBtn = box(0.06, 0.06, 0.01, mat(0xe94560, { emissive: 0xe94560, emissiveIntensity: 1.5 }));
+    var coffeeBtn = box(0.06, 0.06, 0.01, mat(0xe94560, { emissive: 0xe94560, emissiveIntensity: 3.0 }));
     coffeeBtn.position.set(-1.5, 0.55, 0.18);
     scene.add(coffeeBtn);
     // Steam particles (small glowing cubes)
@@ -545,6 +559,7 @@
       var steam = box(0.03, 0.03, 0.03, mat(0xffffff, { transparent: true, opacity: 0.3 }));
       steam.position.set(-1.5 + (Math.random() - 0.5) * 0.15, 0.85 + si * 0.1, 0);
       scene.add(steam);
+      animatables.steamCubes.push(steam);
     }
 
     // Plant 1
@@ -596,8 +611,8 @@
   var character = new THREE.Group();
   (function() {
     // Head
-    var head = box(0.3, 0.3, 0.3, mat(0xffcc99));
-    head.position.y = 1.45;
+    var head = box(0.4, 0.4, 0.4, mat(0xffcc99));
+    head.position.y = 1.5;
     character.add(head);
     // Eyes
     var eyeL = box(0.06, 0.06, 0.02, mat(0x222222));
@@ -607,8 +622,8 @@
     eyeR.position.set(0.08, 1.48, 0.16);
     character.add(eyeR);
     // Hair
-    var hair = box(0.32, 0.12, 0.32, mat(0x222222));
-    hair.position.y = 1.63;
+    var hair = box(0.42, 0.14, 0.42, mat(0x222222));
+    hair.position.y = 1.74;
     character.add(hair);
 
     // Body
@@ -669,7 +684,7 @@
   // ── Simple orbit controls (manual) ────────────────────────
   var camAngle = Math.PI / 4;
   var camPitch = 0.85; // radians from horizontal
-  var camDist = 20;
+  var camDist = 14;
   var isDragging = false;
   var lastMouse = { x: 0, y: 0 };
   var targetAngle = camAngle;
@@ -692,7 +707,7 @@
     lastMouse.y = e.clientY;
   });
   renderer.domElement.addEventListener('wheel', function(e) {
-    targetDist = Math.max(10, Math.min(35, targetDist + e.deltaY * 0.02));
+    targetDist = Math.max(8, Math.min(35, targetDist + e.deltaY * 0.02));
     e.preventDefault();
   }, { passive: false });
 
@@ -735,7 +750,7 @@
 
     // Character idle animation
     character.position.y = Math.sin(t * 3.14) * 0.15;
-    character.rotation.y = t * 0.3;
+    character.rotation.y = Math.sin(t * 0.5) * 0.3;
 
     // Particles
     for (var i = 0; i < particles.length; i++) {
@@ -754,7 +769,49 @@
     }
 
     // Subtle pulsing on green point light
-    pointGreen.intensity = 0.3 + Math.sin(t * 2) * 0.1;
+    pointGreen.intensity = 0.5 + Math.sin(t * 2) * 0.15;
+
+    // Animate LIVE dots (blink)
+    animatables.liveDots.forEach(function(dot) {
+      dot.material.emissiveIntensity = 3.0 + Math.sin(t * 4) * 2.0;
+    });
+
+    // Animate steam (drift up and reset)
+    animatables.steamCubes.forEach(function(s, i) {
+      s.position.y = 0.85 + ((t * 0.3 + i * 0.3) % 0.5);
+      s.material.opacity = 0.4 - ((t * 0.3 + i * 0.3) % 0.5) * 0.6;
+    });
+
+    // Animate idea bulb (pulse)
+    if (animatables.ideaBulb) {
+      animatables.ideaBulb.material.emissiveIntensity = 2.0 + Math.sin(t * 2) * 1.0;
+      animatables.ideaBulbLight.intensity = 0.4 + Math.sin(t * 2) * 0.2;
+    }
+
+    // Animate scanline (scroll)
+    if (animatables.scanline) {
+      animatables.scanline.position.y = 1.0 + ((t * 0.5) % 0.5);
+    }
+
+    // Project room labels to screen space
+    var labelData = [
+      { id: 'label-myroom', pos: new THREE.Vector3(cx.tl.x, 2.5, cx.tl.z) },
+      { id: 'label-product', pos: new THREE.Vector3(cx.tr.x, 2.5, cx.tr.z) },
+      { id: 'label-book', pos: new THREE.Vector3(cx.bl.x, 2.5, cx.bl.z) },
+      { id: 'label-idealab', pos: new THREE.Vector3(cx.br.x, 2.5, cx.br.z) },
+    ];
+    labelData.forEach(function(l) {
+      var projected = l.pos.clone().project(camera);
+      var el = document.getElementById(l.id);
+      if (el) {
+        var x = (projected.x * 0.5 + 0.5) * window.innerWidth;
+        var y = (-projected.y * 0.5 + 0.5) * window.innerHeight;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        el.style.transform = 'translate(-50%, -50%)';
+        el.style.display = projected.z > 1 ? 'none' : 'block';
+      }
+    });
 
     renderer.render(scene, camera);
   }

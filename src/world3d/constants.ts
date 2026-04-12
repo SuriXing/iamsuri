@@ -45,6 +45,44 @@ export const GROUND = {
 export const FOG_DENSITY = 0.004;
 export const SHADOW_MAP_SIZE = 1024;
 
+// World counts
+export const STAR_COUNT = 500;
+export const PARTICLE_COUNT = 150;
+
+// Door geometry
+export const DOOR = {
+  width: 1.2,
+  height: 1.75,
+  frameHeight: 1.9,
+  postW: 0.15,
+  openAngle: -Math.PI * 0.55,
+  hingeLerp: 0.12,
+} as const;
+
+// Character
+export const CHARACTER = {
+  scale: 1.5,
+  bobAmp: 0.15,
+  bobFreq: 3.14,
+  swayAmp: 0.3,
+  swayFreq: 0.5,
+  shadowRadius: 0.4,
+} as const;
+
+// Particle bounds
+export const PARTICLES = {
+  spread: 28,
+  ceiling: 8,
+  floorReset: -0.5,
+} as const;
+
+// Star bounds
+export const STARS = {
+  spreadXZ: 60,
+  yMin: 5,
+  ySpread: 25,
+} as const;
+
 export const STORAGE_KEYS = {
   unlocks: 'suri-3d-doors-unlocked-v2',
   theme:   'suri-theme',

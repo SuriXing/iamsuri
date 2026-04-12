@@ -1,0 +1,127 @@
+import { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+import { ROOM, GAP, FLOOR_Y } from '../constants';
+
+const HALL_COLOR = '#1e2233';
+const HALL_LEN = ROOM * 2 + GAP * 2 + 1;
+const HALL_WIDTH = GAP * 2;
+
+interface PlantProps {
+  x: number;
+  z: number;
+}
+
+function Plant({ x, z }: PlantProps) {
+  return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, 0.25, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.15, 0.12, 0.25, 8]} />
+        <meshPhongMaterial color="#cc7744" flatShading />
+      </mesh>
+      <mesh position={[0, 0.38, 0]} receiveShadow>
+        <cylinderGeometry args={[0.14, 0.14, 0.03, 8]} />
+        <meshPhongMaterial color="#4a3520" flatShading />
+      </mesh>
+      <mesh position={[0, 0.6, 0]} castShadow>
+        <sphereGeometry args={[0.22, 6, 6]} />
+        <meshPhongMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.15} flatShading />
+      </mesh>
+      <mesh position={[0.08, 0.78, 0]} castShadow>
+        <sphereGeometry args={[0.15, 6, 6]} />
+        <meshPhongMaterial color="#16a34a" emissive="#22c55e" emissiveIntensity={0.1} flatShading />
+      </mesh>
+      <mesh position={[-0.05, 0.85, 0.05]} castShadow>
+        <coneGeometry args={[0.12, 0.25, 6]} />
+        <meshPhongMaterial color="#15803d" flatShading />
+      </mesh>
+    </group>
+  );
+}
+
+const STEAM_OFFSETS: ReadonlyArray<readonly [number, number, number]> = [
+  [-0.05, 0.85, 0],
+  [0.03, 0.95, 0],
+  [-0.02, 1.05, 0],
+];
+
+export function Hallway() {
+  const steamRef = useRef<THREE.Group>(null);
+
+  useFrame(({ clock }) => {
+    const g = steamRef.current;
+    if (!g) return;
+    const t = clock.getElapsedTime();
+    g.children.forEach((child, i) => {
+      child.position.y = STEAM_OFFSETS[i][1] + Math.sin(t * 2 + i) * 0.05;
+      const mat = (child as THREE.Mesh).material as THREE.MeshPhongMaterial;
+      mat.opacity = 0.2 + 0.15 * Math.sin(t * 2 + i);
+    });
+  });
+
+  return (
+    <group>
+      {/* Hallway floor cross */}
+      <mesh position={[0, FLOOR_Y - 0.02, 0]} receiveShadow>
+        <boxGeometry args={[HALL_WIDTH, 0.08, HALL_LEN]} />
+        <meshPhongMaterial color={HALL_COLOR} emissive={HALL_COLOR} emissiveIntensity={0.1} flatShading />
+      </mesh>
+      <mesh position={[0, FLOOR_Y - 0.02, 0]} receiveShadow>
+        <boxGeometry args={[HALL_LEN, 0.08, HALL_WIDTH]} />
+        <meshPhongMaterial color={HALL_COLOR} emissive={HALL_COLOR} emissiveIntensity={0.1} flatShading />
+      </mesh>
+
+      {/* Coffee machine */}
+      <mesh position={[-1.5, 0.42, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.4, 0.6, 0.35]} />
+        <meshPhongMaterial color="#222222" flatShading />
+      </mesh>
+      <mesh position={[-1.5, 0.75, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.38, 0.1, 0.33]} />
+        <meshPhongMaterial color="#333333" flatShading />
+      </mesh>
+      <mesh position={[-1.5, 0.55, 0.18]}>
+        <boxGeometry args={[0.06, 0.06, 0.01]} />
+        <meshPhongMaterial color="#e94560" emissive="#e94560" emissiveIntensity={3.0} flatShading />
+      </mesh>
+
+      {/* Steam */}
+      <group ref={steamRef} position={[-1.5, 0, 0]}>
+        {STEAM_OFFSETS.map((p, i) => (
+          <mesh key={i} position={[...p]}>
+            <boxGeometry args={[0.03, 0.03, 0.03]} />
+            <meshPhongMaterial color="#ffffff" transparent opacity={0.3} flatShading />
+          </mesh>
+        ))}
+      </group>
+
+      {/* Plants */}
+      <Plant x={1.3} z={-0.5} />
+      <Plant x={1.5} z={0.6} />
+
+      {/* Rug */}
+      <mesh position={[0, 0.12, 0]} receiveShadow>
+        <boxGeometry args={[1.8, 0.02, 1.0]} />
+        <meshPhongMaterial color="#8B4513" emissive="#ffd700" emissiveIntensity={0.05} flatShading />
+      </mesh>
+      <mesh position={[0, 0.14, 0]} receiveShadow>
+        <boxGeometry args={[1.4, 0.01, 0.6]} />
+        <meshPhongMaterial color="#a0522d" emissive="#e94560" emissiveIntensity={0.05} flatShading />
+      </mesh>
+
+      {/* Ceiling light strips (cross pattern) */}
+      {[-3, 0, 3].map((z) => (
+        <mesh key={`hz-${z}`} position={[0, 2.8, z]}>
+          <boxGeometry args={[0.6, 0.04, 0.1]} />
+          <meshPhongMaterial color="#ffd700" emissive="#ffd700" emissiveIntensity={0.8} flatShading />
+        </mesh>
+      ))}
+      {[-3, 0, 3].map((x) => (
+        <mesh key={`vx-${x}`} position={[x, 2.8, 0]}>
+          <boxGeometry args={[0.1, 0.04, 0.6]} />
+          <meshPhongMaterial color="#ffd700" emissive="#ffd700" emissiveIntensity={0.8} flatShading />
+        </mesh>
+      ))}
+    </group>
+  );
+}

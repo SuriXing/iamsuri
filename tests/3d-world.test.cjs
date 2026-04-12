@@ -1,3 +1,7 @@
+// E2E tests for the 3D world at /iamsuri/3d-world.html.
+// As of F2.13 this exercises the React Three Fiber implementation in
+// src/world3d/. `window.navigateToRoom` and `window.navigateToOverview`
+// are bridges installed in src/world3d/main.tsx for test automation.
 const { test, expect } = require('@playwright/test');
 
 test.describe('3D World Landing Page', () => {

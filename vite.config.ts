@@ -1,17 +1,12 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { resolve } from 'node:path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
+// Deployed to iamsuri.ai via Vercel — root-relative paths.
+// (Previously served under /iamsuri/ on GitHub Pages.)
 export default defineConfig({
   plugins: [react()],
-  base: '/iamsuri/',
+  base: '/',
   build: {
     chunkSizeWarningLimit: 1500,
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html'),
-        '3d-world': resolve(__dirname, '3d-world.html'),
-      },
-    },
   },
-})
+});

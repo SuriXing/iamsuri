@@ -1,14 +1,23 @@
 import './ViewSwitcher.css';
 
-export default function ViewSwitcher() {
+interface Props {
+  onClick: () => void;
+}
+
+/**
+ * Top-right button on the 2D landing page. Clicking flips the top-level
+ * `view` state to `'3d'`, which lazy-loads the R3F world.
+ */
+export default function ViewSwitcher({ onClick }: Props) {
   return (
-    <a
+    <button
+      type="button"
       className="view-switcher"
-      href={`${import.meta.env.BASE_URL}3d-world.html`}
+      onClick={onClick}
       title="Switch to 3D world"
       aria-label="Switch to 3D world"
     >
       3D
-    </a>
+    </button>
   );
 }

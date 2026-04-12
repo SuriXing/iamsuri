@@ -1,13 +1,12 @@
-// E2E tests for the 3D world at /iamsuri/3d-world.html.
-// As of F2.13 this exercises the React Three Fiber implementation in
-// src/world3d/. `window.navigateToRoom` and `window.navigateToOverview`
-// are bridges installed in src/world3d/main.tsx for test automation.
+// E2E tests for the 3D world, now served at /?view=3d from the unified
+// landing page. `window.navigateToRoom` and `window.navigateToOverview`
+// are bridges installed in src/world3d/App3D.tsx for test automation.
 const { test, expect } = require('@playwright/test');
 
 test.describe('3D World Landing Page', () => {
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/iamsuri/3d-world.html');
+    await page.goto('/?view=3d');
     await page.waitForTimeout(3000); // Wait for Three.js to render
   });
 
@@ -121,7 +120,7 @@ test.describe('3D World Landing Page', () => {
   test('page loads in reasonable time', async ({ page }) => {
     // Threshold generous for headless chromium (real browsers load in <1s)
     const start = Date.now();
-    await page.goto('/iamsuri/3d-world.html');
+    await page.goto('/?view=3d');
     await page.waitForSelector('canvas');
     const elapsed = Date.now() - start;
     expect(elapsed).toBeLessThan(5000);

@@ -78,9 +78,9 @@
     z-index: 999;
   }
 
-  /* ── Room content overlays ────────────────────────────── */
+  /* ── Room content overlays (kept in DOM for tests, hidden visually) ─── */
   .room-overlay {
-    display: none;
+    display: none !important;
     position: fixed;
     right: 40px;
     top: 50%;
@@ -96,9 +96,8 @@
     font-family: 'Courier New', monospace;
     color: #e5e7eb;
     z-index: 50;
-    animation: fadeSlideIn 0.4s ease-out;
   }
-  .room-overlay.active { display: block; }
+  .room-overlay.active { /* class still toggled for tests; visibility stays none */ }
   @keyframes fadeSlideIn {
     from { opacity: 0; transform: translateY(-50%) translateX(20px); }
     to { opacity: 1; transform: translateY(-50%) translateX(0); }
@@ -390,6 +389,115 @@
     border-color: rgba(0,0,0,0.15);
   }
   body.light-theme .meta { color: #888; }
+
+  /* ── Interact modal (FP popup) ─────────────────────────── */
+  .interact-modal {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 70;
+    background: rgba(20, 23, 34, 0.96);
+    backdrop-filter: blur(12px);
+    border: 2px solid rgba(255, 215, 0, 0.5);
+    border-radius: 10px;
+    padding: 32px 40px;
+    max-width: 420px;
+    color: #e5e7eb;
+    font-family: 'Courier New', monospace;
+    box-shadow: 0 0 40px rgba(255,215,0,0.2), 0 10px 40px rgba(0,0,0,0.5);
+  }
+  .interact-modal.active { display: block; }
+  .interact-modal h3 {
+    color: #ffd700;
+    font-size: 1.3rem;
+    margin-bottom: 16px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(255,215,0,0.4);
+  }
+  .interact-modal p { font-size: 0.95rem; line-height: 1.6; margin-bottom: 16px; color: #ccc; }
+  .interact-modal a {
+    display: inline-block;
+    color: #ffd700;
+    background: rgba(255,215,0,0.1);
+    padding: 8px 16px;
+    border: 1px solid rgba(255,215,0,0.4);
+    border-radius: 4px;
+    text-decoration: none;
+    margin-top: 8px;
+  }
+  .interact-modal a:hover { background: rgba(255,215,0,0.25); }
+  .interact-modal .close-hint { font-size: 0.7rem; color: #666; margin-top: 20px; text-align: center; letter-spacing: 1.5px; }
+
+  /* ── Interact tooltip (Press E hint) ───────────────────── */
+  .interact-tooltip {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, 40px);
+    z-index: 50;
+    background: rgba(20, 23, 34, 0.85);
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.5);
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    pointer-events: none;
+  }
+  .interact-tooltip.active { display: block; }
+  .interact-tooltip kbd {
+    background: rgba(255,215,0,0.2);
+    border: 1px solid rgba(255,215,0,0.4);
+    padding: 2px 8px;
+    border-radius: 3px;
+    color: #fff;
+    margin: 0 4px;
+  }
+
+  /* ── Crosshair (FP center reticle) ─────────────────────── */
+  .crosshair {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 215, 0, 0.8);
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 4px rgba(255,215,0,0.6);
+    z-index: 45;
+    pointer-events: none;
+  }
+  .crosshair.active { display: block; }
+
+  /* ── FP intro hint ─────────────────────────────────────── */
+  .fp-intro-hint {
+    display: none;
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 55;
+    background: rgba(20, 23, 34, 0.92);
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    padding: 12px 22px;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 1.2px;
+    pointer-events: none;
+    backdrop-filter: blur(6px);
+    text-align: center;
+  }
+  .fp-intro-hint.active { display: block; animation: fpIntroFade 4s ease-out forwards; }
+  @keyframes fpIntroFade {
+    0%   { opacity: 0; }
+    15%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
 </style>
 </head>
 <body>
@@ -463,6 +571,16 @@
   </div>
 </div>
 
+<div id="interact-modal" class="interact-modal">
+  <h3 id="interact-title"></h3>
+  <p id="interact-body"></p>
+  <a id="interact-link" href="#" target="_blank" rel="noopener" style="display:none;">Visit &rarr;</a>
+  <div class="close-hint">Press ESC or click anywhere to close</div>
+</div>
+<div id="interact-tooltip" class="interact-tooltip">Press <kbd>E</kbd> to interact</div>
+<div id="crosshair" class="crosshair"></div>
+<div id="fp-intro-hint" class="fp-intro-hint">Click to look around &middot; WASD to walk &middot; E to interact &middot; ESC to exit</div>
+
 <button id="back-btn" class="back-btn">&times; EXIT ROOM</button>
 <div id="exit-hint" class="exit-hint">Press <kbd>ESC</kbd> or click <kbd>&times; EXIT ROOM</kbd> to leave</div>
 <div id="enter-prompt" class="enter-prompt">Press <kbd id="enter-prompt-key">E</kbd> to <span id="enter-prompt-verb">enter</span> <span id="enter-prompt-name">Room</span></div>
@@ -490,6 +608,7 @@
   var animatables = { liveDots: [], steamCubes: [], ideaBulb: null, ideaBulbLight: null, scanline: null };
   var wallMeshes = [];
   var stars = [];
+  var interactables = [];
 
   // ── Camera ────────────────────────────────────────────────
   var camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
@@ -853,6 +972,11 @@
     // Headboard
     var headboard = box(1.5, 0.7, 0.12, mat(wood));
     headboard.position.set(bedX, 0.65, bedZ - 1.05);
+    headboard.userData.interactable = {
+      title: 'My Bed',
+      body: 'A cozy corner. Sometimes the best ideas come right before sleep.',
+    };
+    interactables.push(headboard);
     scene.add(headboard);
     // Bed legs (4)
     [[-0.7, -0.95], [0.7, -0.95], [-0.7, 0.95], [0.7, 0.95]].forEach(function(p) {
@@ -887,6 +1011,11 @@
     scene.add(monFrame);
     var monScreen = box(0.85, 0.5, 0.02, mat(0x1a1a3e, { emissive: 0xffb6c1, emissiveIntensity: 1.2 }));
     monScreen.position.set(deskX, 1.22, deskZ - 0.47);
+    monScreen.userData.interactable = {
+      title: 'About Suri',
+      body: 'Suri Xing, Grade 8 — Math \u00b7 Design \u00b7 Debate \u00b7 Building. Check back for more.',
+    };
+    interactables.push(monScreen);
     scene.add(monScreen);
     var monStand = box(0.08, 0.32, 0.08, mat(whiteOff));
     monStand.position.set(deskX, 0.96, deskZ - 0.45);
@@ -974,6 +1103,12 @@
     scene.add(screen1Frame);
     var screen1 = box(0.85, 0.55, 0.02, mat(0x112211, { emissive: 0x22c55e, emissiveIntensity: 2.5 }));
     screen1.position.set(ox - 0.9, 1.92, oz - 0.27);
+    screen1.userData.interactable = {
+      title: 'Problem Solver',
+      body: 'Drop your worry in, get help thinking it through.',
+      link: 'https://problem-solver.vercel.app',
+    };
+    interactables.push(screen1);
     scene.add(screen1);
     // "LIVE" indicator dot
     var liveDot1 = box(0.06, 0.06, 0.02, mat(0x22c55e, { emissive: 0x22c55e, emissiveIntensity: 4.0 }));
@@ -989,6 +1124,12 @@
     scene.add(screen2Frame);
     var screen2 = box(0.85, 0.55, 0.02, mat(0x112211, { emissive: 0x22c55e, emissiveIntensity: 2.5 }));
     screen2.position.set(ox + 0.9, 1.92, oz - 0.27);
+    screen2.userData.interactable = {
+      title: 'Mentor Table',
+      body: 'Chat with great minds — practice thinking with AI versions of historical figures.',
+      link: 'https://mentor-table.vercel.app',
+    };
+    interactables.push(screen2);
     scene.add(screen2);
     var liveDot2 = box(0.06, 0.06, 0.02, mat(0x22c55e, { emissive: 0x22c55e, emissiveIntensity: 4.0 }));
     liveDot2.position.set(ox + 1.3, 2.18, oz - 0.25);
@@ -1025,10 +1166,14 @@
     var ox = cx.bl.x, oz = cx.bl.z;
 
     // Bookshelf 1 (tall, against wall)
-    function makeBookshelf(bx, bz) {
+    function makeBookshelf(bx, bz, tag) {
       // Frame
       var frame = box(1.6, 2.0, 0.4, mat(0x6b3410));
       frame.position.set(bx, 1.1, bz);
+      if (tag) {
+        frame.userData.interactable = tag;
+        interactables.push(frame);
+      }
       scene.add(frame);
       // Shelves
       for (var row = 0; row < 4; row++) {
@@ -1044,7 +1189,10 @@
         }
       }
     }
-    makeBookshelf(ox - 0.8, oz - 1.0);
+    makeBookshelf(ox - 0.8, oz - 1.0, {
+      title: 'Blog',
+      body: 'Why I Build Things \u00b7 Apr 2026. Learning by Shipping \u00b7 Mar 2026. (Coming soon)',
+    });
     makeBookshelf(ox + 1.0, oz - 1.0);
 
     // Reading chair
@@ -1096,76 +1244,153 @@
     scene.add(rug);
   })();
 
-  // ── IDEA LAB (bottom-right, yellow) ───────────────────────
+  // ── IDEA LAB (bottom-right, Monet carpet reading nook) ────
   (function() {
     var ox = cx.br.x, oz = cx.br.z;
 
-    // Whiteboard
-    var wbFrame = box(2.2, 1.5, 0.1, mat(0x888888));
-    wbFrame.position.set(ox, 1.1, oz - 1.8);
+    // Monet water-lilies palette
+    var monet = {
+      cream:    0xead9b8,
+      lavender: 0xb5a7d4,
+      dustRose: 0xd89cb0,
+      sage:     0x9ec79e,
+      teal:     0x8fb8c4,
+      softBlue: 0x9bb0cc,
+      willow:   0x7a9d7e,
+      peach:    0xe6b89c,
+      fringe:   0xc8b78f,
+    };
+
+    // Carpet base — covers most of the 5x5 tile, sits just above the floor
+    var carpet = box(4.6, 0.03, 4.6, mat(monet.cream, { emissive: monet.lavender, emissiveIntensity: 0.12 }));
+    carpet.position.set(ox, FLOOR_Y + 0.09, oz);
+    scene.add(carpet);
+
+    // Inner ring of the carpet (slightly raised, softer tone)
+    var carpetInner = box(3.6, 0.015, 3.6, mat(monet.softBlue, { transparent: true, opacity: 0.55, emissive: monet.softBlue, emissiveIntensity: 0.08 }));
+    carpetInner.position.set(ox, FLOOR_Y + 0.11, oz);
+    scene.add(carpetInner);
+
+    // Impressionist patches — random soft brush strokes across the carpet
+    var patchColors = [monet.lavender, monet.dustRose, monet.sage, monet.teal, monet.softBlue, monet.willow, monet.peach];
+    var patchSeed = [
+      [-1.7, -1.6, 0.50, 0.36], [-0.9, -1.8, 0.42, 0.30], [ 0.6, -1.7, 0.55, 0.38],
+      [ 1.6, -1.4, 0.45, 0.32], [-1.8, -0.4, 0.38, 0.50], [-1.5,  0.7, 0.55, 0.32],
+      [-0.5,  0.0, 0.45, 0.42], [ 0.7,  0.4, 0.55, 0.40], [ 1.7,  0.1, 0.40, 0.55],
+      [ 1.5,  1.3, 0.50, 0.38], [ 0.2,  1.7, 0.45, 0.42], [-0.9,  1.5, 0.52, 0.36],
+      [-1.8,  1.8, 0.38, 0.44], [ 1.9,  1.9, 0.42, 0.36], [ 0.0, -0.9, 0.48, 0.34],
+      [-0.3,  0.9, 0.36, 0.50],
+    ];
+    patchSeed.forEach(function(p, i) {
+      var col = patchColors[i % patchColors.length];
+      var patch = box(p[2], 0.012, p[3], mat(col, {
+        transparent: true, opacity: 0.75,
+        emissive: col, emissiveIntensity: 0.18,
+      }));
+      patch.position.set(ox + p[0], FLOOR_Y + 0.12, oz + p[1]);
+      patch.rotation.y = (i * 0.37) % Math.PI;
+      scene.add(patch);
+    });
+
+    // Carpet fringe along two opposing edges (tassel look)
+    [[-2.32, monet.fringe], [2.32, monet.fringe]].forEach(function(f) {
+      var strip = box(4.6, 0.02, 0.14, mat(f[1], { emissive: f[1], emissiveIntensity: 0.1 }));
+      strip.position.set(ox, FLOOR_Y + 0.10, oz + f[0]);
+      scene.add(strip);
+    });
+
+    // Whiteboard — pushed fully to the back wall for reading distance
+    var wbFrame = box(2.6, 1.7, 0.08, mat(0x8a8a8a));
+    wbFrame.position.set(ox, 1.25, oz - 2.08);
     scene.add(wbFrame);
-    var wbFace = box(2.0, 1.3, 0.02, mat(0xeeeeee));
-    wbFace.position.set(ox, 1.1, oz - 1.73);
+    var wbFace = box(2.4, 1.5, 0.02, mat(0xf5f1e8));
+    wbFace.position.set(ox, 1.25, oz - 2.03);
+    wbFace.userData.interactable = {
+      title: 'Idea Board',
+      body: 'AI Study Buddy \u00b7 Debate Trainer \u00b7 Visual Math. Ideas brewing in the lab.',
+    };
+    interactables.push(wbFace);
     scene.add(wbFace);
 
-    // Sticky notes on whiteboard
-    var stickyColors = [
-      { c: 0xffd700, x: -0.5, y: 1.3 },
-      { c: 0xf472b6, x: 0.0,  y: 1.5 },
-      { c: 0x60a5fa, x: 0.4,  y: 1.2 },
-      { c: 0x4ade80, x: -0.3, y: 0.9 },
-      { c: 0xfbbf24, x: 0.5,  y: 0.85 },
-      { c: 0xf472b6, x: -0.6, y: 0.8 },
+    // Whiteboard text blocks — impressionist dashes of color standing in for notes
+    var boardLines = [
+      { c: monet.lavender, x: -0.85, y: 1.80, w: 0.55, h: 0.06 },
+      { c: monet.lavender, x: -0.65, y: 1.70, w: 0.90, h: 0.05 },
+      { c: monet.dustRose, x: -0.70, y: 1.55, w: 0.70, h: 0.05 },
+      { c: monet.sage,     x: -0.50, y: 1.45, w: 0.80, h: 0.05 },
+      { c: monet.teal,     x:  0.60, y: 1.75, w: 0.60, h: 0.06 },
+      { c: monet.softBlue, x:  0.55, y: 1.62, w: 0.75, h: 0.05 },
+      { c: monet.willow,   x:  0.70, y: 1.48, w: 0.55, h: 0.05 },
+      { c: monet.peach,    x: -0.80, y: 1.00, w: 0.45, h: 0.05 },
+      { c: monet.dustRose, x: -0.55, y: 0.88, w: 0.70, h: 0.05 },
+      { c: monet.lavender, x:  0.55, y: 0.95, w: 0.70, h: 0.05 },
+      { c: monet.sage,     x:  0.70, y: 0.83, w: 0.50, h: 0.05 },
     ];
-    stickyColors.forEach(function(s) {
-      var note = box(0.25, 0.25, 0.01, mat(s.c, { emissive: s.c, emissiveIntensity: 0.6 }));
-      note.position.set(ox + s.x, s.y, oz - 1.71);
-      note.rotation.z = (Math.random() - 0.5) * 0.15;
-      scene.add(note);
+    boardLines.forEach(function(l) {
+      var line = box(l.w, l.h, 0.012, mat(l.c, { emissive: l.c, emissiveIntensity: 0.6 }));
+      line.position.set(ox + l.x, l.y, oz - 1.99);
+      scene.add(line);
     });
+    // Board heading bar
+    var heading = box(1.6, 0.09, 0.012, mat(monet.lavender, { emissive: monet.lavender, emissiveIntensity: 0.9 }));
+    heading.position.set(ox, 1.96, oz - 1.99);
+    scene.add(heading);
 
-    // Table
-    var tableTop = box(2.0, 0.08, 1.2, mat(0xdedede));
-    tableTop.position.set(ox, 0.65, oz + 0.3);
-    scene.add(tableTop);
-    [[-0.85, -0.5], [0.85, -0.5], [-0.85, 0.5], [0.85, 0.5]].forEach(function(p) {
-      var leg = cyl(0.05, 0.05, 0.55, 6, mat(0x999999));
-      leg.position.set(ox + p[0], 0.35, oz + 0.3 + p[1]);
+    // Floor cushions arranged in an arc facing the whiteboard
+    function cushion(px, pz, color) {
+      var pad = cyl(0.42, 0.42, 0.12, 14, mat(color, { emissive: color, emissiveIntensity: 0.22 }));
+      pad.position.set(px, FLOOR_Y + 0.19, pz);
+      scene.add(pad);
+      var top = cyl(0.34, 0.34, 0.02, 14, mat(0xffffff, { transparent: true, opacity: 0.18 }));
+      top.position.set(px, FLOOR_Y + 0.26, pz);
+      scene.add(top);
+      // Back support pillow
+      var pillow = box(0.7, 0.3, 0.18, mat(color, { emissive: color, emissiveIntensity: 0.18 }));
+      pillow.position.set(px, FLOOR_Y + 0.36, pz + 0.32);
+      scene.add(pillow);
+    }
+    cushion(ox - 1.4, oz + 0.2, monet.lavender);
+    cushion(ox,       oz + 0.6, monet.dustRose);
+    cushion(ox + 1.4, oz + 0.2, monet.sage);
+
+    // Low tea table tucked to the right side (doesn't block reading sightlines)
+    var teaTop = box(0.9, 0.05, 0.7, mat(monet.cream, { emissive: monet.peach, emissiveIntensity: 0.15 }));
+    teaTop.position.set(ox + 1.5, 0.30, oz - 0.9);
+    scene.add(teaTop);
+    [[-0.38, -0.28], [0.38, -0.28], [-0.38, 0.28], [0.38, 0.28]].forEach(function(p) {
+      var leg = cyl(0.03, 0.03, 0.28, 6, mat(0x7a5a3a));
+      leg.position.set(ox + 1.5 + p[0], 0.14, oz - 0.9 + p[1]);
       scene.add(leg);
     });
-
-    // Items on table
     // Notebook
-    var nb = box(0.4, 0.04, 0.3, mat(0xfbbf24));
-    nb.position.set(ox - 0.5, 0.72, oz + 0.3);
-    nb.rotation.y = 0.15;
+    var nb = box(0.32, 0.04, 0.24, mat(monet.lavender, { emissive: monet.lavender, emissiveIntensity: 0.25 }));
+    nb.position.set(ox + 1.38, 0.355, oz - 0.95);
+    nb.rotation.y = 0.2;
     scene.add(nb);
     // Pencil
-    var pencil = cyl(0.015, 0.015, 0.35, 6, mat(0xffd700));
-    pencil.position.set(ox - 0.15, 0.72, oz + 0.25);
+    var pencil = cyl(0.015, 0.015, 0.3, 6, mat(monet.peach));
+    pencil.position.set(ox + 1.65, 0.35, oz - 0.82);
     pencil.rotation.z = Math.PI / 2;
+    pencil.rotation.y = 0.3;
     scene.add(pencil);
     // Small idea cube (prototype)
-    var proto = box(0.2, 0.2, 0.2, mat(0xe94560, { emissive: 0xe94560, emissiveIntensity: 0.5 }));
-    proto.position.set(ox + 0.5, 0.8, oz + 0.3);
+    var proto = box(0.16, 0.16, 0.16, mat(monet.teal, { emissive: monet.teal, emissiveIntensity: 0.55 }));
+    proto.position.set(ox + 1.6, 0.41, oz - 1.05);
     scene.add(proto);
+    // Teacup
+    var cup = cyl(0.06, 0.05, 0.09, 10, mat(0xf5f1e8));
+    cup.position.set(ox + 1.4, 0.37, oz - 0.78);
+    scene.add(cup);
+    var tea = cyl(0.05, 0.05, 0.015, 10, mat(monet.willow, { emissive: monet.willow, emissiveIntensity: 0.3 }));
+    tea.position.set(ox + 1.4, 0.415, oz - 0.78);
+    scene.add(tea);
 
-    // Chairs (2 stools)
-    [-0.5, 0.5].forEach(function(dx) {
-      var stoolSeat = cyl(0.2, 0.2, 0.06, 8, mat(0x555555));
-      stoolSeat.position.set(ox + dx, 0.45, oz + 1.2);
-      scene.add(stoolSeat);
-      var stoolLeg = cyl(0.03, 0.04, 0.35, 6, mat(0x444444));
-      stoolLeg.position.set(ox + dx, 0.24, oz + 1.2);
-      scene.add(stoolLeg);
-    });
-
-    // Idea light bulb (floating)
-    var bulb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), mat(0xffd700, { emissive: 0xffd700, emissiveIntensity: 3.0 }));
-    bulb.position.set(ox, 2.2, oz + 0.3);
+    // Idea light bulb (floating, above the reading circle)
+    var bulb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 10), mat(0xffe28a, { emissive: 0xffd77a, emissiveIntensity: 3.0 }));
+    bulb.position.set(ox, 2.5, oz + 0.4);
     scene.add(bulb);
-    var bulbGlow = new THREE.PointLight(0xffd700, 0.6, 8);
-    bulbGlow.position.set(ox, 2.2, oz + 0.3);
+    var bulbGlow = new THREE.PointLight(0xffe0a0, 0.7, 9);
+    bulbGlow.position.set(ox, 2.5, oz + 0.4);
     scene.add(bulbGlow);
     animatables.ideaBulb = bulb;
     animatables.ideaBulbLight = bulbGlow;
@@ -1433,13 +1658,23 @@
   var currentView = 'overview';
   var orbitEnabled = true;
 
-  // Camera targets for each room (position + lookAt)
-  var roomCameraTargets = {
-    myroom:  { pos: new THREE.Vector3(cx.tl.x + 4, 5, cx.tl.z + 4), look: new THREE.Vector3(cx.tl.x, 0.5, cx.tl.z) },
-    product: { pos: new THREE.Vector3(cx.tr.x + 4, 5, cx.tr.z + 4), look: new THREE.Vector3(cx.tr.x, 0.5, cx.tr.z) },
-    book:    { pos: new THREE.Vector3(cx.bl.x + 4, 5, cx.bl.z + 4), look: new THREE.Vector3(cx.bl.x, 0.5, cx.bl.z) },
-    idealab: { pos: new THREE.Vector3(cx.br.x + 4, 5, cx.br.z + 4), look: new THREE.Vector3(cx.br.x, 0.5, cx.br.z) },
+  // ── First-person mode state ──────────────────────────────
+  var fpActive = false;
+  var fpYaw = 0;
+  var fpPitch = 0;
+  var fpFocusedObject = null;
+  var interactRaycaster = new THREE.Raycaster();
+  interactRaycaster.far = 3;
+  var modalOpen = false;
+
+  // Map of room id → room center (x, z)
+  var roomCenters = {
+    myroom:  { x: cx.tl.x, z: cx.tl.z },
+    product: { x: cx.tr.x, z: cx.tr.z },
+    book:    { x: cx.bl.x, z: cx.bl.z },
+    idealab: { x: cx.br.x, z: cx.br.z },
   };
+
   var overviewCamState = { pos: new THREE.Vector3(14, 16, 14), look: new THREE.Vector3(0, 1, 0) };
 
   // Tween state
@@ -1518,17 +1753,54 @@
     ['label-myroom', 'label-product', 'label-book', 'label-idealab'].forEach(function(id) {
       document.getElementById(id).style.display = 'none';
     });
-    var target = roomCameraTargets[room];
-    startCameraTween(target.pos, target.look, function() {
-      // Show overlay at 50%
+    // Move character to FP spawn point at the doorway, facing into the room
+    var rc = roomCenters[room];
+    // Top rooms have doors on south wall (z = -1.25), spawn at south edge facing -Z (into room = toward negative Z since room center is at more-negative Z)
+    // Bottom rooms have doors on north wall (z = +1.25), spawn at north edge facing +Z
+    var isTopRoom = rc.z < 0;
+    charPos.x = rc.x;
+    charPos.z = isTopRoom ? (rc.z + ROOM/2 - 0.8) : (rc.z - ROOM/2 + 0.8);
+    fpYaw = isTopRoom ? 0 : Math.PI; // 0 = facing -Z, π = facing +Z
+    fpPitch = 0;
+    // Camera tween: from current → eye-level at spawn, looking toward room center
+    var targetPos = new THREE.Vector3(charPos.x, 1.5, charPos.z);
+    var lookTarget = new THREE.Vector3(rc.x, 1.3, rc.z);
+    startCameraTween(targetPos, lookTarget, function() {
+      // Mark overlay active (invisible — kept for legacy tests)
       showOverlay(room);
     });
+    // After tween: enable FP mode
+    setTimeout(function() {
+      fpActive = true;
+      character.visible = false;
+      document.getElementById('crosshair').classList.add('active');
+      var introHint = document.getElementById('fp-intro-hint');
+      introHint.classList.remove('active');
+      // Re-trigger CSS animation
+      void introHint.offsetWidth;
+      introHint.classList.add('active');
+    }, 1050);
     document.getElementById('back-btn').classList.add('active');
     document.getElementById('exit-hint').classList.add('active');
   }
 
   function navigateToOverview() {
-    // Hide overlay immediately
+    // Tear down FP mode
+    fpActive = false;
+    if (document.pointerLockElement === renderer.domElement) {
+      document.exitPointerLock();
+    }
+    character.visible = true;
+    document.getElementById('crosshair').classList.remove('active');
+    document.getElementById('interact-tooltip').classList.remove('active');
+    document.getElementById('interact-modal').classList.remove('active');
+    document.getElementById('fp-intro-hint').classList.remove('active');
+    modalOpen = false;
+    fpFocusedObject = null;
+    // Reset character to hallway center
+    charPos.x = 0;
+    charPos.z = 0;
+    // Hide overlay immediately (kept for legacy DOM, never shown now)
     hideAllOverlays();
     document.getElementById('back-btn').classList.remove('active');
     document.getElementById('exit-hint').classList.remove('active');
@@ -1560,14 +1832,77 @@
   // Back button
   document.getElementById('back-btn').addEventListener('click', navigateToOverview);
 
+  // ── First-person: pointer lock + mouse look ──────────────
+  renderer.domElement.addEventListener('click', function() {
+    if (!fpActive) return;
+    if (modalOpen) return; // closing handled separately
+    if (document.pointerLockElement !== renderer.domElement) {
+      renderer.domElement.requestPointerLock();
+    }
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!fpActive) return;
+    if (document.pointerLockElement !== renderer.domElement) return;
+    fpYaw -= e.movementX * 0.003;
+    fpPitch -= e.movementY * 0.003;
+    fpPitch = Math.max(-1.3, Math.min(1.3, fpPitch));
+  });
+
+  // ── Interact modal helpers ───────────────────────────────
+  function openInteractModal(data) {
+    document.getElementById('interact-title').textContent = data.title || '';
+    document.getElementById('interact-body').textContent = data.body || '';
+    var linkEl = document.getElementById('interact-link');
+    if (data.link) {
+      linkEl.href = data.link;
+      linkEl.style.display = 'inline-block';
+    } else {
+      linkEl.style.display = 'none';
+    }
+    document.getElementById('interact-modal').classList.add('active');
+    modalOpen = true;
+    // Release pointer lock so user can click the link
+    if (document.pointerLockElement === renderer.domElement) {
+      document.exitPointerLock();
+    }
+  }
+
+  function closeInteractModal() {
+    document.getElementById('interact-modal').classList.remove('active');
+    modalOpen = false;
+  }
+
+  // Click-anywhere closes modal (but ignore clicks on the link itself)
+  document.addEventListener('click', function(e) {
+    if (!modalOpen) return;
+    if (e.target && e.target.id === 'interact-link') return;
+    closeInteractModal();
+  });
+
   // ── Keyboard Navigation ──────────────────────────────────
   // Track which room (if any) the character is near enough to enter
   var nearbyRoom = null;
 
   window.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && currentView !== 'overview') {
-      navigateToOverview();
-    } else if (currentView === 'overview') {
+    if (e.key === 'Escape') {
+      if (modalOpen) {
+        closeInteractModal();
+        return;
+      }
+      if (currentView !== 'overview') {
+        navigateToOverview();
+        return;
+      }
+    }
+    // E in FP mode → open focused interactable
+    if (fpActive && (e.key === 'e' || e.key === 'E')) {
+      if (fpFocusedObject && fpFocusedObject.userData.interactable) {
+        openInteractModal(fpFocusedObject.userData.interactable);
+      }
+      return;
+    }
+    if (currentView === 'overview') {
       // U: unlock nearby door
       if ((e.key === 'u' || e.key === 'U') && nearbyRoom && doors[nearbyRoom] && !doors[nearbyRoom].unlocked) {
         unlockDoor(nearbyRoom);
@@ -1711,6 +2046,55 @@
       if (!cameraTween.halfFired && cameraTween.progress >= 0.5 && cameraTween.onHalf) {
         cameraTween.onHalf();
         cameraTween.halfFired = true;
+      }
+    } else if (fpActive) {
+      // ── First-person mode ─────────────────────────────────
+      var dt = Math.min(0.2, t - lastFrameTime);
+      lastFrameTime = t;
+      var moveX = 0, moveZ = 0;
+      if (keys['w'] || keys['arrowup'])    moveZ += 1;
+      if (keys['s'] || keys['arrowdown'])  moveZ -= 1;
+      if (keys['a'] || keys['arrowleft'])  moveX -= 1;
+      if (keys['d'] || keys['arrowright']) moveX += 1;
+      if (moveX !== 0 || moveZ !== 0) {
+        var len = Math.sqrt(moveX * moveX + moveZ * moveZ);
+        moveX /= len; moveZ /= len;
+        var forward = { x: -Math.sin(fpYaw), z: -Math.cos(fpYaw) };
+        var right   = { x:  Math.cos(fpYaw), z: -Math.sin(fpYaw) };
+        var speed = 2.8;
+        charPos.x += (forward.x * moveZ + right.x * moveX) * speed * dt;
+        charPos.z += (forward.z * moveZ + right.z * moveX) * speed * dt;
+        // Clamp to current room bounds
+        var rc = roomCenters[currentView];
+        if (rc) {
+          var margin = 0.5;
+          charPos.x = Math.max(rc.x - ROOM/2 + margin, Math.min(rc.x + ROOM/2 - margin, charPos.x));
+          charPos.z = Math.max(rc.z - ROOM/2 + margin, Math.min(rc.z + ROOM/2 - margin, charPos.z));
+        }
+      }
+      // Apply FP camera transform
+      camera.position.set(charPos.x, 1.5, charPos.z);
+      var lookAt = new THREE.Vector3(
+        charPos.x - Math.sin(fpYaw) * Math.cos(fpPitch),
+        1.5 + Math.sin(fpPitch),
+        charPos.z - Math.cos(fpYaw) * Math.cos(fpPitch)
+      );
+      camera.lookAt(lookAt);
+      cameraTween.currentLook.copy(lookAt);
+
+      // Forward raycast for interactable focus
+      var rayDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      interactRaycaster.set(camera.position.clone(), rayDir);
+      interactRaycaster.far = 3;
+      var hits = interactRaycaster.intersectObjects(interactables, false);
+      var tooltipEl = document.getElementById('interact-tooltip');
+      if (hits.length > 0 && hits[0].distance < 3) {
+        fpFocusedObject = hits[0].object;
+        if (!modalOpen) tooltipEl.classList.add('active');
+        else tooltipEl.classList.remove('active');
+      } else {
+        fpFocusedObject = null;
+        tooltipEl.classList.remove('active');
       }
     } else if (orbitEnabled) {
       // ── Character movement (WASD / arrows) ────────────────

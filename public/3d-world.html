@@ -187,21 +187,98 @@
     display: none;
     position: fixed;
     top: 28px;
-    right: 32px;
+    left: 32px;
     z-index: 60;
-    background: rgba(20,23,34,0.85);
+    background: rgba(233, 69, 96, 0.9);
+    color: #ffffff;
+    border: 2px solid rgba(255, 215, 0, 0.6);
+    padding: 12px 24px;
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 6px;
+    letter-spacing: 2px;
+    transition: all 0.2s;
+    text-shadow: 0 0 6px rgba(255,255,255,0.4);
+    box-shadow: 0 4px 20px rgba(233,69,96,0.4), 0 0 0 4px rgba(255,215,0,0.1);
+    animation: backBtnPulse 2s ease-in-out infinite;
+  }
+  @keyframes backBtnPulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(233,69,96,0.4), 0 0 0 4px rgba(255,215,0,0.1); }
+    50%      { box-shadow: 0 4px 28px rgba(233,69,96,0.7), 0 0 0 8px rgba(255,215,0,0.2); }
+  }
+  .back-btn:hover {
+    background: rgba(255, 215, 0, 0.9);
+    color: #1a1a2e;
+    transform: scale(1.05);
+  }
+  .back-btn.active { display: block; }
+
+  /* ── Exit hint banner (shown in room view) ────────────── */
+  .exit-hint {
+    display: none;
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 55;
+    background: rgba(20, 23, 34, 0.88);
     color: #ffd700;
-    border: 1px solid rgba(255,215,0,0.3);
-    padding: 8px 18px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    padding: 10px 24px;
+    border-radius: 4px;
     font-family: 'Courier New', monospace;
     font-size: 0.85rem;
-    cursor: pointer;
-    border-radius: 4px;
-    letter-spacing: 1px;
-    transition: all 0.2s;
+    letter-spacing: 1.5px;
+    pointer-events: none;
+    backdrop-filter: blur(6px);
   }
-  .back-btn:hover { background: rgba(255,215,0,0.15); }
-  .back-btn.active { display: block; }
+  .exit-hint.active { display: block; }
+  .exit-hint kbd {
+    background: rgba(255,215,0,0.15);
+    border: 1px solid rgba(255,215,0,0.4);
+    padding: 2px 8px;
+    border-radius: 3px;
+    color: #ffd700;
+    margin: 0 4px;
+    font-family: inherit;
+  }
+
+  /* ── Enter prompt (appears near doors when close) ─────── */
+  .enter-prompt {
+    display: none;
+    position: fixed;
+    z-index: 55;
+    background: rgba(20, 23, 34, 0.92);
+    color: #ffd700;
+    border: 2px solid rgba(255, 215, 0, 0.6);
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 1.5px;
+    pointer-events: none;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 0 18px rgba(255,215,0,0.3);
+    animation: enterPromptBob 1.5s ease-in-out infinite;
+    white-space: nowrap;
+  }
+  @keyframes enterPromptBob {
+    0%, 100% { transform: translate(-50%, -100%); }
+    50%      { transform: translate(-50%, calc(-100% - 4px)); }
+  }
+  .enter-prompt.active { display: block; }
+  .enter-prompt kbd {
+    background: rgba(255,215,0,0.2);
+    border: 1px solid rgba(255,215,0,0.6);
+    padding: 2px 8px;
+    border-radius: 3px;
+    color: #ffffff;
+    margin: 0 4px;
+    font-family: inherit;
+    font-weight: bold;
+  }
 
   /* ── Theme toggle ─────────────────────────────────────── */
   #theme-toggle {
@@ -317,7 +394,7 @@
 <div id="label-book" class="room-label">Book Room</div>
 <div id="label-idealab" class="room-label">Idea Lab</div>
 
-<div id="hint">WASD / arrows to walk · drag to orbit · scroll to zoom · click a room to explore</div>
+<div id="hint">WASD / arrows to walk · walk to a room and press <b>E</b> to enter · drag to orbit · scroll to zoom</div>
 
 <div id="overlay-myroom" class="room-overlay">
   <h2>My Room</h2>
@@ -374,7 +451,9 @@
   </div>
 </div>
 
-<button id="back-btn" class="back-btn">&larr; Back</button>
+<button id="back-btn" class="back-btn">&times; EXIT ROOM</button>
+<div id="exit-hint" class="exit-hint">Press <kbd>ESC</kbd> or click <kbd>&times; EXIT ROOM</kbd> to leave</div>
+<div id="enter-prompt" class="enter-prompt">Press <kbd>E</kbd> to enter <span id="enter-prompt-name">Room</span></div>
 <a id="view-switcher" href="./" title="Switch to 2D world">2D</a>
 <button id="theme-toggle">&#9788;</button>
 <div id="speech-bubble"></div>
@@ -1246,18 +1325,8 @@
   });
   var hoveredRoom = null;
 
-  // Click handler
-  renderer.domElement.addEventListener('click', function(e) {
-    if (currentView !== 'overview') return;
-    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-    var intersects = raycaster.intersectObjects(roomFloorArray);
-    if (intersects.length > 0) {
-      var room = intersects[0].object.userData.room;
-      if (room) navigateToRoom(room);
-    }
-  });
+  // Click-to-enter disabled — use walk + E instead (prevents accidental entry)
+  // Clicks on the canvas only orbit the camera.
 
   // Hover handler
   renderer.domElement.addEventListener('mousemove', function(e) {
@@ -1294,7 +1363,8 @@
   function navigateToRoom(room) {
     currentView = room;
     orbitEnabled = false;
-    // Hide room labels
+    // Hide enter prompt and room labels
+    document.getElementById('enter-prompt').classList.remove('active');
     ['label-myroom', 'label-product', 'label-book', 'label-idealab'].forEach(function(id) {
       document.getElementById(id).style.display = 'none';
     });
@@ -1304,12 +1374,14 @@
       showOverlay(room);
     });
     document.getElementById('back-btn').classList.add('active');
+    document.getElementById('exit-hint').classList.add('active');
   }
 
   function navigateToOverview() {
     // Hide overlay immediately
     hideAllOverlays();
     document.getElementById('back-btn').classList.remove('active');
+    document.getElementById('exit-hint').classList.remove('active');
     startCameraTween(overviewCamState.pos, overviewCamState.look, null);
     // Re-derive orbit angles from overview position after tween
     setTimeout(function() {
@@ -1339,10 +1411,19 @@
   document.getElementById('back-btn').addEventListener('click', navigateToOverview);
 
   // ── Keyboard Navigation ──────────────────────────────────
+  // Track which room (if any) the character is near enough to enter
+  var nearbyRoom = null;
+
   window.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && currentView !== 'overview') {
       navigateToOverview();
     } else if (currentView === 'overview') {
+      // E or Enter: enter the nearby room
+      if ((e.key === 'e' || e.key === 'E' || e.key === 'Enter') && nearbyRoom) {
+        navigateToRoom(nearbyRoom);
+        return;
+      }
+      // Number keys: direct jump
       var roomKeys = { '1': 'myroom', '2': 'product', '3': 'book', '4': 'idealab' };
       if (roomKeys[e.key]) navigateToRoom(roomKeys[e.key]);
     }
@@ -1465,7 +1546,7 @@
       }
     } else if (orbitEnabled) {
       // ── Character movement (WASD / arrows) ────────────────
-      var dt = Math.min(0.05, t - lastFrameTime);
+      var dt = Math.min(0.2, t - lastFrameTime);
       lastFrameTime = t;
       var moveX = 0, moveZ = 0;
       if (keys['w'] || keys['arrowup'])    moveZ -= 1;
@@ -1478,9 +1559,10 @@
         // Normalize diagonal + rotate relative to camera angle so WASD matches view
         var len = Math.sqrt(moveX * moveX + moveZ * moveZ);
         moveX /= len; moveZ /= len;
+        // Camera-forward = (-cos(angle), -sin(angle)). W (moveZ=-1) walks in forward dir.
         var cosA = Math.cos(camAngle), sinA = Math.sin(camAngle);
-        var worldX = moveX * cosA - moveZ * sinA;
-        var worldZ = moveX * sinA + moveZ * cosA;
+        var worldX = cosA * moveZ + sinA * moveX;
+        var worldZ = sinA * moveZ - cosA * moveX;
         var speed = 4.5;
         charPos.x += worldX * speed * dt;
         charPos.z += worldZ * speed * dt;
@@ -1527,6 +1609,44 @@
 
     // Head bob (gentle tilt) — head is first child
     character.children[0].rotation.z = Math.sin(t * 1.5) * 0.05;
+
+    // ── Proximity detection: nearby room enter prompt ───────
+    var enterPromptEl = document.getElementById('enter-prompt');
+    if (currentView === 'overview') {
+      var roomList = [
+        { id: 'myroom',  label: 'My Room',     x: cx.tl.x, z: cx.tl.z },
+        { id: 'product', label: 'Product Room', x: cx.tr.x, z: cx.tr.z },
+        { id: 'book',    label: 'Book Room',    x: cx.bl.x, z: cx.bl.z },
+        { id: 'idealab', label: 'Idea Lab',     x: cx.br.x, z: cx.br.z },
+      ];
+      var nearest = null;
+      var nearestDist = 2.6; // proximity threshold
+      roomList.forEach(function(r) {
+        var dx = charPos.x - r.x;
+        var dz = charPos.z - r.z;
+        var d = Math.sqrt(dx * dx + dz * dz);
+        if (d < nearestDist) { nearestDist = d; nearest = r; }
+      });
+      if (nearest) {
+        nearbyRoom = nearest.id;
+        document.getElementById('enter-prompt-name').textContent = nearest.label;
+        enterPromptEl.classList.add('active');
+        // Position above the room center
+        var pp = new THREE.Vector3(nearest.x, 3.0, nearest.z).project(camera);
+        if (pp.z < 1) {
+          var sx = (pp.x * 0.5 + 0.5) * window.innerWidth;
+          var sy = (-pp.y * 0.5 + 0.5) * window.innerHeight;
+          enterPromptEl.style.left = sx + 'px';
+          enterPromptEl.style.top = sy + 'px';
+        }
+      } else {
+        nearbyRoom = null;
+        enterPromptEl.classList.remove('active');
+      }
+    } else {
+      nearbyRoom = null;
+      enterPromptEl.classList.remove('active');
+    }
 
     // Particles
     for (var i = 0; i < particles.length; i++) {

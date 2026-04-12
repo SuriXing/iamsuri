@@ -4,23 +4,52 @@ import * as THREE from 'three';
 import { CHARACTER, COLORS } from '../constants';
 import { useWorldStore } from '../store/worldStore';
 
+// Smoothly interpolates angle `a` toward `b` around the shorter arc.
+// Prevents the "spin the long way around" issue near ±π boundaries.
+function lerpAngle(a: number, b: number, t: number): number {
+  let diff = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI;
+  if (diff < -Math.PI) diff += Math.PI * 2;
+  return a + diff * t;
+}
+
 export function Character() {
   const groupRef = useRef<THREE.Group>(null);
   const headRef = useRef<THREE.Group>(null);
   const armLRef = useRef<THREE.Mesh>(null);
   const armRRef = useRef<THREE.Mesh>(null);
   const shadowRef = useRef<THREE.Mesh>(null);
+  // Smoothed facing (lerps toward store charFacing so turning is not jerky).
+  const smoothFacingRef = useRef<number>(0);
+  const lastPosRef = useRef<{ x: number; z: number }>({ x: 0, z: 0 });
 
   // No selectors — read store imperatively in useFrame to avoid re-renders.
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     const t = clock.getElapsedTime();
     const { charPos, charFacing } = useWorldStore.getState();
+
+    // Detect whether the character is actively moving this frame.
+    const dx = charPos.x - lastPosRef.current.x;
+    const dz = charPos.z - lastPosRef.current.z;
+    const moving = (dx * dx + dz * dz) > 0.00002;
+    lastPosRef.current.x = charPos.x;
+    lastPosRef.current.z = charPos.z;
+
+    // Smooth-turn: FPS-independent lerp. k=12 → ~120ms to settle.
+    const k = 12;
+    const tf = 1 - Math.exp(-k * delta);
+    smoothFacingRef.current = lerpAngle(smoothFacingRef.current, charFacing, tf);
+
     const g = groupRef.current;
     if (g) {
       g.position.x = charPos.x;
       g.position.z = charPos.z;
-      g.position.y = Math.sin(t * CHARACTER.bobFreq) * CHARACTER.bobAmp;
-      g.rotation.y = charFacing + Math.sin(t * CHARACTER.swayFreq) * CHARACTER.swayAmp;
+      // Bob while walking, gentle hover when idle.
+      g.position.y = moving
+        ? Math.abs(Math.sin(t * 8)) * CHARACTER.bobAmp * 0.6
+        : Math.sin(t * CHARACTER.bobFreq) * CHARACTER.bobAmp;
+      // Idle sway disappears while walking so rotation feels decisive.
+      const sway = moving ? 0 : Math.sin(t * CHARACTER.swayFreq) * CHARACTER.swayAmp;
+      g.rotation.y = smoothFacingRef.current + sway;
     }
     if (shadowRef.current) {
       shadowRef.current.position.x = charPos.x;

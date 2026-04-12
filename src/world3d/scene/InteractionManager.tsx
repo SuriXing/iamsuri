@@ -11,7 +11,11 @@ const ROOM_NUMBER_KEYS: Record<string, RoomId> = {
   '3': 'book',
   '4': 'idealab',
 };
-const PROXIMITY_THRESHOLD = 2.6;
+// Measured against each room's DOOR position, not the room center.
+// The door is the only point the character can physically reach from the
+// hallway (walls block them from the room center). 1.6 is generous enough
+// to cover the corridor in front of each door without overlapping siblings.
+const PROXIMITY_THRESHOLD = 1.6;
 
 /**
  * Centralized keyboard handler + proximity detection for the overworld.
@@ -107,8 +111,8 @@ export function InteractionManager(): null {
     let nearest: RoomId | null = null;
     let nearestDist = PROXIMITY_THRESHOLD;
     for (const r of ROOMS) {
-      const dx = s.charPos.x - r.center.x;
-      const dz = s.charPos.z - r.center.z;
+      const dx = s.charPos.x - r.door.x;
+      const dz = s.charPos.z - r.door.z;
       const d = Math.hypot(dx, dz);
       if (d < nearestDist) {
         nearestDist = d;

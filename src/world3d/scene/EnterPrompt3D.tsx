@@ -38,7 +38,9 @@ export function EnterPrompt3D() {
     if (id === null) return;
     const room = ROOM_BY_ID[id];
     if (groupRef.current) {
-      groupRef.current.position.set(room.center.x, 3.0, room.center.z);
+      // Anchor above the door so the prompt sits over the entrance, not the
+      // back wall. Looks far more natural when approaching the room.
+      groupRef.current.position.set(room.door.x, 2.4, room.door.z);
     }
 
     const locked = !s.unlockedDoors.has(id);

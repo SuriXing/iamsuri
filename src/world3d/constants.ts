@@ -12,7 +12,7 @@ export const COLORS = {
 } as const;
 
 export const SPEEDS = {
-  walk: 4.5,
+  walk: 5.5,
   cameraLerp: 0.08,
 } as const;
 

@@ -127,6 +127,63 @@ test.describe('3D World Landing Page', () => {
     expect(elapsed).toBeLessThan(5000);
   });
 
+  test('keyboard flow: teleport → unlock → enter → exit', async ({ page }) => {
+    // Real-flow test: exercises unlockDoor + InteractionManager U/E key
+    // handlers + Escape handler WITHOUT using window.navigateToRoom.
+    // Uses setCharPos to teleport to the My Room doorway (more reliable
+    // than walking, but still goes through the real keyboard path).
+
+    // Clear door unlocks so we test the locked-door path
+    await page.evaluate(() => localStorage.removeItem('suri-3d-doors-unlocked-v2'));
+    await page.reload();
+    await page.waitForTimeout(3000);
+
+    // Focus the canvas so keys go to the game
+    await page.click('canvas', { position: { x: 640, y: 360 } });
+    await page.waitForTimeout(200);
+
+    // Teleport character to the My Room door (top-left room center is
+    // ~(-3.7, -3.7); doorway is around (-3.7, -1.8) on the +z side).
+    await page.evaluate(() => {
+      window.__worldStore.getState().setCharPos(-3.7, -1.8);
+    });
+    await page.waitForTimeout(200);
+
+    // Wait for the proximity frame to set nearbyRoom
+    await page.waitForFunction(
+      () => window.__worldStore?.getState().nearbyRoom === 'myroom',
+      { timeout: 2000 },
+    );
+
+    // Confirm the door is locked before we press U
+    const lockedBefore = await page.evaluate(() =>
+      window.__worldStore.getState().unlockedDoors.has('myroom'),
+    );
+    expect(lockedBefore).toBe(false);
+
+    // Press U → unlockDoor('myroom')
+    await page.keyboard.press('u');
+    await page.waitForTimeout(200);
+    const unlockedAfter = await page.evaluate(() =>
+      window.__worldStore.getState().unlockedDoors.has('myroom'),
+    );
+    expect(unlockedAfter).toBe(true);
+
+    // Press E → setViewMode('myroom')
+    await page.keyboard.press('e');
+    await page.waitForTimeout(2500); // camera tween
+
+    const viewMode = await page.evaluate(() => window.__worldStore.getState().viewMode);
+    expect(viewMode).toBe('myroom');
+
+    // Escape → back to overview
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(2000);
+
+    const finalView = await page.evaluate(() => window.__worldStore.getState().viewMode);
+    expect(finalView).toBe('overview');
+  });
+
   test('no console errors during interaction', async ({ page }) => {
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));

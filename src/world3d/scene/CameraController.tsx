@@ -58,6 +58,14 @@ export function CameraController(): null {
       tw.startLook.copy(tw.currentLook);
       tw.progress = 0;
       tw.active = true;
+      // Reset per-tween flags so spam 1/2/3/4 can't leak enteringRoom
+      // state from a previous tween into a new one.
+      tw.enteringRoom = false;
+      // Drive the transition state machine so PlayerController knows
+      // to freeze. completed in the tween-end branch below.
+      useWorldStore.setState({
+        viewTransition: viewMode === 'overview' ? 'exiting' : 'entering',
+      });
 
       if (viewMode === 'overview') {
         // Returning to overview: tween to orbit position around current char.
@@ -74,7 +82,6 @@ export function CameraController(): null {
           Math.sin(ca) * Math.cos(cp) * cd,
         );
         tw.targetLook.set(0, 1, 0);
-        tw.enteringRoom = false;
       } else {
         // Entering a room: place char at FP spawn point at the doorway.
         const room = ROOM_BY_ID[viewMode];
@@ -101,8 +108,15 @@ export function CameraController(): null {
         tw.progress = 1;
         tw.active = false;
         if (tw.enteringRoom) {
-          // Activate FP mode now that we're at the spawn point.
-          s.setFp(true);
+          // Activate FP mode now that we're at the spawn point. Flip
+          // the transition state machine to 'idle' so PlayerController
+          // starts moving again on the next frame.
+          s.completeRoomTransition();
+        } else {
+          // Exit tween done — return state machine to idle.
+          if (useWorldStore.getState().viewTransition !== 'idle') {
+            useWorldStore.setState({ viewTransition: 'idle' });
+          }
         }
       }
       const ease = easeInOut(tw.progress);

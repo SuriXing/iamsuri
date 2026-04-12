@@ -13,8 +13,7 @@ export default function FloorPlan({ onEnterRoom }: FloorPlanProps) {
 
   useEffect(() => {
     document.title = "Suri's Lab";
-    let raf: number;
-    raf = requestAnimationFrame(() => {
+    const raf = requestAnimationFrame(() => {
       requestAnimationFrame(() => setVisible(true));
     });
     return () => cancelAnimationFrame(raf);

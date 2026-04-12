@@ -30,11 +30,24 @@ export function usePointerLock(element: HTMLElement | null): void {
       );
     };
 
+    // Observe OS-level pointer-lock changes. When the user presses Esc
+    // or alt-tabs, the browser releases the lock and we stop getting
+    // mousemove events. We don't need to do anything heavy here — the
+    // click handler above already re-requests the lock on canvas click,
+    // so this listener exists to be explicit that we know about the
+    // lifecycle. Kept as a named handler so cleanup removes exactly it.
+    const onLockChange = (): void => {
+      // intentionally empty: state reads through `document.pointerLockElement`
+      // in the other handlers already correctly reflect the new state.
+    };
+
     element.addEventListener('click', onClick);
     document.addEventListener('mousemove', onMove);
+    document.addEventListener('pointerlockchange', onLockChange);
     return () => {
       element.removeEventListener('click', onClick);
       document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('pointerlockchange', onLockChange);
     };
   }, [element]);
 }

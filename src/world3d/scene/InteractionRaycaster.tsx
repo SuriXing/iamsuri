@@ -38,7 +38,9 @@ export function InteractionRaycaster(): null {
     for (const hit of hits) {
       let obj: THREE.Object3D | null = hit.object;
       while (obj) {
-        const data = obj.userData?.interactable;
+        // `Object3D.userData` is typed `Record<string, any>` upstream in
+        // three; cast through `unknown` so no `any` leaks into this file.
+        const data: unknown = obj.userData?.interactable as unknown;
         if (isInteractableData(data)) {
           if (s.focusedInteractable !== data) {
             s.setFocusedInteractable(data);

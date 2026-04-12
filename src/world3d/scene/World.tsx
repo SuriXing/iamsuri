@@ -1,6 +1,9 @@
 import { Html } from '@react-three/drei';
 import { ROOMS } from '../data/rooms';
 import { COLORS, LIGHTS, SHADOW_MAP_SIZE, FOG_DENSITY } from '../constants';
+// NOTE: scene.background and scene.fog.color are set imperatively in
+// ThemeEffect.tsx; we still mount a default `<color>` / `<fogExp2>` here
+// so the very first frame (before the effect runs) isn't a black flash.
 import { Ground } from './Ground';
 import { RoomFloor } from './RoomFloor';
 import { Walls } from './Walls';
@@ -39,8 +42,8 @@ export function World() {
   const bgColor = theme === 'light' ? LIGHT_BG : COLORS.bg;
   return (
     <>
-      <color key={`bg-${theme}`} attach="background" args={[bgColor]} />
-      <fogExp2 key={`fog-${theme}`} attach="fog" args={[bgColor, FOG_DENSITY]} />
+      <color attach="background" args={[bgColor]} />
+      <fogExp2 attach="fog" args={[bgColor, FOG_DENSITY]} />
 
       {/* Lights */}
       <ambientLight intensity={LIGHTS.ambient.intensity} color={LIGHTS.ambient.color} />

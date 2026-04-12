@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { STAR_COUNT, STARS } from '../constants';
 import { makeRng } from '../util/rand';
+import { useWorldStore } from '../store/worldStore';
 
 interface StarBuffers {
   positions: Float32Array;
@@ -32,6 +33,7 @@ const STAR_BUFFERS: StarBuffers = buildStarBuffers();
 
 export function StarField() {
   const matRef = useRef<THREE.PointsMaterial>(null);
+  const theme = useWorldStore((s) => s.theme);
 
   // Single shared geometry — owned per-component to play nice with r3f reconciliation.
   const geometry = useMemo(() => {
@@ -41,12 +43,23 @@ export function StarField() {
   }, []);
 
   // Global twinkle: cheap single opacity write per frame instead of per-star.
+  // In light mode, force opacity to 0 so stars are invisible against the
+  // pale background (twinkle still computed so we don't branch on theme
+  // inside the frame loop — useFrame checks `theme` via closure, which
+  // only updates when this component re-renders from the store subscription).
   useFrame(({ clock }) => {
     const m = matRef.current;
     if (!m) return;
+    if (theme === 'light') {
+      m.opacity = 0;
+      return;
+    }
     const t = clock.getElapsedTime();
     m.opacity = 0.65 + 0.25 * Math.sin(t * 1.5);
   });
+
+  // Skip rendering entirely in light mode — avoids the draw call too.
+  if (theme === 'light') return null;
 
   return (
     <points geometry={geometry}>

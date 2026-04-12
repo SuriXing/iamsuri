@@ -15,6 +15,11 @@ export function PlayerController(): null {
   useFrame((_, delta) => {
     const s = useWorldStore.getState();
     if (s.modalInteractable) return; // freeze movement when modal is open
+    // Freeze player during view-mode tweens (entering or exiting a room).
+    // Without this, the 1s camera blend window lets the player walk out of
+    // room geometry (fpActive is false during the tween, so the overview
+    // GROUND_LIMIT clamp is used instead of the room clamp).
+    if (s.viewTransition !== 'idle') return;
     const dt = Math.min(0.2, delta);
 
     let mx = 0;

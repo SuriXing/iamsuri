@@ -34,11 +34,14 @@ export function InteractionManager(): null {
     const onKeyDown = (e: KeyboardEvent): void => {
       const s = useWorldStore.getState();
 
+      // When a modal is open, only Escape is allowed. Number keys / U / E
+      // must not fire a room jump or unlock while the modal has focus.
+      if (s.modalInteractable) {
+        if (e.key === 'Escape') s.closeModal();
+        return;
+      }
+
       if (e.key === 'Escape') {
-        if (s.modalInteractable) {
-          s.closeModal();
-          return;
-        }
         if (s.viewMode !== 'overview') {
           s.setViewMode('overview');
           return;

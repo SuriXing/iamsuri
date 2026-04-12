@@ -5,6 +5,8 @@ import { FP, STORAGE_KEYS } from '../constants';
 
 export type ViewMode = 'overview' | RoomId;
 
+export type ViewTransition = 'idle' | 'entering' | 'exiting';
+
 export interface InteractableData {
   title: string;
   body: string;
@@ -14,6 +16,7 @@ export interface InteractableData {
 export interface WorldState {
   // View
   viewMode: ViewMode;
+  viewTransition: ViewTransition;
   // Player
   charPos: { x: number; z: number };
   charFacing: number; // radians
@@ -42,6 +45,12 @@ export interface WorldState {
   setFocusedInteractable: (i: InteractableData | null) => void;
   openModal: (i: InteractableData) => void;
   closeModal: () => void;
+  // View transition state machine — avoids useFrame ordering races
+  // between CameraController (writes fpActive at tween end) and
+  // PlayerController (reads fpActive to decide movement).
+  beginRoomTransition: (room: RoomId) => void;
+  completeRoomTransition: () => void;
+  beginExitTransition: () => void;
 }
 
 // localStorage persistence for unlocked doors
@@ -77,6 +86,7 @@ function loadTheme(): 'dark' | 'light' {
 
 export const useWorldStore = create<WorldState>((set) => ({
   viewMode: 'overview',
+  viewTransition: 'idle',
   charPos: { x: 0, z: 0 },
   charFacing: 0,
   fpActive: false,
@@ -88,7 +98,19 @@ export const useWorldStore = create<WorldState>((set) => ({
   focusedInteractable: null,
   modalInteractable: null,
 
-  setViewMode: (v) => set({ viewMode: v }),
+  setViewMode: (v) => {
+    // Centralize the "leaving a room" cleanup so stale focus/modal state
+    // can't carry across room visits.
+    if (v === 'overview') {
+      set({
+        viewMode: v,
+        focusedInteractable: null,
+        modalInteractable: null,
+      });
+    } else {
+      set({ viewMode: v });
+    }
+  },
   setCharPos: (x, z) => set({ charPos: { x, z } }),
   setCharFacing: (f) => set({ charFacing: f }),
   setFp: (active, yaw, pitch) =>
@@ -129,6 +151,17 @@ export const useWorldStore = create<WorldState>((set) => ({
     set({ modalInteractable: i });
   },
   closeModal: () => set({ modalInteractable: null }),
+  beginRoomTransition: (room) =>
+    set({ viewMode: room, viewTransition: 'entering' }),
+  completeRoomTransition: () =>
+    set({ fpActive: true, viewTransition: 'idle' }),
+  beginExitTransition: () =>
+    set({
+      viewMode: 'overview',
+      viewTransition: 'exiting',
+      focusedInteractable: null,
+      modalInteractable: null,
+    }),
 }));
 
 // Test/dev seam: expose store on window (typed via global.d.ts)

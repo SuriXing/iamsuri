@@ -18,6 +18,7 @@ import { BookRoom } from './rooms/BookRoom';
 import { IdeaLab } from './rooms/IdeaLab';
 import { CameraController } from './CameraController';
 import { PlayerController } from './PlayerController';
+import { MouseOrbitController } from './MouseOrbitController';
 import { InteractionManager } from './InteractionManager';
 import { InteractionRaycaster } from './InteractionRaycaster';
 import { ThemeEffect } from './ThemeEffect';
@@ -107,6 +108,7 @@ export function World() {
       {/* Controllers / managers — invisible, but render null and run logic */}
       <CameraController />
       <PlayerController />
+      <MouseOrbitController />
       <InteractionManager />
       <InteractionRaycaster />
       <ThemeEffect />

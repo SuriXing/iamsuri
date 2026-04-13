@@ -32,25 +32,19 @@ export const CAMERA = {
   far: 200,
 } as const;
 
-/** Third-person follow camera offsets (character-local frame). */
+/** Third-person follow camera (orbit around character). */
 export const FOLLOW = {
-  /** How far behind the character the camera sits. */
-  distance: 4.2,
-  /** How high above the ground the camera sits. Stays under ceiling
-   *  strips (y=2.8) and hallway lanterns but high enough to see the
-   *  upcoming path. */
-  height: 4.2,
-  /** How high on the character the camera looks. Slightly below head
-   *  height so the character's back is framed in the lower half of the
-   *  screen and the ground ahead is visible. */
-  lookHeight: 0.6,
+  /** Spherical distance from character — orbit radius. */
+  distance: 6.0,
+  /** Look target height on the character (slightly below head). */
+  lookHeight: 0.8,
   /** How far forward of the character the camera aims. Positive values
    *  show more of the upcoming path. */
   lookAhead: 1.0,
-  /** Softness of the camera follow (higher = snappier). */
+  /** Softness of the camera follow position lerp (higher = snappier). */
   lerp: 6,
-  /** Softness of the camera rotation chasing character facing. */
-  yawLerp: 4,
+  /** Softness of the yaw / pitch lerp toward mouse drag targets. */
+  yawLerp: 6,
 } as const;
 
 /** Duration of intro phases in seconds. */

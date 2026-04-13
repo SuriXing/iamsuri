@@ -4,7 +4,12 @@ import * as THREE from 'three';
 import { useWorldStore, type ViewMode } from '../store/worldStore';
 import { ROOM_BY_ID } from '../data/rooms';
 import { FP, ROOM, CAMERA, FOLLOW, INTRO } from '../constants';
-import { followCamYawRef } from './cameraRefs';
+import {
+  followCamYawRef,
+  followCamPitchRef,
+  targetCamYawRef,
+  targetCamPitchRef,
+} from './cameraRefs';
 
 // Room-entry / room-exit tween duration.
 const ROOM_TWEEN_DURATION = 1.0;
@@ -91,12 +96,16 @@ export function CameraController(): null {
         // Returning to overview: reset character and flip out of FP.
         s.setCharPos(0, 0);
         s.setFp(false);
-        // Target: behind the (now-centered) character at follow distance.
-        const f = s.charFacing;
+        // Target: behind the (centered) character at the current orbit
+        // yaw/pitch (so resuming after a room visit doesn't jolt the
+        // camera back to a default angle).
+        const yaw = followCamYawRef.current;
+        const pitch = followCamPitchRef.current;
+        const cosP = Math.cos(pitch);
         tw.targetPos.set(
-          0 - Math.sin(f) * FOLLOW.distance,
-          FOLLOW.height,
-          0 - Math.cos(f) * FOLLOW.distance,
+          -Math.sin(yaw) * cosP * FOLLOW.distance,
+          Math.sin(pitch) * FOLLOW.distance,
+          -Math.cos(yaw) * cosP * FOLLOW.distance,
         );
         tw.targetLook.set(0, FOLLOW.lookHeight, 0);
       } else {
@@ -156,11 +165,15 @@ export function CameraController(): null {
         // Kick off the zoom-in tween. Start from the current static pose.
         tw.startPos.copy(camera.position);
         tw.startLook.copy(tw.currentLook);
-        const { charPos, charFacing } = s;
+        const { charPos } = s;
+        // Tween into the default orbit pose (yaw=0, pitch=π/4, dist=6).
+        const yaw = followCamYawRef.current;
+        const pitch = followCamPitchRef.current;
+        const cosP = Math.cos(pitch);
         tw.targetPos.set(
-          charPos.x - Math.sin(charFacing) * FOLLOW.distance,
-          FOLLOW.height,
-          charPos.z - Math.cos(charFacing) * FOLLOW.distance,
+          charPos.x - Math.sin(yaw) * cosP * FOLLOW.distance,
+          Math.sin(pitch) * FOLLOW.distance,
+          charPos.z - Math.cos(yaw) * cosP * FOLLOW.distance,
         );
         tw.targetLook.set(charPos.x, FOLLOW.lookHeight, charPos.z);
         tw.progress = 0;
@@ -192,20 +205,17 @@ export function CameraController(): null {
 
     // ── Dialogue: parked behind the character ───────────────
     if (s.introPhase === 'dialogue') {
-      const { charPos, charFacing } = s;
-      // Smoothly track the character's facing so the shot stays stable
-      // but isn't jarring if charFacing changes (shouldn't normally).
-      const factor = 1 - Math.exp(-FOLLOW.yawLerp * delta);
-      followCamYawRef.current = lerpAngle(
-        followCamYawRef.current,
-        charFacing,
-        factor,
-      );
+      const { charPos } = s;
+      // Stationary shot at the default orbit pose. Mouse drag is gated
+      // off during dialogue (see MouseOrbitController), so yaw/pitch
+      // refs stay at their post-zoom values.
       const yaw = followCamYawRef.current;
+      const pitch = followCamPitchRef.current;
+      const cosP = Math.cos(pitch);
       camera.position.set(
-        charPos.x - Math.sin(yaw) * (FOLLOW.distance * 0.9),
-        FOLLOW.height * 0.95,
-        charPos.z - Math.cos(yaw) * (FOLLOW.distance * 0.9),
+        charPos.x - Math.sin(yaw) * cosP * (FOLLOW.distance * 0.9),
+        Math.sin(pitch) * (FOLLOW.distance * 0.9),
+        charPos.z - Math.cos(yaw) * cosP * (FOLLOW.distance * 0.9),
       );
       scratchLook.set(charPos.x, FOLLOW.lookHeight + 0.1, charPos.z);
       camera.lookAt(scratchLook);
@@ -213,23 +223,45 @@ export function CameraController(): null {
       return;
     }
 
-    // ── Follow: third-person follow camera (FIXED yaw) ──────
+    // ── Follow: third-person orbit camera ────────────────────
     //
-    // The camera yaw is locked to whatever followCamYawRef was set to
-    // at the end of the intro. Movement keys do NOT rotate the view —
-    // they only translate the character (and the camera follows the
-    // character's position with the same fixed offset). This is what
-    // the user asked for: WASD/arrows step the avatar around without
-    // changing the perspective.
+    // Mouse drag steers `targetCamYawRef` / `targetCamPitchRef` (handled
+    // by MouseOrbitController). This branch lerps the "current" refs
+    // toward the targets each frame and recomputes the camera position
+    // from spherical coords around the character.
+    //
+    //   pos = char + (
+    //     -sin(yaw) * cos(pitch) * dist,
+    //      sin(pitch) * dist,
+    //     -cos(yaw) * cos(pitch) * dist,
+    //   )
+    //
+    // PlayerController reads followCamYawRef.current to compute
+    // camera-relative WASD movement, so the controls always feel right
+    // relative to the current view.
     {
       const { charPos } = s;
+      // Smooth lerp toward the mouse-driven targets.
+      const factor = 1 - Math.exp(-FOLLOW.yawLerp * delta);
+      followCamYawRef.current = lerpAngle(
+        followCamYawRef.current,
+        targetCamYawRef.current,
+        factor,
+      );
+      followCamPitchRef.current +=
+        (targetCamPitchRef.current - followCamPitchRef.current) * factor;
+
       const yaw = followCamYawRef.current;
+      const pitch = followCamPitchRef.current;
       const sinY = Math.sin(yaw);
       const cosY = Math.cos(yaw);
+      const sinP = Math.sin(pitch);
+      const cosP = Math.cos(pitch);
+
       scratchPos.set(
-        charPos.x - sinY * FOLLOW.distance,
-        FOLLOW.height,
-        charPos.z - cosY * FOLLOW.distance,
+        charPos.x - sinY * cosP * FOLLOW.distance,
+        FOLLOW.lookHeight + sinP * FOLLOW.distance,
+        charPos.z - cosY * cosP * FOLLOW.distance,
       );
       const posFactor = 1 - Math.exp(-FOLLOW.lerp * delta);
       camera.position.lerp(scratchPos, posFactor);

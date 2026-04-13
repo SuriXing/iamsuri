@@ -1,6 +1,10 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Edges } from '@react-three/drei';
 import * as THREE from 'three';
+
+// Shared dark outline (matches the rest of the scene's dark-theme edge color).
+const EDGE_COLOR = '#0a0a14';
 
 const LANTERN_POSITIONS: ReadonlyArray<readonly [number, number]> = [
   [-1.5, -1.5],
@@ -66,6 +70,7 @@ export function HallwayLanterns() {
             <mesh position={[0, LANTERN_BASE_Y + 0.2, 0]} castShadow>
               <boxGeometry args={[0.28, 0.05, 0.28]} />
               <meshPhongMaterial color="#3a2512" flatShading />
+              <Edges color={EDGE_COLOR} lineWidth={1.5} />
             </mesh>
             {/* Top cap point (small pyramid/pagoda accent) */}
             <mesh position={[0, LANTERN_BASE_Y + 0.26, 0]}>
@@ -89,6 +94,7 @@ export function HallwayLanterns() {
             <mesh position={[0, LANTERN_BASE_Y, 0]} castShadow receiveShadow>
               <boxGeometry args={[0.22, 0.3, 0.22]} />
               <meshPhongMaterial color="#a0522d" flatShading />
+              <Edges color={EDGE_COLOR} lineWidth={1.5} />
             </mesh>
 
             {/* Bottom plate */}
@@ -110,12 +116,14 @@ export function HallwayLanterns() {
               />
             </mesh>
 
-            {/* Warm point light */}
+            {/* Warm point light — F3.21: tightened from intensity 1.1 ×
+                distance 6.5 (heavy 4-way overlap) to intensity 0.8 ×
+                distance 4.5 so neighboring lanterns don't double-bake. */}
             <pointLight
               position={[0, LANTERN_BASE_Y - 0.1, 0]}
               color="#ffa860"
-              intensity={1.1}
-              distance={6.5}
+              intensity={0.8}
+              distance={4.5}
             />
           </group>
         </group>

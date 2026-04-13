@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { PARTICLE_COUNT, PARTICLES, COLORS } from '../constants';
+import { PARTICLE_COUNT, PARTICLES } from '../constants';
 import { makeRng } from '../util/rand';
 
 interface ParticleBuffers {
@@ -16,17 +16,22 @@ interface ParticleBuffers {
   driftAmp: Float32Array;   // XZ drift amplitude
   driftFreq: Float32Array;  // XZ drift angular speed
   size: Float32Array;
+  // Precomputed scale (size / 0.04 base cube) — read by index in useFrame to
+  // avoid ~150 divisions per frame. F3.21 perf trim.
+  sizeScale: Float32Array;
   phase: Float32Array;
   // Color name list (resolved at mount via setColorAt)
   colorHex: string[];
 }
 
+// F3.21: trimmed from 5 saturated hues (gold/green/purple/blue/red) to a
+// 3-hue warm/pastel palette. Reviewer A flagged the cool blue + saturated
+// red/purple as fighting the warm dorm-room ambient. Now: warm gold,
+// dusty pink, and amber/orange for a cohesive "candle dust" mood.
 const PARTICLE_COLORS = [
-  COLORS.gold,
-  COLORS.green,
-  COLORS.purple,
-  '#3b82f6',
-  COLORS.red,
+  '#fbbf24', // warm gold
+  '#f4a8b8', // dusty pink
+  '#ff9840', // amber/orange
 ];
 
 function buildBuffers(): ParticleBuffers {
@@ -40,6 +45,7 @@ function buildBuffers(): ParticleBuffers {
   const driftAmp = new Float32Array(PARTICLE_COUNT);
   const driftFreq = new Float32Array(PARTICLE_COUNT);
   const size = new Float32Array(PARTICLE_COUNT);
+  const sizeScale = new Float32Array(PARTICLE_COUNT);
   const phase = new Float32Array(PARTICLE_COUNT);
   const colorHex: string[] = new Array(PARTICLE_COUNT);
   for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -47,6 +53,8 @@ function buildBuffers(): ParticleBuffers {
     py[i] = rng() * PARTICLES.ceiling;
     pz[i] = (rng() - 0.5) * PARTICLES.spread;
     size[i] = 0.02 + rng() * 0.04;
+    // Precomputed once: each frame's per-instance scale uses this (no division).
+    sizeScale[i] = size[i] / 0.04;
     vx[i] = (rng() - 0.5) * 0.005;
     vy[i] = 0.003 + rng() * 0.008;
     vz[i] = (rng() - 0.5) * 0.005;
@@ -57,7 +65,7 @@ function buildBuffers(): ParticleBuffers {
     phase[i] = rng() * Math.PI * 2;
     colorHex[i] = PARTICLE_COLORS[Math.floor(rng() * PARTICLE_COLORS.length)];
   }
-  return { px, py, pz, vx, vy, vz, driftAmp, driftFreq, size, phase, colorHex };
+  return { px, py, pz, vx, vy, vz, driftAmp, driftFreq, size, sizeScale, phase, colorHex };
 }
 
 const BUF: ParticleBuffers = buildBuffers();
@@ -77,7 +85,7 @@ export function Particles() {
     if (!mesh) return;
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       DUMMY.position.set(BUF.px[i], BUF.py[i], BUF.pz[i]);
-      DUMMY.scale.setScalar(BUF.size[i] / 0.04);
+      DUMMY.scale.setScalar(BUF.sizeScale[i]);
       DUMMY.updateMatrix();
       mesh.setMatrixAt(i, DUMMY.matrix);
       TMP_COLOR.set(BUF.colorHex[i]);
@@ -112,7 +120,7 @@ export function Particles() {
       BUF.py[i] = y;
       BUF.pz[i] = z;
       DUMMY.position.set(x, y, z);
-      DUMMY.scale.setScalar(BUF.size[i] / 0.04); // base geometry is 0.04 cube
+      DUMMY.scale.setScalar(BUF.sizeScale[i]); // precomputed (size / 0.04)
       DUMMY.updateMatrix();
       mesh.setMatrixAt(i, DUMMY.matrix);
     }

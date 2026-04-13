@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
+import { PRODUCT_ROOM_CONTENT } from '../../../data/productRoom';
 import type { InteractableData } from '../../store/worldStore';
 
 const TABLE_LEGS: ReadonlyArray<readonly [number, number]> = [
@@ -11,18 +12,10 @@ const TABLE_LEGS: ReadonlyArray<readonly [number, number]> = [
   [0.8, 0.3],
 ];
 
-const PRODUCT_COLORS = ['#e94560', '#ffd700', '#22c55e'];
+const PRODUCT_COLORS: ReadonlyArray<string> = PRODUCT_ROOM_CONTENT.showcaseCubeColors;
 
-const PROBLEM_SOLVER: InteractableData = {
-  title: 'Problem Solver',
-  body: 'Drop your worry in, get help thinking it through.',
-  link: 'https://problem-solver.vercel.app',
-};
-const MENTOR_TABLE: InteractableData = {
-  title: 'Mentor Table',
-  body: 'Chat with great minds — practice thinking with AI versions of historical figures.',
-  link: 'https://mentor-table.vercel.app',
-};
+const PROBLEM_SOLVER: InteractableData = PRODUCT_ROOM_CONTENT.dialogues.problemSolver;
+const MENTOR_TABLE: InteractableData = PRODUCT_ROOM_CONTENT.dialogues.mentorTable;
 
 interface ScreenStandProps {
   ox: number;

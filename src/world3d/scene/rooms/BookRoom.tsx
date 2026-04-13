@@ -1,15 +1,11 @@
 import { ROOM_BY_ID } from '../../data/rooms';
 import { Bookshelf } from '../parts/Bookshelf';
+import { BOOK_ROOM_CONTENT } from '../../../data/bookRoom';
 import type { InteractableData } from '../../store/worldStore';
 
-const SHELF_BOOK_COLORS: ReadonlyArray<string> = [
-  '#e94560', '#3b82f6', '#ffd700', '#22c55e', '#a78bfa', '#f97316',
-];
+const SHELF_BOOK_COLORS: ReadonlyArray<string> = BOOK_ROOM_CONTENT.shelfBookColors;
 
-const BLOG_INTERACTABLE: InteractableData = {
-  title: 'Blog',
-  body: 'Why I Build Things · Apr 2026. Learning by Shipping · Mar 2026. (Coming soon)',
-};
+const BLOG_INTERACTABLE: InteractableData = BOOK_ROOM_CONTENT.dialogues.blog;
 
 export function BookRoom() {
   const { center } = ROOM_BY_ID.book;

@@ -1,16 +1,11 @@
 import { ROOM_BY_ID } from '../../data/rooms';
 import { Bookshelf } from '../parts/Bookshelf';
 import { DeskLamp } from '../parts/DeskLamp';
+import { MY_ROOM_CONTENT } from '../../../data/myRoom';
 import type { InteractableData } from '../../store/worldStore';
 
-const HEADBOARD_INTERACTABLE: InteractableData = {
-  title: 'My Bed',
-  body: 'A cozy corner. Sometimes the best ideas come right before sleep.',
-};
-const MONITOR_INTERACTABLE: InteractableData = {
-  title: 'About Suri',
-  body: 'Suri Xing, Grade 8 — Math · Design · Debate · Building. Check back for more.',
-};
+const HEADBOARD_INTERACTABLE: InteractableData = MY_ROOM_CONTENT.dialogues.bed;
+const MONITOR_INTERACTABLE: InteractableData = MY_ROOM_CONTENT.dialogues.monitor;
 
 const PINK = '#f4a8b8';
 const PINK_SOFT = '#f8c4d0';
@@ -34,7 +29,7 @@ const DESK_LEGS: ReadonlyArray<readonly [number, number]> = [
   [0.6, 0.7],
 ];
 
-const SHELF_BOOK_COLORS: ReadonlyArray<string> = ['#e94560', '#3b82f6', '#f4a8b8', '#f8c4d0', '#ffd700'];
+const SHELF_BOOK_COLORS: ReadonlyArray<string> = MY_ROOM_CONTENT.shelfBookColors;
 
 export function MyRoom() {
   const { center } = ROOM_BY_ID.myroom;

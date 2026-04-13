@@ -3,12 +3,10 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
 import { FLOOR_Y } from '../../constants';
+import { IDEA_LAB_CONTENT } from '../../../data/ideaLab';
 import type { InteractableData } from '../../store/worldStore';
 
-const IDEA_BOARD_INTERACTABLE: InteractableData = {
-  title: 'Idea Board',
-  body: 'AI Study Buddy · Debate Trainer · Visual Math. Ideas brewing in the lab.',
-};
+const IDEA_BOARD_INTERACTABLE: InteractableData = IDEA_LAB_CONTENT.dialogues.ideaBoard;
 
 const MONET = {
   cream:    '#ead9b8',

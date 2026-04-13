@@ -30,6 +30,11 @@ const CORK = '#c8985a';
 // heading bar and circuit-board top so they harmonize with the amber bulb.
 const COPPER_ACCENT = '#c97a2a';
 
+// F3.21: pegboard hole grid offsets — hoisted from inline JSX to module scope
+// so the literal arrays aren't re-created on every render.
+const PEG_HOLE_X: ReadonlyArray<number> = [-0.6, -0.3, 0.0, 0.3, 0.6];
+const PEG_HOLE_Y: ReadonlyArray<number> = [-0.3, 0.0, 0.3];
+
 // --- Ambient spark layer (F3.17) ---
 const SPARK_COUNT = 14;
 const SPARK_DRIFT_SPEED = 0.35;   // world units / sec
@@ -559,8 +564,8 @@ export function IdeaLab() {
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
       {/* Pegboard hole pattern (darker dots) */}
-      {[-0.6, -0.3, 0.0, 0.3, 0.6].map((dx, i) =>
-        [-0.3, 0.0, 0.3].map((dy, j) => (
+      {PEG_HOLE_X.map((dx, i) =>
+        PEG_HOLE_Y.map((dy, j) => (
           <mesh key={`hole-${i}-${j}`} position={[pegboardX + dx, pegboardY + dy, pegboardZ + 0.021]}>
             <boxGeometry args={[0.02, 0.02, 0.002]} />
             <meshPhongMaterial color="#2a1a0a" flatShading />

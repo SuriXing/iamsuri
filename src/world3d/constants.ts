@@ -84,10 +84,10 @@ export const DOOR = {
 
 // F3.7 — door/wall polish tunables (additive, not in frozen blocks).
 export const DOOR_POLISH = {
-  /** Knob sphere radius, 1.5x the F3.5 value (0.055 → 0.0825). */
-  knobRadius: 0.0825,
-  /** Escutcheon plate (width, height, depth). */
-  escutcheon: [0.18, 0.28, 0.025] as const,
+  /** Knob sphere radius — F3.21 bumped 1.5x (0.0825 → 0.124) for game-distance read. */
+  knobRadius: 0.124,
+  /** Escutcheon plate (width, height, depth) — F3.21 widened. */
+  escutcheon: [0.22, 0.34, 0.03] as const,
   /** Warm spill light inside each door opening. */
   spillLight: {
     color: '#ffb060',

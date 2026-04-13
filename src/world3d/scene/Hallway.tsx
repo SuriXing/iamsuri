@@ -145,7 +145,7 @@ export function Hallway() {
         <meshPhongMaterial color="#241608" flatShading />
       </mesh>
 
-      {/* Rug — F3.19: base layer de-emissived, inner border keeps a faint warm kiss */}
+      {/* Rug — F3.19/F3.21: both layers neutral to let lanterns own the warm glow band */}
       <mesh position={[0, 0.12, 0]} receiveShadow>
         <boxGeometry args={[1.8, 0.02, 1.0]} />
         <meshPhongMaterial color="#8B4513" flatShading />

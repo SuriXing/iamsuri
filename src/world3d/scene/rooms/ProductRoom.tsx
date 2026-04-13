@@ -218,6 +218,13 @@ export function ProductRoom() {
         <boxGeometry args={[3.5, 0.005, 0.08]} />
         <meshPhongMaterial color={CYAN} emissive={CYAN} emissiveIntensity={0.9} flatShading />
       </mesh>
+      {/* F3.21 two-tone lighting fake — cool floor band cooling toward the
+          server rack (back-left). Thin overlay ~5% darker/cooler than the
+          base slate, sized to cover the rack quadrant. */}
+      <mesh position={[ox - 1.0, 0.184, oz + 0.6]} receiveShadow>
+        <boxGeometry args={[1.6, 0.005, 1.3]} />
+        <meshPhongMaterial color="#161e2f" flatShading />
+      </mesh>
 
       {/* ----- DESK (top + trim + tapered legs) ----- */}
       <mesh position={[deskX, deskY, deskZ]} castShadow receiveShadow>

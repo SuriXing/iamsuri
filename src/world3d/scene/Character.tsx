@@ -275,13 +275,19 @@ export function Character() {
           <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
 
-        {/* HERO ELEMENT — lab coat. Thin white box overlapping the front torso.
-            Visible at 40px, instant "scientist" silhouette read. Theme-aware
-            off-cream in light theme so it still separates from the gold. */}
-        <mesh position={[0, 1.06, 0.09]} castShadow receiveShadow>
-          <boxGeometry args={[0.42, 0.40, 0.10]} />
+        {/* HERO ELEMENT — lab coat. F3.21: wraps the FULL torso (front + back)
+            so it reads from the default follow-cam (which sees the back). The
+            box now spans the body depth (0.30) instead of a thin front panel. */}
+        <mesh position={[0, 1.06, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.44, 0.40, 0.30]} />
           <meshPhongMaterial color={labCoatColor} flatShading />
           <Edges color={edgeColor} lineWidth={1.5} />
+        </mesh>
+        {/* Lab coat front placket — thin proud strip down center front for
+            silhouette detail (keeps the front-cam read from F3.4 reviews). */}
+        <mesh position={[0, 1.06, 0.155]}>
+          <boxGeometry args={[0.06, 0.40, 0.02]} />
+          <meshPhongMaterial color={COLORS.pink} emissive={COLORS.pink} emissiveIntensity={0.25} flatShading />
         </mesh>
 
         {/* Collar / scarf — thin pink band at the neckline. Slight emissive

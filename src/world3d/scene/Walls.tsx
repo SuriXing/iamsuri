@@ -161,6 +161,13 @@ function WallProp({ kind, x, z, y, faceZ, edgeColor }: WallPropProps) {
             flatShading
           />
         </mesh>
+        {/* F3.21 — real warm point light cast on adjacent wall surfaces */}
+        <pointLight
+          position={[0, 0, faceZ * 0.2]}
+          color="#ffaa55"
+          intensity={0.5}
+          distance={2.0}
+        />
       </group>
     );
   }

@@ -49,7 +49,7 @@ export default function App3D({ onExitTo2D }: Props) {
             near: CAMERA.near,
             far: CAMERA.far,
           }}
-          gl={{ antialias: true }}
+          gl={{ antialias: true, powerPreference: 'high-performance' }}
         >
           <World />
         </Canvas>

@@ -55,8 +55,8 @@ const ACCENT_LIGHT_AMPLITUDE = 0.12;
 const ACCENT_LIGHT_SPEED = 1.9;
 // F3.15 — hero focal animations: slow globe spin + gold frame breathing glow.
 const GLOBE_SPIN_SPEED = 0.35;
-const FRAME_GLOW_BASE = 0.22;
-const FRAME_GLOW_AMPLITUDE = 0.18;
+const FRAME_GLOW_BASE = 0.35;
+const FRAME_GLOW_AMPLITUDE = 0.08;
 const FRAME_GLOW_SPEED = 1.3;
 
 // Dust mote scatter (deterministic).
@@ -158,6 +158,14 @@ export function BookRoom() {
           <meshPhongMaterial color={i % 2 === 0 ? WOOD_MID : WOOD_LIGHT} flatShading />
         </mesh>
       ))}
+      {/* F3.21 two-tone lighting fake — thin warm overlay band on the half
+          of the floor nearest the reading lamp + chair (positive Z, eastern
+          half). ~5% L lighter and warmer than WOOD_LIGHT. Sits 0.005 above
+          the planks; thin so it doesn't introduce z-fight at the seam. */}
+      <mesh position={[ox + 0.6, 0.131, oz + 0.9]} receiveShadow>
+        <boxGeometry args={[2.6, 0.005, 2.0]} />
+        <meshPhongMaterial color="#a8633a" flatShading />
+      </mesh>
       {/* Central amber rug */}
       <mesh position={[ox, 0.135, oz + 0.5]} receiveShadow>
         <boxGeometry args={[2.8, 0.02, 2.0]} />

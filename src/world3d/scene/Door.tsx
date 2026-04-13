@@ -21,6 +21,9 @@ const FRAME_EMISSIVE = '#4a2c0a';
 const FRAME_TRIM_COLOR = '#3a2410'; // slightly darker than frame for trim/baseboard
 // Frame molding overlay — ~15% lighter than the frame for value separation.
 const FRAME_MOLDING_COLOR = '#8a6732';
+// F3.21: chunky dark jamb/header overlay — sits proud of the wall so the doorway
+// reads as architectural framing, not a flat seam in a colored panel.
+const JAMB_DARK_COLOR = '#2a1a0c';
 // Door slab lives in a DIFFERENT hue family from walls (walls = neutral brown,
 // door = deeper red-brown). Drives the designer's "value separation" ask.
 const PANEL_BASE = '#5a2814';
@@ -72,18 +75,23 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
   const angleRef = useRef<number>(unlocked ? DOOR.openAngle : 0);
 
   // Per-door deterministic wood tones for the 3-strip panel.
-  // Fix 1: push L delta from ±0.04 → ±0.10 (± half of 0.20) for visibility at game distance.
+  // F3.21: rails are guaranteed darker than the field by at least 0.15 L
+  // (was a free ±0.10 jitter that allowed rails to land brighter than the
+  // field). Field still gets a small jitter for per-door variation; rails
+  // are derived as `field - 0.16 ± small`. Inset/mullion derive from field.
   const panelTints = useMemo(() => {
     const rng = makeRng(hashRoomId(roomId));
-    const middle = tintHex(PANEL_BASE, (rng() - 0.5) * 0.20);
+    const middle = tintHex(PANEL_BASE, (rng() - 0.5) * 0.06 + 0.04);
+    const railJitter = () => (rng() - 0.5) * 0.04;
     return {
-      top:    tintHex(PANEL_BASE, (rng() - 0.5) * 0.20),
+      // Rails: at least -0.16 L darker than the field, plus tiny jitter.
+      top:    tintHex(middle, -0.16 + railJitter()),
       middle,
-      bottom: tintHex(PANEL_BASE, (rng() - 0.5) * 0.20),
-      // Inset panel sits -0.08 L darker than the middle field strip.
-      inset:  tintHex(middle, -0.08),
+      bottom: tintHex(middle, -0.16 + railJitter()),
+      // Inset panel sits another -0.10 L darker than the rails to read as a shadow drop.
+      inset:  tintHex(middle, -0.26),
       // Center mullion: darker wood so it reads as an architectural divider.
-      mullion: tintHex(middle, -0.12),
+      mullion: tintHex(middle, -0.20),
     };
   }, [roomId]);
 
@@ -165,6 +173,21 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
   const lintelArgs: [number, number, number] = horizontal
     ? [DOOR.width + DOOR.postW * 2, 0.18, 0.22]
     : [0.22, 0.18, DOOR.width + DOOR.postW * 2];
+
+  // F3.21: dark architectural jamb overlays — slightly wider than the base
+  // posts, slightly proud of the wall, so the doorway reads as a real cut-in
+  // frame instead of a colored seam. Three pieces: left jamb, right jamb,
+  // top header. Width is base postW + 0.05; depth bumped 0.04 proud of the
+  // existing 0.18 post to push them out of the wall plane.
+  const jambW = DOOR.postW + 0.05;
+  const jambDepth = 0.26;
+  const jambArgs: [number, number, number] = horizontal
+    ? [jambW, DOOR.frameHeight + 0.04, jambDepth]
+    : [jambDepth, DOOR.frameHeight + 0.04, jambW];
+  const headerArgs: [number, number, number] = horizontal
+    ? [DOOR.width + jambW * 2, 0.22, jambDepth]
+    : [jambDepth, 0.22, DOOR.width + jambW * 2];
+  const headerPos: [number, number, number] = [x, DOOR.frameHeight + 0.05, z];
 
   // Thin trim board on top of the lintel (0.06 thick, wider overhang so it
   // overlaps the lintel top by 0.02 and kills the F3.6 "visible gap").
@@ -263,7 +286,25 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
 
   return (
     <group>
-      {/* Frame posts */}
+      {/* F3.21 — chunky DARK jamb overlays. Three architectural pieces
+          (left jamb, right jamb, top header) sit proud of the wall in a
+          much darker wood tone so the doorway reads as cut-in framing. */}
+      <mesh position={postLeft} castShadow receiveShadow>
+        <boxGeometry args={jambArgs} />
+        <meshPhongMaterial color={JAMB_DARK_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.18} flatShading />
+        <Edges color={edgeColor} lineWidth={1.4} />
+      </mesh>
+      <mesh position={postRight} castShadow receiveShadow>
+        <boxGeometry args={jambArgs} />
+        <meshPhongMaterial color={JAMB_DARK_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.18} flatShading />
+        <Edges color={edgeColor} lineWidth={1.4} />
+      </mesh>
+      <mesh position={headerPos} castShadow receiveShadow>
+        <boxGeometry args={headerArgs} />
+        <meshPhongMaterial color={JAMB_DARK_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.18} flatShading />
+        <Edges color={edgeColor} lineWidth={1.4} />
+      </mesh>
+      {/* Frame posts (lighter inner trim, tucked behind jambs) */}
       <mesh position={postLeft} castShadow receiveShadow>
         <boxGeometry args={postArgs} />
         <meshPhongMaterial color={FRAME_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.3} flatShading />

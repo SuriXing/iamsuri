@@ -118,10 +118,11 @@ export function PlayerController(): null {
     if (nx === curX && nz === curZ) return;
 
     s.setCharPos(nx, nz);
-    // In follow mode, face the direction we actually moved.
-    if (!s.fpActive) {
-      s.setCharFacing(Math.atan2(nx - curX, nz - curZ));
-    }
+    // Character facing is intentionally NOT updated in follow mode so
+    // the avatar doesn't spin around on direction changes (and so the
+    // camera, which is locked to followCamYawRef, doesn't drift).
+    // Down/back is a true reverse step — character walks backwards
+    // while still facing the camera-forward direction.
   });
 
   return null;

@@ -213,17 +213,16 @@ export function CameraController(): null {
       return;
     }
 
-    // ── Follow: third-person chase camera ───────────────────
+    // ── Follow: third-person follow camera (FIXED yaw) ──────
+    //
+    // The camera yaw is locked to whatever followCamYawRef was set to
+    // at the end of the intro. Movement keys do NOT rotate the view —
+    // they only translate the character (and the camera follows the
+    // character's position with the same fixed offset). This is what
+    // the user asked for: WASD/arrows step the avatar around without
+    // changing the perspective.
     {
-      const { charPos, charFacing } = s;
-      // Smoothed camera yaw chases the character's facing so the shot
-      // always sits behind them without snapping.
-      const factor = 1 - Math.exp(-FOLLOW.yawLerp * delta);
-      followCamYawRef.current = lerpAngle(
-        followCamYawRef.current,
-        charFacing,
-        factor,
-      );
+      const { charPos } = s;
       const yaw = followCamYawRef.current;
       const sinY = Math.sin(yaw);
       const cosY = Math.cos(yaw);
@@ -232,11 +231,8 @@ export function CameraController(): null {
         FOLLOW.height,
         charPos.z - cosY * FOLLOW.distance,
       );
-      // Smooth positional follow.
       const posFactor = 1 - Math.exp(-FOLLOW.lerp * delta);
       camera.position.lerp(scratchPos, posFactor);
-      // Aim slightly forward of the character so the upcoming path is
-      // visible in the lower half of the screen.
       scratchLook.set(
         charPos.x + sinY * FOLLOW.lookAhead,
         FOLLOW.lookHeight,

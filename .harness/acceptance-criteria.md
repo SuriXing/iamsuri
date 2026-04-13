@@ -1,44 +1,79 @@
-# Acceptance Criteria — 3D World Production Refactor
+# Acceptance Criteria — F3 Polish Pass
 
-## Tech Stack Decision (locked)
-- **React 19 + TypeScript** (already in project)
-- **@react-three/fiber** for React-based Three.js
-- **@react-three/drei** for helpers (PointerLockControls, raycasting, text)
-- **Zustand** for global state (rooms, doors, player, camera mode)
-- **Vite** (existing build tool)
-- **Single dev server, single build, single deployable**
+## What "done" looks like
 
-Rationale: React Three Fiber makes 3D scenes composable, testable, and type-safe. Zustand avoids prop drilling for cross-cutting game state. All existing tooling (Vite, TS, Playwright, ESLint) continues to work.
+The 3D world (`src/world3d/scene/**`) reads as **精致** (refined, well-crafted)
+rather than blocky-prototype. Every visible furniture, character, room and
+ambient component has been touched in at least one of these ways:
 
-## Definition of Done
+- material variation (per-instance hue/lightness, deterministic via mulberry32)
+- bevels / trim / contrasting top edges or baseboards
+- drei `<Edges>` outline pop on key silhouettes
+- subtle ambient micro-animations (≤ ±5% pulse, ≤ ±2° flutter)
+- improved proportions (no equal-thickness slab look)
+- joint detail (chamfer / corner block / bracket)
+- material expressiveness (wood matte, metal slight specular)
+- 1–2 clutter props per room
+- accent point lights to break up flat shading
 
-1. The pre-refactor monolithic HTML is gone or reduced to a stub. The 3D world is implemented in TypeScript React components under `src/world3d/` and mounted via Vite as an MPA entry at `./3d-world.html` (project root, served at `/iamsuri/3d-world.html`). Note: the entry HTML lives at the project root, not under `public/` — files in `public/` bypass Vite's bundler. The legacy pre-refactor copy at `public/3d-world-legacy.html` is separate and stays as a reference.
-2. Scene graph is decomposed into typed components: `<World>`, `<Hallway>`, `<Room id>`, `<Door>`, `<Character>`, `<FirstPersonCamera>`, `<Interactable>`, per-room content (`<MyRoom>`, `<ProductRoom>`, etc.).
-3. Global state lives in a Zustand store at `src/store/worldStore.ts` with typed slices: `viewMode` ('overview' | roomId), `fp` (yaw, pitch, active), `doors` (locked/unlocked), `charPos`.
-4. Room config is data-driven: `src/data/rooms3d.ts` exports an array of room definitions (id, label, center, color, interactables). Adding a room = adding an entry.
-5. All 11 existing Playwright tests still pass against the new implementation (URL may change to `/iamsuri/3d-world` instead of `.html`).
-6. `npm run build` succeeds with zero TypeScript errors and zero ESLint errors.
-7. `npm run lint` passes clean (no new violations).
-8. Bundle split works: the 3D route lazy-loads so the 2D home page is unaffected (or stays under 150 KB initial JS).
-9. The 2D→3D switcher in `src/App.tsx` navigates to the React-based 3D route instead of the HTML file.
-10. Code review by independent reviewers confirms:
-    - Clear component boundaries with single responsibilities
-    - No `any` types
-    - No inline magic numbers (constants extracted)
-    - Accessibility: keyboard interaction docs, alt text where applicable
-    - Performance: R3F best practices (useFrame not setInterval, no geometry allocation in render loop)
+## Hard constraints (must NOT change)
 
-## How to Verify
+- `src/world3d/data/rooms.ts`
+- `src/world3d/scene/CameraController.tsx`
+- `src/world3d/scene/PlayerController.tsx`
+- `src/world3d/scene/MouseOrbitController.tsx`
+- `src/world3d/scene/colliders.ts` (and existing collider registrations)
+- `src/world3d/store/worldStore.ts`
+- `src/world3d/hud/*`
+- `src/world3d/constants.ts` FOLLOW / CAMERA / FP / INTRO / ROOM / GAP
+- 4-room layout, door positions, character scale (0.9), intro flow
+- `tests/3d-world.test.cjs` test assertions
+- Any file outside `src/world3d/scene/` and `src/world3d/util/`
 
-- `npm run build` → passes
-- `npm run lint` → passes
-- `npx playwright test --config=playwright.config.cjs` → all 11 pass (test URLs updated to new route)
-- Visual: all existing features still work — door unlock, walk-to-enter, first-person inside rooms, interactables, exit, theme toggle, character movement, 2D/3D switcher
-- Bundle: `dist/assets/*.js` — the 3D chunk is separated from the main chunk
+## How to verify each tick
 
-## Out of Scope (v2+)
-- Adding new rooms or content
-- Changing visual design
-- Adding assets/textures (still programmatic geometry)
-- Multiplayer
-- Saving progress beyond localStorage
+- `cd /Users/surixing/Code/iamsuri && npx tsc -b` — clean
+- `npm run lint` — clean (no new violations beyond baseline 0)
+- `npm run build` — clean
+- `npx playwright test --config=playwright.config.cjs` — **12/12 passing**
+- Per implement tick: a Playwright screenshot of the affected component, saved
+  to `.harness/nodes/{NODE_ID}/run_{N}/screenshot-*.png`
+- Per review tick: at least 2 independent subagent eval files with severity
+  emojis (🔴 / 🟡 / 🔵)
+
+## Performance budget
+
+- 60fps on mid-range hardware (no visible jank)
+- Triangle count growth ≤ 50% (currently ~5k)
+- Draw call growth ≤ 30% (currently ~80)
+- All useFrame callbacks: zero per-frame allocation (no `new THREE.Vector3()`
+  inside the loop). Use module-scope scratch vectors.
+- All derived geometry / arrays inside `useMemo`
+
+## How quality is evaluated (final gate)
+
+Two independent designer subagents review with this rubric:
+
+| Dimension | Weight |
+|---|---|
+| Material variation | 15 |
+| Edge / silhouette pop | 15 |
+| Proportions | 15 |
+| Micro-animations | 15 |
+| Color harmony | 10 |
+| Clutter / props | 10 |
+| Character refinement | 10 |
+| Performance feel | 10 |
+
+Score 0–100 each, average them. Ship gate: **≥ 88 AND no 🔴 critical findings**.
+Any dimension < 70% from a reviewer = 🟡 ITERATE → fix unit before re-scoring.
+
+## No regressions checklist
+
+- collision still blocks walking through walls
+- door unlock still requires walking up + U key
+- intro static→zoom→dialogue→follow flow still plays
+- mouse orbit drag still rotates camera
+- arrow keys still walk character (Up forward, Down back, Left/Right strafe)
+- theme toggle still flips both HTML overlay and 3D scene background
+- 2D ↔ 3D switcher still works

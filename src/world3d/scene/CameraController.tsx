@@ -225,15 +225,23 @@ export function CameraController(): null {
         factor,
       );
       const yaw = followCamYawRef.current;
+      const sinY = Math.sin(yaw);
+      const cosY = Math.cos(yaw);
       scratchPos.set(
-        charPos.x - Math.sin(yaw) * FOLLOW.distance,
+        charPos.x - sinY * FOLLOW.distance,
         FOLLOW.height,
-        charPos.z - Math.cos(yaw) * FOLLOW.distance,
+        charPos.z - cosY * FOLLOW.distance,
       );
       // Smooth positional follow.
       const posFactor = 1 - Math.exp(-FOLLOW.lerp * delta);
       camera.position.lerp(scratchPos, posFactor);
-      scratchLook.set(charPos.x, FOLLOW.lookHeight, charPos.z);
+      // Aim slightly forward of the character so the upcoming path is
+      // visible in the lower half of the screen.
+      scratchLook.set(
+        charPos.x + sinY * FOLLOW.lookAhead,
+        FOLLOW.lookHeight,
+        charPos.z + cosY * FOLLOW.lookAhead,
+      );
       camera.lookAt(scratchLook);
       tw.currentLook.copy(scratchLook);
     }

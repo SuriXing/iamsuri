@@ -35,11 +35,18 @@ export const CAMERA = {
 /** Third-person follow camera offsets (character-local frame). */
 export const FOLLOW = {
   /** How far behind the character the camera sits. */
-  distance: 4.5,
-  /** How high above the ground the camera sits. */
-  height: 3.0,
-  /** How high on the character the camera looks. */
-  lookHeight: 1.0,
+  distance: 4.2,
+  /** How high above the ground the camera sits. Stays under ceiling
+   *  strips (y=2.8) and hallway lanterns but high enough to see the
+   *  upcoming path. */
+  height: 4.2,
+  /** How high on the character the camera looks. Slightly below head
+   *  height so the character's back is framed in the lower half of the
+   *  screen and the ground ahead is visible. */
+  lookHeight: 0.6,
+  /** How far forward of the character the camera aims. Positive values
+   *  show more of the upcoming path. */
+  lookAhead: 1.0,
   /** Softness of the camera follow (higher = snappier). */
   lerp: 6,
   /** Softness of the camera rotation chasing character facing. */

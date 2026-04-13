@@ -44,9 +44,12 @@ export function PlayerController(): null {
       if (k.has('a') || k.has('arrowleft')) mx -= 1;
       if (k.has('d') || k.has('arrowright')) mx += 1;
     } else {
-      // Follow mode: W moves away from camera, S toward, A/D strafe.
-      if (k.has('w') || k.has('arrowup')) mz -= 1;
-      if (k.has('s') || k.has('arrowdown')) mz += 1;
+      // Follow mode input convention:
+      //   mz > 0 = forward (in the direction the camera is looking)
+      //   mx > 0 = right (camera right)
+      // Up / W → forward. Down / S → back. Left / A → left. Right / D → right.
+      if (k.has('w') || k.has('arrowup')) mz += 1;
+      if (k.has('s') || k.has('arrowdown')) mz -= 1;
       if (k.has('a') || k.has('arrowleft')) mx -= 1;
       if (k.has('d') || k.has('arrowright')) mx += 1;
     }
@@ -65,31 +68,25 @@ export function PlayerController(): null {
       worldX = -sinY * mz + cosY * mx;
       worldZ = -cosY * mz - sinY * mx;
     } else {
-      // Follow mode. Camera looks toward character FROM yaw direction,
-      // so camera-forward = (-sin(yaw), -cos(yaw)). "W" (mz=-1) should
-      // move the character in camera-forward. "D" (mx=+1) strafes right
-      // relative to that forward.
-      //   camera_forward = (-sinY, -cosY)
-      //   camera_right   = (cosY, -sinY)
-      //   world = forward * (-mz) + right * mx
-      //         = (-sinY * -mz + cosY * mx, -cosY * -mz + -sinY * mx)
-      //         = (sinY * mz + cosY * mx, cosY * mz - sinY * mx)
-      // wait — easier: want W (mz=-1) to give camera_forward = (-sinY, -cosY):
-      //   worldX =  sinY * -mz + cosY *  mx = -sinY*mz + cosY*mx
-      // Let's derive fresh:
-      //   pressing W (mz=-1, mx=0) → move in (-sinY, -cosY) →
-      //     worldX = -sinY, worldZ = -cosY
-      //   pressing D (mz=0, mx=1) → move in (cosY, -sinY) →
-      //     worldX = cosY, worldZ = -sinY
-      // So:
-      //   worldX = -sinY*mz + cosY*mx  (no — check: W mz=-1 mx=0: -sinY*-1=sinY, not -sinY)
-      // Re-derive:
-      //   W: mz=-1, mx=0 → need worldX=-sinY, worldZ=-cosY
-      //     worldX = sinY*mz        → sinY*-1=-sinY ✓
-      //     worldZ = cosY*mz        → cosY*-1=-cosY ✓
-      //   D: mz=0, mx=1 → need worldX=cosY, worldZ=-sinY
-      //     worldX = sinY*mz + cosY*mx = 0 + cosY = cosY ✓
-      //     worldZ = cosY*mz - sinY*mx = 0 - sinY = -sinY ✓
+      // Follow mode.
+      //
+      // Camera sits behind the character, looking toward them. The camera's
+      // look direction is (sin(yaw), cos(yaw)), which is also the
+      // character's forward direction in world space (because the camera
+      // chases character facing).
+      //
+      //   forward = (sin(yaw), cos(yaw))   ← W / Up
+      //   right   = (cos(yaw), -sin(yaw))  ← D / Right
+      //
+      //   world = forward * mz + right * mx
+      //
+      // Check @ yaw=0 (camera at -Z, looking toward +Z):
+      //   W (mz=1, mx=0) → (0, 1)  ✓ +Z (into the screen)
+      //   D (mz=0, mx=1) → (1, 0)  ✓ +X (rightward on screen)
+      //
+      // Check @ yaw=π (camera at +Z, looking toward -Z, after turning around):
+      //   W (mz=1, mx=0) → (0, -1) ✓ still "into the screen"
+      //   D (mz=0, mx=1) → (-1, 0) ✓ still "rightward on screen"
       const yaw = followCamYawRef.current;
       const sinY = Math.sin(yaw);
       const cosY = Math.cos(yaw);

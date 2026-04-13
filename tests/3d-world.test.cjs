@@ -27,6 +27,10 @@ test.describe('3D World Landing Page', () => {
   });
 
   test('room labels are visible', async ({ page }) => {
+    // drei <Html> labels mount lazily; wait for the first one explicitly
+    // instead of relying on the global beforeEach timeout (which races
+    // under headless cold start).
+    await page.waitForSelector('#label-myroom', { timeout: 10000 });
     const labels = ['label-myroom', 'label-product', 'label-book', 'label-idealab'];
     for (const id of labels) {
       const el = await page.$(`#${id}`);

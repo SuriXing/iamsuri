@@ -70,14 +70,14 @@ export function Hallway() {
 
   return (
     <group>
-      {/* Hallway floor cross */}
+      {/* Hallway floor cross — F3.19: de-emissived to restore lantern visual authority */}
       <mesh position={[0, FLOOR_Y - 0.02, 0]} receiveShadow>
         <boxGeometry args={[HALL_WIDTH, 0.08, HALL_LEN]} />
-        <meshPhongMaterial color={HALL_COLOR} emissive={HALL_COLOR} emissiveIntensity={0.1} flatShading />
+        <meshPhongMaterial color={HALL_COLOR} flatShading />
       </mesh>
       <mesh position={[0, FLOOR_Y - 0.02, 0]} receiveShadow>
         <boxGeometry args={[HALL_LEN, 0.08, HALL_WIDTH]} />
-        <meshPhongMaterial color={HALL_COLOR} emissive={HALL_COLOR} emissiveIntensity={0.1} flatShading />
+        <meshPhongMaterial color={HALL_COLOR} flatShading />
       </mesh>
 
       {/* Coffee machine */}
@@ -110,15 +110,15 @@ export function Hallway() {
       <Plant x={-1.35} z={0.6} />
       <Plant x={-1.35} z={-0.55} />
 
-      {/* Runner strip (long narrow rug between corridor doors) */}
+      {/* Runner strip (long narrow rug between corridor doors) — F3.19: de-emissived */}
       <mesh position={[0, FLOOR_Y + 0.005, 2.2]} receiveShadow>
         <boxGeometry args={[0.55, 0.01, 3.0]} />
-        <meshPhongMaterial color="#6b3216" emissive="#d97034" emissiveIntensity={0.05} flatShading />
+        <meshPhongMaterial color="#6b3216" flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       <mesh position={[0, FLOOR_Y + 0.005, -2.2]} receiveShadow>
         <boxGeometry args={[0.55, 0.01, 3.0]} />
-        <meshPhongMaterial color="#6b3216" emissive="#d97034" emissiveIntensity={0.05} flatShading />
+        <meshPhongMaterial color="#6b3216" flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
 
@@ -145,14 +145,14 @@ export function Hallway() {
         <meshPhongMaterial color="#241608" flatShading />
       </mesh>
 
-      {/* Rug */}
+      {/* Rug — F3.19: base layer de-emissived, inner border keeps a faint warm kiss */}
       <mesh position={[0, 0.12, 0]} receiveShadow>
         <boxGeometry args={[1.8, 0.02, 1.0]} />
-        <meshPhongMaterial color="#8B4513" emissive="#ffd700" emissiveIntensity={0.05} flatShading />
+        <meshPhongMaterial color="#8B4513" flatShading />
       </mesh>
       <mesh position={[0, 0.14, 0]} receiveShadow>
         <boxGeometry args={[1.4, 0.01, 0.6]} />
-        <meshPhongMaterial color="#a0522d" emissive="#e94560" emissiveIntensity={0.05} flatShading />
+        <meshPhongMaterial color="#a0522d" flatShading />
       </mesh>
 
       {/* Ceiling light strips (cross pattern) */}

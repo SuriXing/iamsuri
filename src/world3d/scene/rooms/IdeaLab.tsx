@@ -36,41 +36,63 @@ const SPARK_DRIFT_SPEED = 0.35;   // world units / sec
 const SPARK_Y_MIN = 0.95;         // just above bench top
 const SPARK_Y_MAX = 2.35;         // just below floating bulb
 
-interface SparkBuffers {
+// F3.19: split into two sub-buffers so emissive colors can differ per bucket.
+// meshPhongMaterial emissive is a material uniform (not per-instance), so a
+// single InstancedMesh + setColorAt cannot produce two different glow hues.
+// Solution: two separate InstancedMesh components, each with its own emissive.
+interface SparkBucket {
   bx: Float32Array;     // local X offset from room center
-  by: Float32Array;     // current Y (mutated)
+  by: Float32Array;     // current Y (mutated in place)
   bz: Float32Array;     // local Z offset
   speed: Float32Array;  // per-spark drift speed mult
-  isOrange: Uint8Array; // 1 = orange, 0 = warm white
 }
 
-function buildSparkBuffers(): SparkBuffers {
-  // Spec: mulberry-seeded positions. Literal 0x1dea5par isn't a valid number,
-  // so read "1dea5par" as a bespoke mnemonic seed: 0x1dea5 ^ SPARK_COUNT.
+function buildSparkBuckets(): { orange: SparkBucket; warm: SparkBucket } {
   const rng = makeRng(0x1dea5 ^ SPARK_COUNT);
-  const bx = new Float32Array(SPARK_COUNT);
-  const by = new Float32Array(SPARK_COUNT);
-  const bz = new Float32Array(SPARK_COUNT);
-  const speed = new Float32Array(SPARK_COUNT);
-  const isOrange = new Uint8Array(SPARK_COUNT);
+  const ox: number[] = [];
+  const oy: number[] = [];
+  const oz: number[] = [];
+  const os: number[] = [];
+  const wx: number[] = [];
+  const wy: number[] = [];
+  const wz: number[] = [];
+  const ws: number[] = [];
   for (let i = 0; i < SPARK_COUNT; i++) {
-    // Spawn above the workbench footprint (bench is 2.6 x 0.95 centered at benchZ).
-    bx[i] = (rng() - 0.5) * 2.2;
-    // Workbench is at benchZ = oz + 0.6, footprint ~0.95 deep.
-    bz[i] = 0.6 + (rng() - 0.5) * 0.9;
-    by[i] = SPARK_Y_MIN + rng() * (SPARK_Y_MAX - SPARK_Y_MIN);
-    speed[i] = 0.7 + rng() * 0.6;
-    isOrange[i] = rng() < 0.5 ? 1 : 0;
+    const x = (rng() - 0.5) * 2.2;
+    const z = 0.6 + (rng() - 0.5) * 0.9;
+    const y = SPARK_Y_MIN + rng() * (SPARK_Y_MAX - SPARK_Y_MIN);
+    const sp = 0.7 + rng() * 0.6;
+    const isOrange = rng() < 0.5;
+    if (isOrange) {
+      ox.push(x); oy.push(y); oz.push(z); os.push(sp);
+    } else {
+      wx.push(x); wy.push(y); wz.push(z); ws.push(sp);
+    }
   }
-  return { bx, by, bz, speed, isOrange };
+  return {
+    orange: {
+      bx: new Float32Array(ox),
+      by: new Float32Array(oy),
+      bz: new Float32Array(oz),
+      speed: new Float32Array(os),
+    },
+    warm: {
+      bx: new Float32Array(wx),
+      by: new Float32Array(wy),
+      bz: new Float32Array(wz),
+      speed: new Float32Array(ws),
+    },
+  };
 }
 
-const SPARK_BUF: SparkBuffers = buildSparkBuffers();
+const SPARK_BUCKETS = buildSparkBuckets();
+const SPARK_ORANGE = SPARK_BUCKETS.orange;
+const SPARK_WARM = SPARK_BUCKETS.warm;
+const SPARK_ORANGE_COUNT = SPARK_ORANGE.bx.length;
+const SPARK_WARM_COUNT = SPARK_WARM.bx.length;
 
 // Zero-alloc scratch for the spark useFrame loop.
 const SPARK_DUMMY = new THREE.Object3D();
-const SPARK_COLOR_ORANGE = new THREE.Color('#f97316');
-const SPARK_COLOR_WARM = new THREE.Color('#fff3a0');
 
 // --- Micro-anim constants (module scope) ---
 const GEAR_SPEED_A = 1.4;
@@ -171,7 +193,8 @@ export function IdeaLab() {
   const hangingToolRef = useRef<THREE.Group>(null);
   const solderTipRef = useRef<THREE.Mesh>(null);
   const accentLightRef = useRef<THREE.PointLight>(null);
-  const sparksRef = useRef<THREE.InstancedMesh>(null);
+  const sparksOrangeRef = useRef<THREE.InstancedMesh>(null);
+  const sparksWarmRef = useRef<THREE.InstancedMesh>(null);
 
   useFrame(({ clock }, delta) => {
     const t = clock.getElapsedTime();
@@ -222,37 +245,57 @@ export function IdeaLab() {
     const al = accentLightRef.current;
     if (al) al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED) * ACCENT_LIGHT_AMPLITUDE;
 
-    // Ambient sparks — pure Y drift with wraparound. Zero-alloc: reuses
-    // SPARK_DUMMY and mutates SPARK_BUF in place.
-    const sm = sparksRef.current;
-    if (sm) {
-      for (let i = 0; i < SPARK_COUNT; i++) {
-        let y = SPARK_BUF.by[i];
-        y += SPARK_DRIFT_SPEED * SPARK_BUF.speed[i] * delta;
-        if (y > SPARK_Y_MAX) {
-          y = SPARK_Y_MIN;
-        }
-        SPARK_BUF.by[i] = y;
-        SPARK_DUMMY.position.set(SPARK_BUF.bx[i], y, SPARK_BUF.bz[i]);
+    // Ambient sparks — pure Y drift with wraparound, zero-alloc.
+    // Two sub-buffers rendered by two InstancedMesh components so each
+    // bucket carries its own emissive color (orange vs warm white).
+    const smO = sparksOrangeRef.current;
+    if (smO) {
+      for (let i = 0; i < SPARK_ORANGE_COUNT; i++) {
+        let y = SPARK_ORANGE.by[i];
+        y += SPARK_DRIFT_SPEED * SPARK_ORANGE.speed[i] * delta;
+        if (y > SPARK_Y_MAX) y = SPARK_Y_MIN;
+        SPARK_ORANGE.by[i] = y;
+        SPARK_DUMMY.position.set(SPARK_ORANGE.bx[i], y, SPARK_ORANGE.bz[i]);
         SPARK_DUMMY.updateMatrix();
-        sm.setMatrixAt(i, SPARK_DUMMY.matrix);
+        smO.setMatrixAt(i, SPARK_DUMMY.matrix);
       }
-      sm.instanceMatrix.needsUpdate = true;
+      smO.instanceMatrix.needsUpdate = true;
+    }
+    const smW = sparksWarmRef.current;
+    if (smW) {
+      for (let i = 0; i < SPARK_WARM_COUNT; i++) {
+        let y = SPARK_WARM.by[i];
+        y += SPARK_DRIFT_SPEED * SPARK_WARM.speed[i] * delta;
+        if (y > SPARK_Y_MAX) y = SPARK_Y_MIN;
+        SPARK_WARM.by[i] = y;
+        SPARK_DUMMY.position.set(SPARK_WARM.bx[i], y, SPARK_WARM.bz[i]);
+        SPARK_DUMMY.updateMatrix();
+        smW.setMatrixAt(i, SPARK_DUMMY.matrix);
+      }
+      smW.instanceMatrix.needsUpdate = true;
     }
   });
 
-  // Initial bake of spark instance matrices + colors.
+  // Initial bake of spark instance matrices.
   useEffect(() => {
-    const sm = sparksRef.current;
-    if (!sm) return;
-    for (let i = 0; i < SPARK_COUNT; i++) {
-      SPARK_DUMMY.position.set(SPARK_BUF.bx[i], SPARK_BUF.by[i], SPARK_BUF.bz[i]);
-      SPARK_DUMMY.updateMatrix();
-      sm.setMatrixAt(i, SPARK_DUMMY.matrix);
-      sm.setColorAt(i, SPARK_BUF.isOrange[i] ? SPARK_COLOR_ORANGE : SPARK_COLOR_WARM);
+    const smO = sparksOrangeRef.current;
+    if (smO) {
+      for (let i = 0; i < SPARK_ORANGE_COUNT; i++) {
+        SPARK_DUMMY.position.set(SPARK_ORANGE.bx[i], SPARK_ORANGE.by[i], SPARK_ORANGE.bz[i]);
+        SPARK_DUMMY.updateMatrix();
+        smO.setMatrixAt(i, SPARK_DUMMY.matrix);
+      }
+      smO.instanceMatrix.needsUpdate = true;
     }
-    sm.instanceMatrix.needsUpdate = true;
-    if (sm.instanceColor) sm.instanceColor.needsUpdate = true;
+    const smW = sparksWarmRef.current;
+    if (smW) {
+      for (let i = 0; i < SPARK_WARM_COUNT; i++) {
+        SPARK_DUMMY.position.set(SPARK_WARM.bx[i], SPARK_WARM.by[i], SPARK_WARM.bz[i]);
+        SPARK_DUMMY.updateMatrix();
+        smW.setMatrixAt(i, SPARK_DUMMY.matrix);
+      }
+      smW.instanceMatrix.needsUpdate = true;
+    }
   }, []);
 
   // Layout anchors.
@@ -601,21 +644,36 @@ export function IdeaLab() {
       </mesh>
       <pointLight ref={bulbLightRef} position={[ox, 2.5, oz + 0.4]} color="#ffe0a0" intensity={0.7} distance={9} />
 
-      {/* ----- AMBIENT SPARK LAYER (F3.17) ----- */}
-      {/* Small emissive cubes drifting upward over the workbench. Buffer
-          positions are stored in room-local space; the wrapping group applies
-          the room offset once. */}
+      {/* ----- AMBIENT SPARK LAYER (F3.19: two buckets for true color split) ----- */}
+      {/* Small emissive cubes drifting upward over the workbench. Split into
+          orange + warm-white InstancedMesh so each carries its own emissive
+          uniform (meshPhongMaterial emissive can't vary per-instance). */}
       <group position={[ox, 0, oz]}>
         <instancedMesh
-          ref={sparksRef}
-          args={[undefined, undefined, SPARK_COUNT]}
+          ref={sparksOrangeRef}
+          args={[undefined, undefined, SPARK_ORANGE_COUNT]}
           frustumCulled={false}
         >
           <boxGeometry args={[0.03, 0.03, 0.03]} />
           <meshPhongMaterial
-            color="#ffffff"
-            emissive="#ffc870"
-            emissiveIntensity={1.6}
+            color="#f97316"
+            emissive="#f97316"
+            emissiveIntensity={2.0}
+            transparent
+            opacity={0.95}
+            flatShading
+          />
+        </instancedMesh>
+        <instancedMesh
+          ref={sparksWarmRef}
+          args={[undefined, undefined, SPARK_WARM_COUNT]}
+          frustumCulled={false}
+        >
+          <boxGeometry args={[0.03, 0.03, 0.03]} />
+          <meshPhongMaterial
+            color="#fff3a0"
+            emissive="#fff3a0"
+            emissiveIntensity={1.5}
             transparent
             opacity={0.9}
             flatShading

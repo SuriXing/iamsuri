@@ -38,6 +38,12 @@ export function InteractionManager(): null {
     const onKeyDown = (e: KeyboardEvent): void => {
       const s = useWorldStore.getState();
 
+      // During the intro sequence (static / zoom / dialogue) every key
+      // except Enter/Space is swallowed. Enter/Space advance the
+      // dialogue — handled by the Dialogue component directly, so here
+      // we just freeze everything else.
+      if (s.introPhase !== 'follow') return;
+
       // When a modal is open, only Escape is allowed. Number keys / U / E
       // must not fire a room jump or unlock while the modal has focus.
       if (s.modalInteractable) {

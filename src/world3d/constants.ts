@@ -24,10 +24,32 @@ export const FP = {
 } as const;
 
 export const CAMERA = {
-  position: [14, 16, 14] as const,
+  // Initial (intro) position — slightly tilted top-down establishing shot.
+  position: [0, 20, 14] as const,
+  lookAt: [0, 0, 0] as const,
   fov: 50,
   near: 0.1,
   far: 200,
+} as const;
+
+/** Third-person follow camera offsets (character-local frame). */
+export const FOLLOW = {
+  /** How far behind the character the camera sits. */
+  distance: 4.5,
+  /** How high above the ground the camera sits. */
+  height: 3.0,
+  /** How high on the character the camera looks. */
+  lookHeight: 1.0,
+  /** Softness of the camera follow (higher = snappier). */
+  lerp: 6,
+  /** Softness of the camera rotation chasing character facing. */
+  yawLerp: 4,
+} as const;
+
+/** Duration of intro phases in seconds. */
+export const INTRO = {
+  staticHold: 1.6,
+  zoomDuration: 2.4,
 } as const;
 
 export const LIGHTS = {

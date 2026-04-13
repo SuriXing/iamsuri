@@ -137,6 +137,11 @@ test.describe('3D World Landing Page', () => {
     await page.reload();
     await page.waitForTimeout(3000);
 
+    // Skip the intro dialogue so keyboard input isn't swallowed by the
+    // "freeze player until intro finishes" gate.
+    await page.evaluate(() => window.__worldStore.getState().setIntroPhase('follow'));
+    await page.waitForTimeout(100);
+
     // Focus the canvas so keys go to the game
     await page.click('canvas', { position: { x: 640, y: 360 } });
     await page.waitForTimeout(200);

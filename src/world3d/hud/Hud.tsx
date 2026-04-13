@@ -1,6 +1,7 @@
 import { BackButton } from './BackButton';
 import { BottomHint } from './BottomHint';
 import { Crosshair } from './Crosshair';
+import { Dialogue } from './Dialogue';
 import { ExitHint } from './ExitHint';
 import { IntroHint } from './IntroHint';
 import { InteractModal } from './InteractModal';
@@ -12,6 +13,7 @@ import { useWorldStore } from '../store/worldStore';
 
 export function Hud() {
   const inRoom = useWorldStore((s) => s.viewMode !== 'overview');
+  const introActive = useWorldStore((s) => s.introPhase !== 'follow');
 
   return (
     <>
@@ -24,7 +26,7 @@ export function Hud() {
         </div>
       )}
 
-      <BottomHint />
+      {!introActive && <BottomHint />}
       <RoomOverlays />
       <BackButton />
       <ExitHint />
@@ -32,6 +34,7 @@ export function Hud() {
       <InteractTooltip />
       <InteractModal />
       <IntroHint />
+      <Dialogue />
       <ThemeToggle />
       <ViewSwitcher />
     </>

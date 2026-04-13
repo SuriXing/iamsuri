@@ -7,6 +7,25 @@ export type ViewMode = 'overview' | RoomId;
 
 export type ViewTransition = 'idle' | 'entering' | 'exiting';
 
+/**
+ * Top-level camera flow for the 3D world. The intro sequence runs once:
+ *
+ *   intro-static  (tilted top-down establishing shot, ~1.6s)
+ *        │
+ *        ▼
+ *   intro-zoom    (cinematic tween down toward the character, ~2.4s)
+ *        │
+ *        ▼
+ *   dialogue      (camera parked behind character, text box visible)
+ *        │  user clicks Next
+ *        ▼
+ *   follow        (default gameplay: third-person behind the character)
+ *
+ * Entering a room flips fpActive=true; the camera uses the FP logic
+ * instead. Exiting a room returns to `follow`.
+ */
+export type IntroPhase = 'intro-static' | 'intro-zoom' | 'dialogue' | 'follow';
+
 export interface InteractableData {
   title: string;
   body: string;
@@ -32,6 +51,9 @@ export interface WorldState {
   nearbyRoom: RoomId | null;
   focusedInteractable: InteractableData | null;
   modalInteractable: InteractableData | null;
+  // Intro sequence
+  introPhase: IntroPhase;
+  dialogueIndex: number;
 
   // Actions
   setViewMode: (v: ViewMode) => void;
@@ -51,6 +73,9 @@ export interface WorldState {
   beginRoomTransition: (room: RoomId) => void;
   completeRoomTransition: () => void;
   beginExitTransition: () => void;
+  // Intro actions
+  setIntroPhase: (p: IntroPhase) => void;
+  advanceDialogue: () => void;
 }
 
 // localStorage persistence for unlocked doors
@@ -97,6 +122,8 @@ export const useWorldStore = create<WorldState>((set) => ({
   nearbyRoom: null,
   focusedInteractable: null,
   modalInteractable: null,
+  introPhase: 'intro-static',
+  dialogueIndex: 0,
 
   setViewMode: (v) => {
     // Centralize the "leaving a room" cleanup so stale focus/modal state
@@ -161,6 +188,14 @@ export const useWorldStore = create<WorldState>((set) => ({
       viewTransition: 'exiting',
       focusedInteractable: null,
       modalInteractable: null,
+    }),
+  setIntroPhase: (p) => set({ introPhase: p }),
+  advanceDialogue: () =>
+    set((s) => {
+      // For now there's only a single line; advancing ends the intro
+      // and drops the player into 'follow' mode. When more lines are
+      // added later, this is the place to increment dialogueIndex.
+      return { introPhase: 'follow', dialogueIndex: s.dialogueIndex + 1 };
     }),
 }));
 

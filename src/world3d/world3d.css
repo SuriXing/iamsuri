@@ -418,3 +418,99 @@ body.world3d-light-theme .room-label {
   background: rgba(255, 255, 255, 0.85);
   border-color: rgba(0, 0, 0, 0.1);
 }
+
+/* ── Intro dialogue overlay ──────────────────────────────── */
+@keyframes dialogueEnter {
+  0%   { opacity: 0; transform: translate(-50%, 16px); }
+  100% { opacity: 1; transform: translate(-50%, 0); }
+}
+.dialogue-root {
+  position: fixed;
+  left: 50%;
+  bottom: 80px;
+  transform: translate(-50%, 0);
+  z-index: 90;
+  font-family: 'Courier New', monospace;
+  pointer-events: none;
+  animation: dialogueEnter 280ms ease-out both;
+}
+.dialogue-box {
+  min-width: 420px;
+  max-width: 560px;
+  background: rgba(20, 23, 34, 0.92);
+  backdrop-filter: blur(14px);
+  border: 2px solid rgba(255, 215, 0, 0.45);
+  border-radius: 10px;
+  padding: 20px 24px 16px 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5),
+              0 0 24px rgba(255, 215, 0, 0.15);
+  pointer-events: auto;
+}
+.dialogue-box::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  transform: translateX(-50%) rotate(45deg);
+  width: 16px;
+  height: 16px;
+  background: rgba(20, 23, 34, 0.92);
+  border-top: 2px solid rgba(255, 215, 0, 0.45);
+  border-left: 2px solid rgba(255, 215, 0, 0.45);
+}
+.dialogue-speaker {
+  color: #ffd700;
+  font-size: 0.8rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+.dialogue-text {
+  color: #e5e7eb;
+  font-size: 1rem;
+  line-height: 1.55;
+  margin: 0 0 16px 0;
+  min-height: 1.55em;
+}
+.dialogue-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.dialogue-next {
+  background: rgba(255, 215, 0, 0.12);
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.55);
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 120ms ease;
+}
+.dialogue-next:hover,
+.dialogue-next:focus-visible {
+  background: rgba(255, 215, 0, 0.25);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+body.world3d-light-theme .dialogue-box,
+body.world3d-light-theme .dialogue-box::before {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(184, 134, 11, 0.45);
+}
+body.world3d-light-theme .dialogue-speaker {
+  color: #b8860b;
+  text-shadow: none;
+}
+body.world3d-light-theme .dialogue-text {
+  color: #1a1a2e;
+}
+body.world3d-light-theme .dialogue-next {
+  color: #b8860b;
+  border-color: rgba(184, 134, 11, 0.6);
+  background: rgba(184, 134, 11, 0.1);
+}

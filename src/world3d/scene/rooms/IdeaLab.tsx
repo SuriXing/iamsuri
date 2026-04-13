@@ -1,60 +1,51 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
+import { Edges } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
 import { FLOOR_Y } from '../../constants';
 import { IDEA_LAB_CONTENT } from '../../../data/ideaLab';
+import { useWorldStore } from '../../store/worldStore';
+import { makeRng } from '../../util/rand';
 import type { InteractableData } from '../../store/worldStore';
 
 const IDEA_BOARD_INTERACTABLE: InteractableData = IDEA_LAB_CONTENT.dialogues.ideaBoard;
 
-const MONET = {
-  cream:    '#ead9b8',
-  lavender: '#b5a7d4',
-  dustRose: '#d89cb0',
-  sage:     '#9ec79e',
-  teal:     '#8fb8c4',
-  softBlue: '#9bb0cc',
-  willow:   '#7a9d7e',
-  peach:    '#e6b89c',
-  fringe:   '#c8b78f',
-} as const;
+// --- Maker workshop palette (wood + metal + electric accents) ---
+const WOOD_DEEP = '#4a2f1a';
+const WOOD_MID = '#6b4a2a';
+const WOOD_LIGHT = '#8b6a42';
+const WOOD_PLANK = '#7a5a3a';
+const METAL_DARK = '#3a4250';
+const METAL_MID = '#6a7280';
+const METAL_LIGHT = '#9ba2ac';
+const PEG_BROWN = '#5a3e22';
+const WHITE_PAPER = '#f5f1e8';
+const ELECTRIC_GREEN = '#4ade80';
+const ELECTRIC_GREEN_DIM = '#22c55e';
+const ORANGE_SPARK = '#f97316';
+const AMBER_BULB = '#fbbf24';
+const CORK = '#c8985a';
 
-interface PatchSpec {
-  x: number;
-  z: number;
-  w: number;
-  d: number;
-}
-
-const PATCH_SEED: ReadonlyArray<PatchSpec> = [
-  { x: -1.7, z: -1.6, w: 0.50, d: 0.36 },
-  { x: -0.9, z: -1.8, w: 0.42, d: 0.30 },
-  { x:  0.6, z: -1.7, w: 0.55, d: 0.38 },
-  { x:  1.6, z: -1.4, w: 0.45, d: 0.32 },
-  { x: -1.8, z: -0.4, w: 0.38, d: 0.50 },
-  { x: -1.5, z:  0.7, w: 0.55, d: 0.32 },
-  { x: -0.5, z:  0.0, w: 0.45, d: 0.42 },
-  { x:  0.7, z:  0.4, w: 0.55, d: 0.40 },
-  { x:  1.7, z:  0.1, w: 0.40, d: 0.55 },
-  { x:  1.5, z:  1.3, w: 0.50, d: 0.38 },
-  { x:  0.2, z:  1.7, w: 0.45, d: 0.42 },
-  { x: -0.9, z:  1.5, w: 0.52, d: 0.36 },
-  { x: -1.8, z:  1.8, w: 0.38, d: 0.44 },
-  { x:  1.9, z:  1.9, w: 0.42, d: 0.36 },
-  { x:  0.0, z: -0.9, w: 0.48, d: 0.34 },
-  { x: -0.3, z:  0.9, w: 0.36, d: 0.50 },
-];
-
-const PATCH_COLORS = [
-  MONET.lavender,
-  MONET.dustRose,
-  MONET.sage,
-  MONET.teal,
-  MONET.softBlue,
-  MONET.willow,
-  MONET.peach,
-];
+// --- Micro-anim constants (module scope) ---
+const GEAR_SPEED_A = 1.4;
+const GEAR_SPEED_B = -1.9;
+const GEAR_SPEED_C = 2.3;
+const BULB_FLOAT_AMPLITUDE = 0.08;
+const BULB_FLOAT_SPEED = 1.2;
+const BULB_PULSE_BASE = 2.8;
+const BULB_PULSE_AMPLITUDE = 0.6;
+const BULB_PULSE_SPEED = 2.0;
+const PROTOTYPE_VIBRATE_AMPLITUDE = 0.008;
+const PROTOTYPE_VIBRATE_SPEED = 18.0;
+const HANGING_TOOL_SWING_AMPLITUDE = 0.06;
+const HANGING_TOOL_SWING_SPEED = 1.3;
+const SOLDER_TIP_PULSE_BASE = 1.6;
+const SOLDER_TIP_PULSE_AMPLITUDE = 0.7;
+const SOLDER_TIP_PULSE_SPEED = 3.1;
+const ACCENT_LIGHT_BASE = 0.75;
+const ACCENT_LIGHT_AMPLITUDE = 0.15;
+const ACCENT_LIGHT_SPEED = 1.3;
 
 interface BoardLine {
   c: string;
@@ -64,121 +55,183 @@ interface BoardLine {
   h: number;
 }
 
+// Keep the board content but retint into electric workshop accents.
 const BOARD_LINES: ReadonlyArray<BoardLine> = [
-  { c: MONET.lavender, x: -0.85, y: 1.80, w: 0.55, h: 0.06 },
-  { c: MONET.lavender, x: -0.65, y: 1.70, w: 0.90, h: 0.05 },
-  { c: MONET.dustRose, x: -0.70, y: 1.55, w: 0.70, h: 0.05 },
-  { c: MONET.sage,     x: -0.50, y: 1.45, w: 0.80, h: 0.05 },
-  { c: MONET.teal,     x:  0.60, y: 1.75, w: 0.60, h: 0.06 },
-  { c: MONET.softBlue, x:  0.55, y: 1.62, w: 0.75, h: 0.05 },
-  { c: MONET.willow,   x:  0.70, y: 1.48, w: 0.55, h: 0.05 },
-  { c: MONET.peach,    x: -0.80, y: 1.00, w: 0.45, h: 0.05 },
-  { c: MONET.dustRose, x: -0.55, y: 0.88, w: 0.70, h: 0.05 },
-  { c: MONET.lavender, x:  0.55, y: 0.95, w: 0.70, h: 0.05 },
-  { c: MONET.sage,     x:  0.70, y: 0.83, w: 0.50, h: 0.05 },
+  { c: ELECTRIC_GREEN, x: -0.85, y: 1.80, w: 0.55, h: 0.06 },
+  { c: '#fbbf24',      x: -0.65, y: 1.70, w: 0.90, h: 0.05 },
+  { c: '#fb7185',      x: -0.70, y: 1.55, w: 0.70, h: 0.05 },
+  { c: ELECTRIC_GREEN, x: -0.50, y: 1.45, w: 0.80, h: 0.05 },
+  { c: '#60a5fa',      x:  0.60, y: 1.75, w: 0.60, h: 0.06 },
+  { c: ORANGE_SPARK,   x:  0.55, y: 1.62, w: 0.75, h: 0.05 },
+  { c: ELECTRIC_GREEN, x:  0.70, y: 1.48, w: 0.55, h: 0.05 },
+  { c: '#fbbf24',      x: -0.80, y: 1.00, w: 0.45, h: 0.05 },
+  { c: '#fb7185',      x: -0.55, y: 0.88, w: 0.70, h: 0.05 },
+  { c: '#60a5fa',      x:  0.55, y: 0.95, w: 0.70, h: 0.05 },
+  { c: ELECTRIC_GREEN, x:  0.70, y: 0.83, w: 0.50, h: 0.05 },
 ];
 
-const TEA_TABLE_LEGS: ReadonlyArray<readonly [number, number]> = [
-  [-0.38, -0.28],
-  [0.38, -0.28],
-  [-0.38, 0.28],
-  [0.38, 0.28],
+// Workbench leg positions.
+const BENCH_LEGS: ReadonlyArray<readonly [number, number]> = [
+  [-1.15, -0.35],
+  [1.15, -0.35],
+  [-1.15, 0.35],
+  [1.15, 0.35],
 ];
 
-interface CushionProps {
-  px: number;
-  pz: number;
-  color: string;
-}
+// Pegboard hanging tools — [dxFromBoardCenter, yOffset, width, height, color]
+const PEG_TOOLS: ReadonlyArray<readonly [number, number, number, number, string]> = [
+  [-0.7, 0.0, 0.06, 0.28, METAL_LIGHT], // wrench stem
+  [-0.4, 0.0, 0.22, 0.08, METAL_MID],   // hammer head
+  [-0.4, -0.15, 0.04, 0.28, WOOD_LIGHT], // hammer handle
+  [0.0, 0.0, 0.12, 0.22, METAL_LIGHT],  // pliers body
+  [0.4, 0.0, 0.06, 0.3, METAL_MID],     // screwdriver shaft
+  [0.4, -0.22, 0.05, 0.1, ORANGE_SPARK], // screwdriver grip
+  [0.7, 0.0, 0.18, 0.08, METAL_LIGHT],  // wrench head
+];
 
-function Cushion({ px, pz, color }: CushionProps) {
-  return (
-    <group>
-      <mesh position={[px, FLOOR_Y + 0.19, pz]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.42, 0.42, 0.12, 14]} />
-        <meshPhongMaterial color={color} emissive={color} emissiveIntensity={0.22} flatShading />
-      </mesh>
-      <mesh position={[px, FLOOR_Y + 0.26, pz]}>
-        <cylinderGeometry args={[0.34, 0.34, 0.02, 14]} />
-        <meshPhongMaterial color="#ffffff" transparent opacity={0.18} flatShading />
-      </mesh>
-      <mesh position={[px, FLOOR_Y + 0.36, pz + 0.32]} castShadow>
-        <boxGeometry args={[0.7, 0.3, 0.18]} />
-        <meshPhongMaterial color={color} emissive={color} emissiveIntensity={0.18} flatShading />
-      </mesh>
-    </group>
-  );
-}
+// Floor plank stripes (X positions).
+const PLANK_STRIPES: ReadonlyArray<number> = [-1.6, -0.8, 0.0, 0.8, 1.6];
 
 export function IdeaLab() {
   const { center } = ROOM_BY_ID.idealab;
   const ox = center.x;
   const oz = center.z;
+
+  const theme = useWorldStore((s) => s.theme);
+  const edgeColor = theme === 'dark' ? '#0a0a14' : '#5a4830';
+
+  // Deterministic paper sketch positions scattered on floor/bench.
+  const sketches = useMemo(() => {
+    const rng = makeRng(0x1dea5c);
+    const arr: Array<{ x: number; z: number; rot: number; size: number; tint: number }> = [];
+    for (let i = 0; i < 6; i++) {
+      arr.push({
+        x: (rng() - 0.5) * 2.4,
+        z: 0.8 + (rng() - 0.5) * 1.2,
+        rot: rng() * Math.PI,
+        size: 0.18 + rng() * 0.08,
+        tint: (rng() - 0.5) * 0.08,
+      });
+    }
+    return arr;
+  }, []);
+
+  // Refs for micro-animations.
   const bulbRef = useRef<THREE.Mesh>(null);
   const bulbLightRef = useRef<THREE.PointLight>(null);
+  const gearARef = useRef<THREE.Mesh>(null);
+  const gearBRef = useRef<THREE.Mesh>(null);
+  const gearCRef = useRef<THREE.Mesh>(null);
+  const prototypeRef = useRef<THREE.Mesh>(null);
+  const hangingToolRef = useRef<THREE.Group>(null);
+  const solderTipRef = useRef<THREE.Mesh>(null);
+  const accentLightRef = useRef<THREE.PointLight>(null);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    const yOffset = Math.sin(t * 1.2) * 0.1;
-    if (bulbRef.current) bulbRef.current.position.y = 2.5 + yOffset;
-    if (bulbLightRef.current) {
-      bulbLightRef.current.position.y = 2.5 + yOffset;
-      bulbLightRef.current.intensity = 0.6 + Math.sin(t * 2) * 0.15;
+
+    // Floating idea bulb (vertical bob + pulse).
+    const bulb = bulbRef.current;
+    const yOffset = Math.sin(t * BULB_FLOAT_SPEED) * BULB_FLOAT_AMPLITUDE;
+    if (bulb) {
+      bulb.position.y = 2.5 + yOffset;
+      const mat = bulb.material as THREE.MeshPhongMaterial;
+      mat.emissiveIntensity = BULB_PULSE_BASE + Math.sin(t * BULB_PULSE_SPEED) * BULB_PULSE_AMPLITUDE;
     }
+    const bulbLight = bulbLightRef.current;
+    if (bulbLight) {
+      bulbLight.position.y = 2.5 + yOffset;
+      bulbLight.intensity = 0.6 + Math.sin(t * BULB_PULSE_SPEED) * 0.15;
+    }
+
+    // Gears — counter-rotating.
+    const gA = gearARef.current;
+    if (gA) gA.rotation.z = t * GEAR_SPEED_A;
+    const gB = gearBRef.current;
+    if (gB) gB.rotation.z = t * GEAR_SPEED_B;
+    const gC = gearCRef.current;
+    if (gC) gC.rotation.z = t * GEAR_SPEED_C;
+
+    // Prototype vibrating (high-freq tiny shake).
+    const proto = prototypeRef.current;
+    if (proto) {
+      proto.position.x = proto.userData.baseX + Math.sin(t * PROTOTYPE_VIBRATE_SPEED) * PROTOTYPE_VIBRATE_AMPLITUDE;
+      proto.position.z = proto.userData.baseZ + Math.cos(t * PROTOTYPE_VIBRATE_SPEED * 0.9) * PROTOTYPE_VIBRATE_AMPLITUDE;
+    }
+
+    // Hanging tool swinging.
+    const hang = hangingToolRef.current;
+    if (hang) {
+      hang.rotation.z = Math.sin(t * HANGING_TOOL_SWING_SPEED) * HANGING_TOOL_SWING_AMPLITUDE;
+    }
+
+    // Soldering iron tip glow pulse.
+    const tip = solderTipRef.current;
+    if (tip) {
+      const mat = tip.material as THREE.MeshPhongMaterial;
+      mat.emissiveIntensity = SOLDER_TIP_PULSE_BASE + Math.sin(t * SOLDER_TIP_PULSE_SPEED) * SOLDER_TIP_PULSE_AMPLITUDE;
+    }
+
+    // Green accent light breathing.
+    const al = accentLightRef.current;
+    if (al) al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED) * ACCENT_LIGHT_AMPLITUDE;
   });
+
+  // Layout anchors.
+  const benchX = ox;
+  const benchZ = oz + 0.6;
+  const benchTopY = 0.78;
+
+  const pegboardX = ox;
+  const pegboardY = 1.45;
+  const pegboardZ = oz + 2.0;
 
   return (
     <group>
-      {/* Carpet base */}
+      {/* ----- WOOD PLANK FLOOR (two-tone bands) ----- */}
       <mesh position={[ox, FLOOR_Y + 0.09, oz]} receiveShadow>
         <boxGeometry args={[4.6, 0.03, 4.6]} />
-        <meshPhongMaterial color={MONET.cream} emissive={MONET.lavender} emissiveIntensity={0.12} flatShading />
+        <meshPhongMaterial color={WOOD_DEEP} flatShading />
       </mesh>
-      {/* Inner ring */}
-      <mesh position={[ox, FLOOR_Y + 0.11, oz]} receiveShadow>
-        <boxGeometry args={[3.6, 0.015, 3.6]} />
-        <meshPhongMaterial
-          color={MONET.softBlue}
-          emissive={MONET.softBlue}
-          emissiveIntensity={0.08}
-          transparent
-          opacity={0.55}
-          flatShading
-        />
+      {PLANK_STRIPES.map((dx, i) => (
+        <mesh key={`plank-${i}`} position={[ox + dx, FLOOR_Y + 0.105, oz]} receiveShadow>
+          <boxGeometry args={[0.74, 0.01, 4.5]} />
+          <meshPhongMaterial color={i % 2 === 0 ? WOOD_MID : WOOD_PLANK} flatShading />
+        </mesh>
+      ))}
+      {/* Oil-stain accent patches */}
+      <mesh position={[ox + 0.8, FLOOR_Y + 0.12, oz + 1.2]}>
+        <boxGeometry args={[0.4, 0.002, 0.3]} />
+        <meshPhongMaterial color="#2a1a0a" flatShading />
       </mesh>
-      {/* Patches */}
-      {PATCH_SEED.map((p, i) => {
-        const col = PATCH_COLORS[i % PATCH_COLORS.length];
-        return (
-          <mesh
-            key={i}
-            position={[ox + p.x, FLOOR_Y + 0.12, oz + p.z]}
-            rotation={[0, (i * 0.37) % Math.PI, 0]}
-          >
-            <boxGeometry args={[p.w, 0.012, p.d]} />
-            <meshPhongMaterial
-              color={col}
-              emissive={col}
-              emissiveIntensity={0.18}
-              transparent
-              opacity={0.75}
-              flatShading
-            />
-          </mesh>
-        );
-      })}
-      {/* Fringe */}
-      {[-2.32, 2.32].map((zOff) => (
-        <mesh key={zOff} position={[ox, FLOOR_Y + 0.10, oz + zOff]}>
-          <boxGeometry args={[4.6, 0.02, 0.14]} />
-          <meshPhongMaterial color={MONET.fringe} emissive={MONET.fringe} emissiveIntensity={0.1} flatShading />
+      <mesh position={[ox - 1.2, FLOOR_Y + 0.12, oz - 0.5]}>
+        <boxGeometry args={[0.5, 0.002, 0.35]} />
+        <meshPhongMaterial color="#2a1a0a" flatShading />
+      </mesh>
+
+      {/* ----- PAPER SKETCHES SCATTERED ON FLOOR ----- */}
+      {sketches.map((s, i) => (
+        <mesh
+          key={`sketch-${i}`}
+          position={[ox + s.x, FLOOR_Y + 0.115, oz + s.z]}
+          rotation={[0, s.rot, 0]}
+        >
+          <boxGeometry args={[s.size, 0.003, s.size * 0.75]} />
+          <meshPhongMaterial
+            color={WHITE_PAPER}
+            emissive={WHITE_PAPER}
+            emissiveIntensity={0.25 + s.tint}
+            flatShading
+          />
+          <Edges color={edgeColor} lineWidth={1} />
         </mesh>
       ))}
 
-      {/* Whiteboard */}
+      {/* ----- IDEA BOARD / WHITEBOARD (interactable preserved) ----- */}
       <mesh position={[ox, 1.25, oz - 2.08]} castShadow receiveShadow>
         <boxGeometry args={[2.6, 1.7, 0.08]} />
-        <meshPhongMaterial color="#8a8a8a" flatShading />
+        <meshPhongMaterial color={WOOD_MID} flatShading />
+        <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
       <mesh
         position={[ox, 1.25, oz - 2.03]}
@@ -187,68 +240,297 @@ export function IdeaLab() {
         }}
       >
         <boxGeometry args={[2.4, 1.5, 0.02]} />
-        <meshPhongMaterial color="#f5f1e8" flatShading />
+        <meshPhongMaterial color={WHITE_PAPER} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      {/* Board lines */}
       {BOARD_LINES.map((l, i) => (
-        <mesh key={i} position={[ox + l.x, l.y, oz - 1.99]}>
+        <mesh key={`bline-${i}`} position={[ox + l.x, l.y, oz - 1.99]}>
           <boxGeometry args={[l.w, l.h, 0.012]} />
-          <meshPhongMaterial color={l.c} emissive={l.c} emissiveIntensity={0.6} flatShading />
+          <meshPhongMaterial color={l.c} emissive={l.c} emissiveIntensity={0.7} flatShading />
         </mesh>
       ))}
-      {/* Heading bar */}
+      {/* Heading bar (green marker) */}
       <mesh position={[ox, 1.96, oz - 1.99]}>
         <boxGeometry args={[1.6, 0.09, 0.012]} />
-        <meshPhongMaterial color={MONET.lavender} emissive={MONET.lavender} emissiveIntensity={0.9} flatShading />
+        <meshPhongMaterial color={ELECTRIC_GREEN} emissive={ELECTRIC_GREEN} emissiveIntensity={1.0} flatShading />
+      </mesh>
+      {/* Whiteboard marker tray */}
+      <mesh position={[ox, 0.48, oz - 2.0]}>
+        <boxGeometry args={[2.2, 0.04, 0.08]} />
+        <meshPhongMaterial color={METAL_MID} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      {/* 3 markers on tray */}
+      <mesh position={[ox - 0.5, 0.51, oz - 1.98]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.018, 0.018, 0.14, 6]} />
+        <meshPhongMaterial color={ELECTRIC_GREEN} flatShading />
+      </mesh>
+      <mesh position={[ox - 0.3, 0.51, oz - 1.98]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.018, 0.018, 0.14, 6]} />
+        <meshPhongMaterial color="#fb7185" flatShading />
+      </mesh>
+      <mesh position={[ox - 0.1, 0.51, oz - 1.98]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.018, 0.018, 0.14, 6]} />
+        <meshPhongMaterial color="#60a5fa" flatShading />
       </mesh>
 
-      {/* Cushions */}
-      <Cushion px={ox - 1.4} pz={oz + 0.2} color={MONET.lavender} />
-      <Cushion px={ox} pz={oz + 0.6} color={MONET.dustRose} />
-      <Cushion px={ox + 1.4} pz={oz + 0.2} color={MONET.sage} />
-
-      {/* Tea table */}
-      <mesh position={[ox + 1.5, 0.30, oz - 0.9]} castShadow receiveShadow>
-        <boxGeometry args={[0.9, 0.05, 0.7]} />
-        <meshPhongMaterial color={MONET.cream} emissive={MONET.peach} emissiveIntensity={0.15} flatShading />
+      {/* ----- WORKBENCH (hero — thick top + trim + 4 legs) ----- */}
+      <mesh position={[benchX, benchTopY, benchZ]} castShadow receiveShadow>
+        <boxGeometry args={[2.6, 0.14, 0.95]} />
+        <meshPhongMaterial color={WOOD_LIGHT} flatShading />
+        <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
-      {TEA_TABLE_LEGS.map(([dx, dz], i) => (
-        <mesh key={i} position={[ox + 1.5 + dx, 0.14, oz - 0.9 + dz]} castShadow>
-          <cylinderGeometry args={[0.03, 0.03, 0.28, 6]} />
-          <meshPhongMaterial color="#7a5a3a" flatShading />
+      {/* Bench trim (darker band beneath top) */}
+      <mesh position={[benchX, benchTopY - 0.1, benchZ]} castShadow>
+        <boxGeometry args={[2.58, 0.06, 0.93]} />
+        <meshPhongMaterial color={WOOD_MID} flatShading />
+      </mesh>
+      {/* Legs — chunky 4-post */}
+      {BENCH_LEGS.map(([dx, dz], i) => (
+        <mesh key={`bleg-${i}`} position={[benchX + dx, benchTopY - 0.42, benchZ + dz]} castShadow>
+          <boxGeometry args={[0.12, 0.6, 0.12]} />
+          <meshPhongMaterial color={WOOD_DEEP} flatShading />
+          <Edges color={edgeColor} lineWidth={1} />
         </mesh>
       ))}
-      {/* Notebook */}
-      <mesh position={[ox + 1.38, 0.355, oz - 0.95]} rotation={[0, 0.2, 0]} castShadow>
-        <boxGeometry args={[0.32, 0.04, 0.24]} />
-        <meshPhongMaterial color={MONET.lavender} emissive={MONET.lavender} emissiveIntensity={0.25} flatShading />
+      {/* Cross-brace under bench */}
+      <mesh position={[benchX, benchTopY - 0.65, benchZ]}>
+        <boxGeometry args={[2.2, 0.06, 0.08]} />
+        <meshPhongMaterial color={WOOD_MID} flatShading />
       </mesh>
-      {/* Pencil */}
-      <mesh position={[ox + 1.65, 0.35, oz - 0.82]} rotation={[0, 0.3, Math.PI / 2]} castShadow>
-        <cylinderGeometry args={[0.015, 0.015, 0.3, 6]} />
-        <meshPhongMaterial color={MONET.peach} flatShading />
+      {/* Bench vise (front edge) */}
+      <mesh position={[benchX - 1.0, benchTopY + 0.08, benchZ - 0.42]} castShadow>
+        <boxGeometry args={[0.28, 0.16, 0.18]} />
+        <meshPhongMaterial color={METAL_DARK} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      {/* Prototype */}
-      <mesh position={[ox + 1.6, 0.41, oz - 1.05]} castShadow>
-        <boxGeometry args={[0.16, 0.16, 0.16]} />
-        <meshPhongMaterial color={MONET.teal} emissive={MONET.teal} emissiveIntensity={0.55} flatShading />
-      </mesh>
-      {/* Teacup */}
-      <mesh position={[ox + 1.4, 0.37, oz - 0.78]} castShadow>
-        <cylinderGeometry args={[0.06, 0.05, 0.09, 10]} />
-        <meshPhongMaterial color="#f5f1e8" flatShading />
-      </mesh>
-      <mesh position={[ox + 1.4, 0.415, oz - 0.78]}>
-        <cylinderGeometry args={[0.05, 0.05, 0.015, 10]} />
-        <meshPhongMaterial color={MONET.willow} emissive={MONET.willow} emissiveIntensity={0.3} flatShading />
+      <mesh position={[benchX - 1.0, benchTopY + 0.12, benchZ - 0.32]}>
+        <cylinderGeometry args={[0.015, 0.015, 0.18, 6]} />
+        <meshPhongMaterial color={METAL_LIGHT} flatShading />
       </mesh>
 
-      {/* Floating idea bulb */}
+      {/* ----- WORK-IN-PROGRESS PROTOTYPE (vibrates, center of bench) ----- */}
+      <mesh
+        ref={prototypeRef}
+        position={[benchX, benchTopY + 0.16, benchZ]}
+        onUpdate={(m) => {
+          m.userData.baseX = benchX;
+          m.userData.baseZ = benchZ;
+        }}
+        castShadow
+      >
+        <boxGeometry args={[0.3, 0.18, 0.22]} />
+        <meshPhongMaterial color={METAL_MID} flatShading />
+        <Edges color={edgeColor} lineWidth={1.2} />
+      </mesh>
+      {/* Circuit-board top on prototype */}
+      <mesh position={[benchX, benchTopY + 0.26, benchZ]}>
+        <boxGeometry args={[0.28, 0.02, 0.2]} />
+        <meshPhongMaterial color={ELECTRIC_GREEN_DIM} emissive={ELECTRIC_GREEN_DIM} emissiveIntensity={0.4} flatShading />
+      </mesh>
+      {/* Prototype LED indicator */}
+      <mesh position={[benchX + 0.1, benchTopY + 0.28, benchZ + 0.08]}>
+        <boxGeometry args={[0.02, 0.02, 0.02]} />
+        <meshPhongMaterial color={ORANGE_SPARK} emissive={ORANGE_SPARK} emissiveIntensity={3.0} flatShading />
+      </mesh>
+
+      {/* ----- GEARS (3, counter-rotating) — mounted on bench ----- */}
+      <mesh ref={gearARef} position={[benchX + 0.9, benchTopY + 0.15, benchZ - 0.2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <cylinderGeometry args={[0.15, 0.15, 0.04, 8]} />
+        <meshPhongMaterial color={METAL_LIGHT} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh ref={gearBRef} position={[benchX + 1.15, benchTopY + 0.15, benchZ - 0.05]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <cylinderGeometry args={[0.1, 0.1, 0.04, 6]} />
+        <meshPhongMaterial color={METAL_MID} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh ref={gearCRef} position={[benchX + 0.75, benchTopY + 0.15, benchZ + 0.05]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <cylinderGeometry args={[0.08, 0.08, 0.04, 6]} />
+        <meshPhongMaterial color={METAL_DARK} flatShading />
+      </mesh>
+
+      {/* ----- SOLDERING IRON (pulsing tip) ----- */}
+      <mesh position={[benchX - 0.5, benchTopY + 0.05, benchZ + 0.3]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.025, 0.025, 0.3, 6]} />
+        <meshPhongMaterial color={ORANGE_SPARK} flatShading />
+      </mesh>
+      <mesh position={[benchX - 0.68, benchTopY + 0.05, benchZ + 0.3]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.012, 0.012, 0.1, 6]} />
+        <meshPhongMaterial color={METAL_LIGHT} flatShading />
+      </mesh>
+      <mesh ref={solderTipRef} position={[benchX - 0.76, benchTopY + 0.05, benchZ + 0.3]}>
+        <boxGeometry args={[0.03, 0.03, 0.03]} />
+        <meshPhongMaterial color={ORANGE_SPARK} emissive={ORANGE_SPARK} emissiveIntensity={SOLDER_TIP_PULSE_BASE} flatShading />
+      </mesh>
+
+      {/* ----- WRENCH + HAMMER ON BENCH (scatter tools) ----- */}
+      <mesh position={[benchX - 0.2, benchTopY + 0.04, benchZ + 0.32]} rotation={[0, 0.6, 0]} castShadow>
+        <boxGeometry args={[0.24, 0.03, 0.05]} />
+        <meshPhongMaterial color={METAL_LIGHT} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh position={[benchX + 0.1, benchTopY + 0.05, benchZ + 0.3]} rotation={[0, -0.3, 0]} castShadow>
+        <boxGeometry args={[0.18, 0.03, 0.04]} />
+        <meshPhongMaterial color={WOOD_LIGHT} flatShading />
+      </mesh>
+      <mesh position={[benchX + 0.2, benchTopY + 0.06, benchZ + 0.3]} rotation={[0, -0.3, 0]} castShadow>
+        <boxGeometry args={[0.08, 0.06, 0.04]} />
+        <meshPhongMaterial color={METAL_MID} flatShading />
+      </mesh>
+
+      {/* ----- JAR OF PARTS (screws) ----- */}
+      <mesh position={[benchX + 0.4, benchTopY + 0.13, benchZ + 0.3]} castShadow>
+        <cylinderGeometry args={[0.07, 0.07, 0.22, 10]} />
+        <meshPhongMaterial color="#a8bdd0" transparent opacity={0.5} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh position={[benchX + 0.4, benchTopY + 0.06, benchZ + 0.3]}>
+        <cylinderGeometry args={[0.065, 0.065, 0.08, 10]} />
+        <meshPhongMaterial color={METAL_MID} flatShading />
+      </mesh>
+      <mesh position={[benchX + 0.4, benchTopY + 0.24, benchZ + 0.3]}>
+        <cylinderGeometry args={[0.07, 0.065, 0.02, 10]} />
+        <meshPhongMaterial color={METAL_DARK} flatShading />
+      </mesh>
+
+      {/* ----- TAPE ROLL ----- */}
+      <mesh position={[benchX - 0.75, benchTopY + 0.08, benchZ + 0.05]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <cylinderGeometry args={[0.08, 0.08, 0.04, 10]} />
+        <meshPhongMaterial color={AMBER_BULB} emissive={AMBER_BULB} emissiveIntensity={0.1} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+
+      {/* ----- PENCIL CUP ----- */}
+      <mesh position={[benchX + 0.7, benchTopY + 0.1, benchZ - 0.32]} castShadow>
+        <cylinderGeometry args={[0.07, 0.06, 0.2, 8]} />
+        <meshPhongMaterial color={METAL_MID} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh position={[benchX + 0.69, benchTopY + 0.22, benchZ - 0.34]} rotation={[0.2, 0, 0.1]}>
+        <cylinderGeometry args={[0.01, 0.01, 0.18, 6]} />
+        <meshPhongMaterial color={AMBER_BULB} flatShading />
+      </mesh>
+      <mesh position={[benchX + 0.72, benchTopY + 0.22, benchZ - 0.3]} rotation={[-0.15, 0, -0.1]}>
+        <cylinderGeometry args={[0.01, 0.01, 0.18, 6]} />
+        <meshPhongMaterial color="#fb7185" flatShading />
+      </mesh>
+      <mesh position={[benchX + 0.67, benchTopY + 0.22, benchZ - 0.31]}>
+        <cylinderGeometry args={[0.01, 0.01, 0.18, 6]} />
+        <meshPhongMaterial color="#60a5fa" flatShading />
+      </mesh>
+
+      {/* ----- ROLLS OF PAPER (blueprints, under bench) ----- */}
+      <mesh position={[benchX - 1.05, 0.2, benchZ + 0.35]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.05, 0.05, 0.5, 8]} />
+        <meshPhongMaterial color={WHITE_PAPER} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh position={[benchX - 1.05, 0.31, benchZ + 0.35]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.05, 0.05, 0.45, 8]} />
+        <meshPhongMaterial color={CORK} flatShading />
+      </mesh>
+
+      {/* ----- PEGBOARD (on back wall) ----- */}
+      <mesh position={[pegboardX, pegboardY, pegboardZ]} castShadow receiveShadow>
+        <boxGeometry args={[1.8, 1.0, 0.04]} />
+        <meshPhongMaterial color={PEG_BROWN} flatShading />
+        <Edges color={edgeColor} lineWidth={1.2} />
+      </mesh>
+      {/* Pegboard hole pattern (darker dots) */}
+      {[-0.6, -0.3, 0.0, 0.3, 0.6].map((dx, i) =>
+        [-0.3, 0.0, 0.3].map((dy, j) => (
+          <mesh key={`hole-${i}-${j}`} position={[pegboardX + dx, pegboardY + dy, pegboardZ + 0.021]}>
+            <boxGeometry args={[0.02, 0.02, 0.002]} />
+            <meshPhongMaterial color="#2a1a0a" flatShading />
+          </mesh>
+        ))
+      )}
+      {/* Tools hanging on pegboard */}
+      {PEG_TOOLS.map(([dx, dy, w, h, c], i) => (
+        <mesh key={`ptool-${i}`} position={[pegboardX + dx, pegboardY + dy, pegboardZ + 0.05]} castShadow>
+          <boxGeometry args={[w, h, 0.04]} />
+          <meshPhongMaterial color={c} flatShading />
+          <Edges color={edgeColor} lineWidth={1} />
+        </mesh>
+      ))}
+
+      {/* ----- HANGING SWINGING TOOL (rope + wrench, swings) ----- */}
+      <group ref={hangingToolRef} position={[pegboardX + 0.9, pegboardY + 0.5, pegboardZ + 0.1]}>
+        <mesh position={[0, -0.2, 0]}>
+          <boxGeometry args={[0.008, 0.4, 0.008]} />
+          <meshPhongMaterial color={CORK} flatShading />
+        </mesh>
+        <mesh position={[0, -0.45, 0]} castShadow>
+          <boxGeometry args={[0.06, 0.18, 0.04]} />
+          <meshPhongMaterial color={METAL_LIGHT} flatShading />
+          <Edges color={edgeColor} lineWidth={1} />
+        </mesh>
+      </group>
+
+      {/* ----- CORK BOARD (small, side wall) ----- */}
+      <mesh position={[ox + 2.05, 1.2, oz - 0.5]} rotation={[0, -Math.PI / 2, 0]} castShadow>
+        <boxGeometry args={[1.0, 0.7, 0.04]} />
+        <meshPhongMaterial color={CORK} flatShading />
+        <Edges color={edgeColor} lineWidth={1.2} />
+      </mesh>
+      {/* 3 pinned sketches */}
+      <mesh position={[ox + 2.02, 1.3, oz - 0.7]} rotation={[0, -Math.PI / 2, 0.1]}>
+        <boxGeometry args={[0.2, 0.16, 0.005]} />
+        <meshPhongMaterial color={WHITE_PAPER} flatShading />
+      </mesh>
+      <mesh position={[ox + 2.02, 1.18, oz - 0.3]} rotation={[0, -Math.PI / 2, -0.1]}>
+        <boxGeometry args={[0.2, 0.16, 0.005]} />
+        <meshPhongMaterial color={WHITE_PAPER} flatShading />
+      </mesh>
+      <mesh position={[ox + 2.02, 1.02, oz - 0.55]} rotation={[0, -Math.PI / 2, 0]}>
+        <boxGeometry args={[0.18, 0.14, 0.005]} />
+        <meshPhongMaterial color="#ffe4b0" flatShading />
+      </mesh>
+
+      {/* ----- STOOL (simple seat beside bench) ----- */}
+      <mesh position={[benchX + 1.4, 0.45, benchZ + 0.8]} castShadow>
+        <boxGeometry args={[0.35, 0.06, 0.35]} />
+        <meshPhongMaterial color={WOOD_LIGHT} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh position={[benchX + 1.26, 0.21, benchZ + 0.66]}>
+        <boxGeometry args={[0.04, 0.46, 0.04]} />
+        <meshPhongMaterial color={WOOD_MID} flatShading />
+      </mesh>
+      <mesh position={[benchX + 1.54, 0.21, benchZ + 0.66]}>
+        <boxGeometry args={[0.04, 0.46, 0.04]} />
+        <meshPhongMaterial color={WOOD_MID} flatShading />
+      </mesh>
+      <mesh position={[benchX + 1.26, 0.21, benchZ + 0.94]}>
+        <boxGeometry args={[0.04, 0.46, 0.04]} />
+        <meshPhongMaterial color={WOOD_MID} flatShading />
+      </mesh>
+      <mesh position={[benchX + 1.54, 0.21, benchZ + 0.94]}>
+        <boxGeometry args={[0.04, 0.46, 0.04]} />
+        <meshPhongMaterial color={WOOD_MID} flatShading />
+      </mesh>
+
+      {/* ----- FLOATING IDEA BULB (hero, pulses) ----- */}
       <mesh ref={bulbRef} position={[ox, 2.5, oz + 0.4]}>
-        <sphereGeometry args={[0.13, 10, 10]} />
-        <meshPhongMaterial color="#ffe28a" emissive="#ffd77a" emissiveIntensity={3.0} flatShading />
+        <sphereGeometry args={[0.14, 10, 10]} />
+        <meshPhongMaterial color="#ffe28a" emissive={AMBER_BULB} emissiveIntensity={BULB_PULSE_BASE} flatShading />
+      </mesh>
+      {/* Bulb screw base */}
+      <mesh position={[ox, 2.65, oz + 0.4]}>
+        <boxGeometry args={[0.07, 0.08, 0.07]} />
+        <meshPhongMaterial color={METAL_MID} flatShading />
       </mesh>
       <pointLight ref={bulbLightRef} position={[ox, 2.5, oz + 0.4]} color="#ffe0a0" intensity={0.7} distance={9} />
+
+      {/* ----- GOLD ACCENT LIGHT at workbench (room accent per rooms.ts #fbbf24) ----- */}
+      <pointLight
+        ref={accentLightRef}
+        color={AMBER_BULB}
+        intensity={ACCENT_LIGHT_BASE}
+        distance={6}
+        position={[benchX, benchTopY + 0.4, benchZ]}
+      />
     </group>
   );
 }

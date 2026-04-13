@@ -11,10 +11,11 @@ import type { InteractableData } from '../../store/worldStore';
 
 const BLOG_INTERACTABLE: InteractableData = BOOK_ROOM_CONTENT.dialogues.blog;
 
-// --- Cozy library palette (warm wood, deep brown, amber, forest, cream) ---
-const WOOD_DEEP = '#4a2f1a';
-const WOOD_MID = '#6b4423';
-const WOOD_LIGHT = '#8b5e3c';
+// --- Cozy library palette (mahogany-shifted: red-brown register) ---
+// F3.15: nudged red +hue to lock tonal distinctness vs IdeaLab's olive-pine.
+const WOOD_DEEP = '#4a281a';
+const WOOD_MID = '#6b3a1e';
+const WOOD_LIGHT = '#9c5a30';
 const CREAM = '#e8dcc4';
 const CREAM_DARK = '#d4c4a4';
 const AMBER = '#e8a860';
@@ -52,6 +53,11 @@ const PAGE_SPEED = 1.5;
 const ACCENT_LIGHT_BASE = 0.8;
 const ACCENT_LIGHT_AMPLITUDE = 0.12;
 const ACCENT_LIGHT_SPEED = 1.9;
+// F3.15 — hero focal animations: slow globe spin + gold frame breathing glow.
+const GLOBE_SPIN_SPEED = 0.35;
+const FRAME_GLOW_BASE = 0.22;
+const FRAME_GLOW_AMPLITUDE = 0.18;
+const FRAME_GLOW_SPEED = 1.3;
 
 // Dust mote scatter (deterministic).
 const DUST_SEED = 0xb00c2a;
@@ -84,6 +90,9 @@ export function BookRoom() {
   const accentLightRef = useRef<THREE.PointLight>(null);
   const pageRef = useRef<THREE.Mesh>(null);
   const dustRefs = useRef<Array<THREE.Mesh | null>>([]);
+  // F3.15 hero refs — globe group rotates; gold frame emissive pulses.
+  const globeRef = useRef<THREE.Group>(null);
+  const frameRef = useRef<THREE.Mesh>(null);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -115,6 +124,15 @@ export function BookRoom() {
       if (!m) continue;
       const spec = dustMotes[i];
       m.position.y = DUST_BASE_Y + Math.sin(t * DUST_SPEED + spec.phase) * DUST_AMPLITUDE;
+    }
+
+    // F3.15 hero focal: globe slow-spin + framed picture gold breathing.
+    const globe = globeRef.current;
+    if (globe) globe.rotation.y = t * GLOBE_SPIN_SPEED;
+    const frame = frameRef.current;
+    if (frame) {
+      const fmat = frame.material as THREE.MeshPhongMaterial;
+      fmat.emissiveIntensity = FRAME_GLOW_BASE + Math.sin(t * FRAME_GLOW_SPEED) * FRAME_GLOW_AMPLITUDE;
     }
   });
 
@@ -385,7 +403,7 @@ export function BookRoom() {
       {/* ----- POTTED FERN (cozy corner greenery) ----- */}
       <mesh position={[ox + 1.8, 0.22, oz + 1.5]} castShadow>
         <boxGeometry args={[0.28, 0.34, 0.28]} />
-        <meshPhongMaterial color="#6b4423" flatShading />
+        <meshPhongMaterial color={WOOD_MID} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       <mesh position={[ox + 1.8, 0.52, oz + 1.5]} castShadow>
@@ -401,7 +419,7 @@ export function BookRoom() {
         <meshPhongMaterial color={FOREST_LIGHT} emissive={FOREST_LIGHT} emissiveIntensity={0.15} flatShading />
       </mesh>
 
-      {/* ----- GLOBE ON LEFT CORNER ----- */}
+      {/* ----- GLOBE ON LEFT CORNER (F3.15 hero: slow spin) ----- */}
       <mesh position={[ox - 1.85, 0.3, oz + 1.5]} castShadow>
         <boxGeometry args={[0.2, 0.06, 0.2]} />
         <meshPhongMaterial color={WOOD_DEEP} flatShading />
@@ -410,16 +428,18 @@ export function BookRoom() {
         <boxGeometry args={[0.03, 0.2, 0.03]} />
         <meshPhongMaterial color={BRASS} flatShading />
       </mesh>
-      <mesh position={[ox - 1.85, 0.56, oz + 1.5]} castShadow>
-        <sphereGeometry args={[0.16, 8, 8]} />
-        <meshPhongMaterial color="#8ba7b8" emissive="#8ba7b8" emissiveIntensity={0.15} flatShading />
-        <Edges color={edgeColor} lineWidth={1} />
-      </mesh>
-      {/* Brass globe ring */}
-      <mesh position={[ox - 1.85, 0.56, oz + 1.5]} rotation={[0, 0, Math.PI / 8]}>
-        <torusGeometry args={[0.17, 0.008, 6, 20]} />
-        <meshPhongMaterial color={BRASS} flatShading />
-      </mesh>
+      {/* Spinning sphere + ring group — hero focal animation */}
+      <group ref={globeRef} position={[ox - 1.85, 0.56, oz + 1.5]}>
+        <mesh castShadow>
+          <sphereGeometry args={[0.16, 8, 8]} />
+          <meshPhongMaterial color="#8ba7b8" emissive="#8ba7b8" emissiveIntensity={0.15} flatShading />
+          <Edges color={edgeColor} lineWidth={1} />
+        </mesh>
+        <mesh rotation={[0, 0, Math.PI / 8]}>
+          <torusGeometry args={[0.17, 0.008, 6, 20]} />
+          <meshPhongMaterial color={BRASS} flatShading />
+        </mesh>
+      </group>
 
       {/* ----- FLOATING DUST MOTES ----- */}
       {dustMotes.map((m, i) => (
@@ -446,15 +466,20 @@ export function BookRoom() {
       {/* Wide ambient lamp fill */}
       <pointLight position={[ox, 2.0, oz + 0.5]} color="#e8a860" intensity={0.4} distance={9} />
 
-      {/* ----- FRAMED PICTURE ABOVE CHAIR (gold-frame) ----- */}
-      <mesh position={[chairX, 1.85, chairZ + 0.55]} castShadow>
+      {/* ----- FRAMED PICTURE ABOVE CHAIR (gold frame — F3.15 breathes) ----- */}
+      <mesh ref={frameRef} position={[chairX, 1.85, chairZ + 0.55]} castShadow>
         <boxGeometry args={[0.6, 0.45, 0.04]} />
-        <meshPhongMaterial color={GOLD} flatShading />
+        <meshPhongMaterial
+          color={GOLD}
+          emissive={GOLD}
+          emissiveIntensity={FRAME_GLOW_BASE}
+          flatShading
+        />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       <mesh position={[chairX, 1.85, chairZ + 0.57]}>
         <boxGeometry args={[0.5, 0.35, 0.02]} />
-        <meshPhongMaterial color="#6b4423" emissive="#6b4423" emissiveIntensity={0.1} flatShading />
+        <meshPhongMaterial color={WOOD_MID} emissive={WOOD_MID} emissiveIntensity={0.1} flatShading />
       </mesh>
     </group>
   );

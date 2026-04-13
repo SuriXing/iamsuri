@@ -11,11 +11,12 @@ import type { InteractableData } from '../../store/worldStore';
 
 const IDEA_BOARD_INTERACTABLE: InteractableData = IDEA_LAB_CONTENT.dialogues.ideaBoard;
 
-// --- Maker workshop palette (wood + metal + electric accents) ---
-const WOOD_DEEP = '#4a2f1a';
-const WOOD_MID = '#6b4a2a';
-const WOOD_LIGHT = '#8b6a42';
-const WOOD_PLANK = '#7a5a3a';
+// --- Maker workshop palette (pine/olive-shifted — yellow-brown register) ---
+// F3.15: nudged yellow +hue to lock tonal distinctness vs BookRoom's mahogany.
+const WOOD_DEEP = '#4a3418';
+const WOOD_MID = '#6e5428';
+const WOOD_LIGHT = '#8f7436';
+const WOOD_PLANK = '#7e6430';
 const METAL_DARK = '#3a4250';
 const METAL_MID = '#6a7280';
 const METAL_LIGHT = '#9ba2ac';

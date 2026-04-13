@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import * as THREE from 'three';
-import { DOOR } from '../constants';
+import { DOOR, DOOR_POLISH } from '../constants';
 import { useWorldStore } from '../store/worldStore';
 import type { RoomId } from '../data/rooms';
 import { registerCollider, unregisterCollider } from './colliders';
@@ -19,7 +19,11 @@ interface DoorProps {
 const FRAME_COLOR = '#6b4e1f';
 const FRAME_EMISSIVE = '#4a2c0a';
 const FRAME_TRIM_COLOR = '#3a2410'; // slightly darker than frame for trim/baseboard
-const PANEL_BASE = '#4a2c0a';
+// Frame molding overlay — ~15% lighter than the frame for value separation.
+const FRAME_MOLDING_COLOR = '#8a6732';
+// Door slab lives in a DIFFERENT hue family from walls (walls = neutral brown,
+// door = deeper red-brown). Drives the designer's "value separation" ask.
+const PANEL_BASE = '#5a2814';
 const LOCK_COLOR = '#ff2244';
 const CHECK_COLOR = '#22ff66';
 const LANTERN_LOCKED_BODY = '#ff5544';
@@ -43,11 +47,14 @@ function hashRoomId(id: string): number {
 }
 
 // Small hex tint helper — deterministic, used once inside useMemo (not per-frame).
-function tintHex(hex: string, delta: number): string {
+// dL shifts lightness; dH rotates hue (in rad units, wraps 0-1).
+function tintHex(hex: string, dL: number, dH = 0): string {
   const c = new THREE.Color(hex);
   const hsl = { h: 0, s: 0, l: 0 };
   c.getHSL(hsl);
-  hsl.l = Math.max(0, Math.min(1, hsl.l + delta));
+  hsl.l = Math.max(0, Math.min(1, hsl.l + dL));
+  // Hue is 0-1 in THREE; dH is in radians → convert by /(2π). Wrap with + 1 % 1.
+  hsl.h = ((hsl.h + dH / (Math.PI * 2)) % 1 + 1) % 1;
   c.setHSL(hsl.h, hsl.s, hsl.l);
   return `#${c.getHexString()}`;
 }
@@ -57,17 +64,26 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
   const theme = useWorldStore((s) => s.theme);
   const edgeColor = theme === 'dark' ? EDGE_DARK : EDGE_LIGHT;
   const hingeRef = useRef<THREE.Group>(null);
+  const lockGroupRef = useRef<THREE.Group>(null);
   const lockRef = useRef<THREE.Mesh>(null);
+  const lockShackleRef = useRef<THREE.Mesh>(null);
+  const lanternGroupRef = useRef<THREE.Group>(null);
+  const lanternBodyRef = useRef<THREE.Mesh>(null);
   const angleRef = useRef<number>(unlocked ? DOOR.openAngle : 0);
 
   // Per-door deterministic wood tones for the 3-strip panel.
+  // Fix 1: push L delta from ±0.04 → ±0.10 (± half of 0.20) for visibility at game distance.
   const panelTints = useMemo(() => {
     const rng = makeRng(hashRoomId(roomId));
-    // Three strips: top rail, middle field, bottom rail — each gets a small L delta.
+    const middle = tintHex(PANEL_BASE, (rng() - 0.5) * 0.20);
     return {
-      top:    tintHex(PANEL_BASE, (rng() - 0.5) * 0.08),
-      middle: tintHex(PANEL_BASE, (rng() - 0.5) * 0.08),
-      bottom: tintHex(PANEL_BASE, (rng() - 0.5) * 0.08),
+      top:    tintHex(PANEL_BASE, (rng() - 0.5) * 0.20),
+      middle,
+      bottom: tintHex(PANEL_BASE, (rng() - 0.5) * 0.20),
+      // Inset panel sits -0.08 L darker than the middle field strip.
+      inset:  tintHex(middle, -0.08),
+      // Center mullion: darker wood so it reads as an architectural divider.
+      mullion: tintHex(middle, -0.12),
     };
   }, [roomId]);
 
@@ -96,10 +112,37 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
     const factor = 1 - Math.exp(-DOOR.hingeLerp * 60 * delta);
     angleRef.current += (target - angleRef.current) * factor;
     if (hingeRef.current) hingeRef.current.rotation.y = angleRef.current;
-    if (!unlocked && lockRef.current) {
-      const mat = lockRef.current.material as THREE.MeshPhongMaterial;
-      // Pulse ±5% around 2.5 emissive base.
-      mat.emissiveIntensity = 2.5 + Math.sin(clock.getElapsedTime() * 3) * 0.125;
+    const t = clock.getElapsedTime();
+    if (!unlocked) {
+      // Lock group pulses as one object: scale ±5%, body+shackle emissive shared.
+      const wave = Math.sin(t * 3);
+      const pulse = 2.5 + wave * 0.125;
+      const s = 1 + wave * 0.05;
+      if (lockGroupRef.current) {
+        lockGroupRef.current.scale.x = s;
+        lockGroupRef.current.scale.y = s;
+        lockGroupRef.current.scale.z = s;
+      }
+      if (lockRef.current) {
+        (lockRef.current.material as THREE.MeshPhongMaterial).emissiveIntensity = pulse;
+      }
+      if (lockShackleRef.current) {
+        (lockShackleRef.current.material as THREE.MeshPhongMaterial).emissiveIntensity = pulse;
+      }
+    }
+    // Lantern body pulses — locked: faster dim red throb, unlocked: slow warm breath.
+    if (lanternGroupRef.current) {
+      const freq = unlocked ? 1.2 : 2.5;
+      const s = 1 + Math.sin(t * freq) * 0.05;
+      lanternGroupRef.current.scale.x = s;
+      lanternGroupRef.current.scale.y = s;
+      lanternGroupRef.current.scale.z = s;
+    }
+    if (lanternBodyRef.current) {
+      const freq = unlocked ? 1.2 : 2.5;
+      const base = unlocked ? 2.8 : 1.6;
+      (lanternBodyRef.current.material as THREE.MeshPhongMaterial).emissiveIntensity =
+        base + Math.sin(t * freq) * 0.15;
     }
   });
 
@@ -123,11 +166,26 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
     ? [DOOR.width + DOOR.postW * 2, 0.18, 0.22]
     : [0.22, 0.18, DOOR.width + DOOR.postW * 2];
 
-  // Thin trim board on top of the lintel (0.04 thick).
+  // Thin trim board on top of the lintel (0.06 thick, wider overhang so it
+  // overlaps the lintel top by 0.02 and kills the F3.6 "visible gap").
   const lintelTrimArgs: [number, number, number] = horizontal
-    ? [DOOR.width + DOOR.postW * 2 + 0.04, 0.04, 0.26]
-    : [0.26, 0.04, DOOR.width + DOOR.postW * 2 + 0.04];
-  const lintelTrimPos: [number, number, number] = [x, DOOR.frameHeight + 0.13, z];
+    ? [DOOR.width + DOOR.postW * 2 + 0.08, 0.06, 0.30]
+    : [0.30, 0.06, DOOR.width + DOOR.postW * 2 + 0.08];
+  // Lintel top is at frameHeight + 0.11. Place trim so its bottom (center - 0.03)
+  // is at +0.09 → overlaps lintel by 0.02. Center at +0.12.
+  const lintelTrimPos: [number, number, number] = [x, DOOR.frameHeight + 0.12, z];
+
+  // Frame molding overlay — thin contrasting strips hugging the outside of each post.
+  // Lighter wood tone, taller than the post by a hair, sits slightly proud.
+  const moldingPostArgs: [number, number, number] = horizontal
+    ? [DOOR.postW * 0.4, DOOR.frameHeight + 0.02, 0.22]
+    : [0.22, DOOR.frameHeight + 0.02, DOOR.postW * 0.4];
+  const moldingLeftPos: [number, number, number] = horizontal
+    ? [x - DOOR.width / 2 - DOOR.postW * 0.25, yMid + 0.01, z]
+    : [x, yMid + 0.01, z - DOOR.width / 2 - DOOR.postW * 0.25];
+  const moldingRightPos: [number, number, number] = horizontal
+    ? [x + DOOR.width / 2 + DOOR.postW * 0.25, yMid + 0.01, z]
+    : [x, yMid + 0.01, z + DOOR.width / 2 + DOOR.postW * 0.25];
 
   // Baseboard at the bottom of each post.
   const baseboardArgs: [number, number, number] = horizontal
@@ -170,6 +228,39 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
 
   const knobColor = theme === 'dark' ? '#c0b070' : '#998060';
 
+  // Desaturated accent color for the per-door doormat (memoized, never per-frame).
+  const matColor = useMemo(() => {
+    const c = new THREE.Color(accentColor);
+    const hsl = { h: 0, s: 0, l: 0 };
+    c.getHSL(hsl);
+    // Low saturation (~25%) + mid lightness for a "rug weave" read.
+    c.setHSL(hsl.h, Math.min(hsl.s, 0.25), 0.35);
+    return `#${c.getHexString()}`;
+  }, [accentColor]);
+
+  // Doormat sits on the hallway side of the doorway.
+  // Top rooms: door z = -1.25, hallway is at higher z → mat at z = -1.0.
+  // Bottom rooms: door z = +1.25, hallway at lower z → mat at z = +1.0.
+  const matPos: [number, number, number] = horizontal
+    ? [x, 0.015, z < 0 ? -1.0 : 1.0]
+    : [x < 0 ? -1.0 : 1.0, 0.015, z];
+  const matArgs: [number, number, number] = horizontal
+    ? [DOOR.width, 0.03, 0.6]
+    : [0.6, 0.03, DOOR.width];
+
+  // Warm spill light INSIDE the room opening. The inside direction is the
+  // one AWAY from origin (doors always face the central hallway). For
+  // horizontal doors (along x-walls at z = ±(GAP+0.05)), inside Z is -sign(z).
+  // For vertical doors, inside X is -sign(x). Wait — door z = +1.25 (positive)
+  // means room is at z = +half, so inside is further +z. So insideSign = sign(coord).
+  const insideSignZ = horizontal ? Math.sign(z) : 0;
+  const insideSignX = horizontal ? 0 : Math.sign(x);
+  const spillLightPos: [number, number, number] = [
+    x + insideSignX * DOOR_POLISH.spillLight.offset,
+    DOOR_POLISH.spillLight.y,
+    z + insideSignZ * DOOR_POLISH.spillLight.offset,
+  ];
+
   return (
     <group>
       {/* Frame posts */}
@@ -183,14 +274,37 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
         <meshPhongMaterial color={FRAME_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.3} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
+      {/* Contrasting frame moldings around the outside of each post */}
+      <mesh position={moldingLeftPos}>
+        <boxGeometry args={moldingPostArgs} />
+        <meshPhongMaterial
+          color={FRAME_MOLDING_COLOR}
+          emissive={FRAME_EMISSIVE}
+          emissiveIntensity={0.25}
+          flatShading
+        />
+        <Edges color={edgeColor} lineWidth={1.0} />
+      </mesh>
+      <mesh position={moldingRightPos}>
+        <boxGeometry args={moldingPostArgs} />
+        <meshPhongMaterial
+          color={FRAME_MOLDING_COLOR}
+          emissive={FRAME_EMISSIVE}
+          emissiveIntensity={0.25}
+          flatShading
+        />
+        <Edges color={edgeColor} lineWidth={1.0} />
+      </mesh>
       {/* Baseboards at bottom of each post */}
       <mesh position={baseboardLeftPos} receiveShadow>
         <boxGeometry args={baseboardArgs} />
         <meshPhongMaterial color={FRAME_TRIM_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.2} flatShading />
+        <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
       <mesh position={baseboardRightPos} receiveShadow>
         <boxGeometry args={baseboardArgs} />
         <meshPhongMaterial color={FRAME_TRIM_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.2} flatShading />
+        <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
       {/* Lintel */}
       <mesh position={lintelPos} castShadow receiveShadow>
@@ -198,10 +312,23 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
         <meshPhongMaterial color={FRAME_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.3} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
-      {/* Lintel trim board (on top of the lintel) */}
+      {/* Lintel trim board — overlaps the lintel top (gap fix from F3.6 review) */}
       <mesh position={lintelTrimPos}>
         <boxGeometry args={lintelTrimArgs} />
-        <meshPhongMaterial color={FRAME_TRIM_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.2} flatShading />
+        <meshPhongMaterial
+          color={FRAME_MOLDING_COLOR}
+          emissive={FRAME_EMISSIVE}
+          emissiveIntensity={0.25}
+          flatShading
+        />
+        <Edges color={edgeColor} lineWidth={1.0} />
+      </mesh>
+
+      {/* Doormat — flat box at the doorway threshold, hallway side, accent-tinted */}
+      <mesh position={matPos} receiveShadow>
+        <boxGeometry args={matArgs} />
+        <meshPhongMaterial color={matColor} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
       </mesh>
 
       {/* Hinge group with door panel — 3 stacked strips */}
@@ -244,37 +371,52 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
           <boxGeometry args={[DOOR.width * 0.8, 0.06, PANEL_THICK + 0.01]} />
           <meshPhongMaterial color={accentColor} emissive={accentColor} emissiveIntensity={0.6} flatShading />
         </mesh>
-        {/* Knob assembly: escutcheon plate + knob sphere */}
+        {/* Center mullion — thin vertical strip, full panel height, darker wood. */}
+        <mesh position={stripPos(DOOR.height / 2)} rotation={[0, panelRotY, 0]}>
+          <boxGeometry args={[0.04, DOOR.height, PANEL_THICK + 0.005]} />
+          <meshPhongMaterial color={panelTints.mullion} flatShading />
+          <Edges color={edgeColor} lineWidth={1} />
+        </mesh>
+        {/* Inset panel rectangle on the middle field — slightly darker, thin. */}
+        <mesh position={stripPos(middleY)} rotation={[0, panelRotY, 0]}>
+          <boxGeometry args={[DOOR.width * 0.6, MID_H * 0.7, 0.02]} />
+          <meshPhongMaterial color={panelTints.inset} flatShading />
+          <Edges color={edgeColor} lineWidth={1} />
+        </mesh>
+        {/* Knob assembly: escutcheon plate + knob sphere (1.5× the F3.5 sizing —
+            designer explicitly called out the knob was too small at game distance) */}
         <group position={knobGroupPos}>
           {/* Escutcheon plate (flat box, sits flush against the door) */}
           <mesh rotation={[0, panelRotY, 0]}>
-            <boxGeometry args={[0.14, 0.22, 0.02]} />
-            <meshPhongMaterial color={knobColor} emissive={knobColor} emissiveIntensity={0.25} flatShading />
+            <boxGeometry args={DOOR_POLISH.escutcheon as unknown as [number, number, number]} />
+            <meshPhongMaterial color={knobColor} emissive={knobColor} emissiveIntensity={0.3} flatShading />
             <Edges color={edgeColor} lineWidth={1.2} />
           </mesh>
           {/* Knob sphere — sits proud of the escutcheon */}
-          <mesh position={horizontal ? [0, 0, 0.04] : [0.04, 0, 0]}>
-            <sphereGeometry args={[0.055, 10, 8]} />
-            <meshPhongMaterial color={knobColor} emissive={knobColor} emissiveIntensity={0.4} flatShading />
+          <mesh position={horizontal ? [0, 0, 0.055] : [0.055, 0, 0]}>
+            <sphereGeometry args={[DOOR_POLISH.knobRadius, 12, 10]} />
+            <meshPhongMaterial color={knobColor} emissive={knobColor} emissiveIntensity={0.45} flatShading />
+            <Edges color={edgeColor} lineWidth={1.0} />
           </mesh>
         </group>
       </group>
 
       {/* Lock / unlock indicator above the door */}
       {!unlocked ? (
-        <>
-          {/* Lock body — larger, pulsing */}
-          <mesh ref={lockRef} position={[x, DOOR.frameHeight + 0.42, z]}>
-            <boxGeometry args={[0.24, 0.22, 0.08]} />
+        <group ref={lockGroupRef} position={[x, DOOR.frameHeight + 0.48, z]}>
+          {/* Lock body — larger, pulses with the shackle as a single group */}
+          <mesh ref={lockRef} position={[0, 0, 0]}>
+            <boxGeometry args={[0.28, 0.24, 0.1]} />
             <meshPhongMaterial color={LOCK_COLOR} emissive={LOCK_COLOR} emissiveIntensity={2.5} flatShading />
             <Edges color={edgeColor} lineWidth={1.2} />
           </mesh>
           {/* Lock shackle (box on top of the body) */}
-          <mesh position={[x, DOOR.frameHeight + 0.58, z]}>
-            <boxGeometry args={[0.14, 0.1, 0.06]} />
-            <meshPhongMaterial color={LOCK_COLOR} emissive={LOCK_COLOR} emissiveIntensity={2.2} flatShading />
+          <mesh ref={lockShackleRef} position={[0, 0.18, 0]}>
+            <boxGeometry args={[0.16, 0.12, 0.07]} />
+            <meshPhongMaterial color={LOCK_COLOR} emissive={LOCK_COLOR} emissiveIntensity={2.5} flatShading />
+            <Edges color={edgeColor} lineWidth={1.0} />
           </mesh>
-        </>
+        </group>
       ) : (
         <>
           {/* Green checkmark — two thin boxes forming an L (rotated 45deg). */}
@@ -289,32 +431,52 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
         </>
       )}
 
-      {/* Lantern — glow body + metal cap + chain */}
-      {/* Chain hanging from above */}
-      <mesh position={[x, DOOR.frameHeight + 0.42, z]}>
-        <boxGeometry args={[0.015, 0.28, 0.015]} />
-        <meshPhongMaterial color={CHAIN_COLOR} flatShading />
-      </mesh>
-      {/* Metal cap on top of the lantern */}
-      <mesh position={[x, DOOR.frameHeight + 0.29, z]}>
-        <boxGeometry args={[0.2, 0.04, 0.2]} />
-        <meshPhongMaterial color={LANTERN_CAP_COLOR} flatShading />
-      </mesh>
-      {/* Lantern glow body (1.2x original 0.15 = 0.18) */}
-      <mesh position={[x, DOOR.frameHeight + 0.18, z]}>
-        <boxGeometry args={[0.18, 0.18, 0.18]} />
-        <meshPhongMaterial
-          color={lanternBodyColor}
-          emissive={lanternBodyColor}
-          emissiveIntensity={2.5}
-          flatShading
-        />
-      </mesh>
+      {/* Lantern — group-anchored at lantern body so a single scale pulse
+          drives body + cap + chain together. Lock-state color wired in. */}
+      <group ref={lanternGroupRef} position={[x, DOOR.frameHeight + 0.18, z]}>
+        {/* Chain hanging from above (local +y) */}
+        <mesh position={[0, 0.24, 0]}>
+          <boxGeometry args={[0.02, 0.28, 0.02]} />
+          <meshPhongMaterial color={CHAIN_COLOR} flatShading />
+        </mesh>
+        {/* Metal cap on top of the lantern */}
+        <mesh position={[0, 0.11, 0]}>
+          <boxGeometry args={[0.22, 0.05, 0.22]} />
+          <meshPhongMaterial color={LANTERN_CAP_COLOR} flatShading />
+          <Edges color={edgeColor} lineWidth={1.0} />
+        </mesh>
+        {/* Lantern glow body — lock-state color, F3.7 slightly larger */}
+        <mesh ref={lanternBodyRef} position={[0, 0, 0]}>
+          <boxGeometry args={[0.2, 0.22, 0.2]} />
+          <meshPhongMaterial
+            color={lanternBodyColor}
+            emissive={lanternBodyColor}
+            emissiveIntensity={unlocked ? 2.8 : 1.6}
+            flatShading
+          />
+          <Edges color={edgeColor} lineWidth={1.0} />
+        </mesh>
+        {/* Bottom finial */}
+        <mesh position={[0, -0.14, 0]}>
+          <boxGeometry args={[0.1, 0.04, 0.1]} />
+          <meshPhongMaterial color={LANTERN_CAP_COLOR} flatShading />
+        </mesh>
+      </group>
+      {/* Lantern point light — stays at fixed world position */}
       <pointLight
         position={[x, DOOR.frameHeight + 0.18, z]}
         color={lanternLightColor}
-        intensity={0.7}
+        intensity={unlocked ? 0.9 : 0.5}
         distance={5}
+      />
+
+      {/* F3.7: warm spill light INSIDE the room opening. Makes the arch glow
+          into the hallway, addressing F3.6 flat-lighting finding. */}
+      <pointLight
+        position={spillLightPos}
+        color={DOOR_POLISH.spillLight.color}
+        intensity={DOOR_POLISH.spillLight.intensity}
+        distance={DOOR_POLISH.spillLight.distance}
       />
     </group>
   );

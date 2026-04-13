@@ -82,6 +82,44 @@ export const DOOR = {
   hingeLerp: 0.12,
 } as const;
 
+// F3.7 — door/wall polish tunables (additive, not in frozen blocks).
+export const DOOR_POLISH = {
+  /** Knob sphere radius, 1.5x the F3.5 value (0.055 → 0.0825). */
+  knobRadius: 0.0825,
+  /** Escutcheon plate (width, height, depth). */
+  escutcheon: [0.18, 0.28, 0.025] as const,
+  /** Warm spill light inside each door opening. */
+  spillLight: {
+    color: '#ffb060',
+    intensity: 0.9,
+    distance: 3.2,
+    /** Offset from door center into the room, along inside normal. */
+    offset: 0.9,
+    /** Height above floor. */
+    y: 1.1,
+  },
+  /** Doormat size (x, y, z) — thin, wider than door. */
+  doormat: [1.5, 0.03, 0.55] as const,
+  /** Doormat offset from door along the hallway side (opposite inside). */
+  doormatOffset: 0.5,
+  /** Lintel trim small z-nudge to kill the F3.6 visible gap. */
+  lintelNudge: -0.02,
+} as const;
+
+// F3.7 — wall polish tunables.
+export const WALL_POLISH = {
+  /** Base neutral wall color (what F3.5 used). */
+  baseColor: '#3d2817',
+  /** Baseboard color — ~20% darker. */
+  baseboard: '#211108',
+  /** Top cap color — ~15% lighter. */
+  topCap: '#5e3e22',
+  /** How strongly to blend the room accent into the wall tint (0-1). */
+  accentMix: 0.08,
+  /** mulberry32 per-segment L jitter delta (±half of this range). */
+  tintJitter: 0.24,
+} as const;
+
 // Character
 export const CHARACTER = {
   scale: 0.9,

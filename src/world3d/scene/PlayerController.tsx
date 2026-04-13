@@ -70,28 +70,26 @@ export function PlayerController(): null {
     } else {
       // Follow mode.
       //
-      // Camera sits behind the character, looking toward them. The camera's
-      // look direction is (sin(yaw), cos(yaw)), which is also the
-      // character's forward direction in world space (because the camera
-      // chases character facing).
+      // Three.js camera convention: when the camera looks toward +Z (yaw
+      // = 0), its local +X (the right side of the screen) points to world
+      // -X. This is because the default camera looks down -Z, so rotating
+      // 180° to face +Z flips the right axis. Verified empirically.
       //
-      //   forward = (sin(yaw), cos(yaw))   ← W / Up
-      //   right   = (cos(yaw), -sin(yaw))  ← D / Right
+      //   camera_forward = (sin(yaw), cos(yaw))     — W / ↑
+      //   camera_right   = (-cos(yaw), sin(yaw))    — D / →   ← note minus
       //
       //   world = forward * mz + right * mx
       //
-      // Check @ yaw=0 (camera at -Z, looking toward +Z):
-      //   W (mz=1, mx=0) → (0, 1)  ✓ +Z (into the screen)
-      //   D (mz=0, mx=1) → (1, 0)  ✓ +X (rightward on screen)
-      //
-      // Check @ yaw=π (camera at +Z, looking toward -Z, after turning around):
-      //   W (mz=1, mx=0) → (0, -1) ✓ still "into the screen"
-      //   D (mz=0, mx=1) → (-1, 0) ✓ still "rightward on screen"
+      // Check @ yaw=0 (camera at -Z behind char, looking toward +Z):
+      //   W (mz=1, mx=0) → (0, 1)   +Z, "into the screen"           ✓
+      //   D (mz=0, mx=1) → (-1, 0)  -X, screen-right                 ✓
+      //   A (mz=0, mx=-1) → (1, 0)  +X, screen-left                  ✓
+      //   S (mz=-1, mx=0) → (0, -1) -Z, back toward camera           ✓
       const yaw = followCamYawRef.current;
       const sinY = Math.sin(yaw);
       const cosY = Math.cos(yaw);
-      worldX = sinY * mz + cosY * mx;
-      worldZ = cosY * mz - sinY * mx;
+      worldX = sinY * mz - cosY * mx;
+      worldZ = cosY * mz + sinY * mx;
     }
 
     const speed = s.fpActive ? FP_SPEED : SPEEDS.walk;

@@ -1,3 +1,7 @@
+import { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+
 interface DeskLampProps {
   /** Base X (lamp foot). */
   x: number;
@@ -15,7 +19,16 @@ interface DeskLampProps {
   distance?: number;
   /** Body color (foot + arm). Default off-white. */
   bodyColor?: string;
+  /**
+   * When true, the head emissive and point-light intensity pulse by ±5%
+   * via useFrame. Zero per-frame allocation. Default: false.
+   */
+  pulse?: boolean;
 }
+
+// Module-level scratch — ensures zero per-frame allocation when many lamps pulse.
+const BASE_EMISSIVE = 1.8;
+const PULSE_AMPLITUDE = 0.05;
 
 /**
  * Reusable desk-lamp combo: foot + arm + emissive head + warm point light.
@@ -29,7 +42,27 @@ export function DeskLamp({
   intensity = 1.0,
   distance = 6,
   bodyColor = '#e8e8e8',
+  pulse = false,
 }: DeskLampProps) {
+  const headRef = useRef<THREE.Mesh>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
+
+  useFrame(({ clock }) => {
+    if (!pulse) return;
+    const t = clock.getElapsedTime();
+    // ±5% modulation — cheap sin, no allocations.
+    const mod = 1 + Math.sin(t * 1.6) * PULSE_AMPLITUDE;
+    const head = headRef.current;
+    if (head) {
+      const mat = head.material as THREE.MeshPhongMaterial;
+      mat.emissiveIntensity = BASE_EMISSIVE * mod;
+    }
+    const light = lightRef.current;
+    if (light) {
+      light.intensity = intensity * mod;
+    }
+  });
+
   return (
     <group>
       {/* Foot */}
@@ -43,11 +76,12 @@ export function DeskLamp({
         <meshPhongMaterial color={bodyColor} flatShading />
       </mesh>
       {/* Head */}
-      <mesh position={[x, y + 0.5, z]}>
+      <mesh ref={headRef} position={[x, y + 0.5, z]}>
         <boxGeometry args={[0.16, 0.08, 0.12]} />
-        <meshPhongMaterial color={color} emissive={color} emissiveIntensity={1.8} flatShading />
+        <meshPhongMaterial color={color} emissive={color} emissiveIntensity={BASE_EMISSIVE} flatShading />
       </mesh>
       <pointLight
+        ref={lightRef}
         position={[x, y + 0.4, z]}
         color={lightColor ?? color}
         intensity={intensity}

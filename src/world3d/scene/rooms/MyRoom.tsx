@@ -1,5 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Edges } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
 import { Bookshelf } from '../parts/Bookshelf';
 import { DeskLamp } from '../parts/DeskLamp';
@@ -43,6 +45,19 @@ const SHELF_BOOK_COLORS: ReadonlyArray<string> = MY_ROOM_CONTENT.shelfBookColors
 // Deterministic pillow tint seed for two pillows.
 const PILLOW_SEED = 0x51f3a8;
 
+// ---- Micro-animation constants (module-scope = zero per-frame alloc) ----
+// Monitor scanline sweep: vertical oscillation across screen face.
+const SCANLINE_BASE_Y = 1.25;
+const SCANLINE_SWEEP_AMPLITUDE = 0.25; // ±0.25 fits within 0.58 screen half-height
+const SCANLINE_SWEEP_SPEED = 2.0;
+// Plant foliage breathing: ±3% scale pulse.
+const PLANT_BREATH_AMPLITUDE = 0.03;
+const PLANT_BREATH_SPEED = 0.8;
+// Pink accent light breathing: base 0.3, ±10% at slow 0.6 Hz — ambient feel.
+const ACCENT_LIGHT_BASE = 0.3;
+const ACCENT_LIGHT_AMPLITUDE = 0.03; // 10% of base
+const ACCENT_LIGHT_SPEED = 0.6;
+
 // Folded clothes stack — small boxes in pink/white.
 interface ClothesBoxSpec {
   readonly dy: number;
@@ -78,6 +93,31 @@ export function MyRoom() {
     if (b === a) b = pool[(pool.indexOf(a) + 1) % pool.length];
     return [a, b];
   }, []);
+
+  // Micro-animation refs (mirrors DeskLamp zero-alloc pattern).
+  const scanlineRef = useRef<THREE.Mesh>(null);
+  const plantLeavesRef = useRef<THREE.Mesh>(null);
+  const accentLightRef = useRef<THREE.PointLight>(null);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    // Monitor scanline sweep — vertical oscillation across screen.
+    const scan = scanlineRef.current;
+    if (scan) {
+      scan.position.y = SCANLINE_BASE_Y + Math.sin(t * SCANLINE_SWEEP_SPEED) * SCANLINE_SWEEP_AMPLITUDE;
+    }
+    // Plant foliage breathing — uniform scale pulse.
+    const leaves = plantLeavesRef.current;
+    if (leaves) {
+      const s = 1 + Math.sin(t * PLANT_BREATH_SPEED) * PLANT_BREATH_AMPLITUDE;
+      leaves.scale.setScalar(s);
+    }
+    // Pink accent point-light breathing.
+    const al = accentLightRef.current;
+    if (al) {
+      al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED) * ACCENT_LIGHT_AMPLITUDE;
+    }
+  });
 
   return (
     <group>
@@ -182,20 +222,22 @@ export function MyRoom() {
         <meshPhongMaterial color={GOLD} emissive={GOLD} emissiveIntensity={0.3} flatShading />
       </mesh>
 
-      {/* Monitor frame */}
-      <mesh position={[deskX, 1.2, deskZ - 0.5]} castShadow>
-        <boxGeometry args={[1.0, 0.65, 0.06]} />
+      {/* Monitor frame — bumped 1.0x0.65 -> 1.2x0.72 for proper proportion */}
+      <mesh position={[deskX, 1.25, deskZ - 0.5]} castShadow>
+        <boxGeometry args={[1.2, 0.72, 0.06]} />
         <meshPhongMaterial color="#eeeeee" flatShading />
+        <Edges color={EDGE_COLOR} lineWidth={1.2} />
       </mesh>
       {/* Screen (monitor interactable) */}
       <mesh
-        position={[deskX, 1.22, deskZ - 0.47]}
+        position={[deskX, 1.25, deskZ - 0.47]}
         onUpdate={(m) => {
           m.userData.interactable = MONITOR_INTERACTABLE;
         }}
       >
-        <boxGeometry args={[0.85, 0.5, 0.02]} />
+        <boxGeometry args={[1.02, 0.58, 0.02]} />
         <meshPhongMaterial color="#1a1a3e" emissive="#ffb6c1" emissiveIntensity={1.2} flatShading />
+        <Edges color={EDGE_COLOR} lineWidth={1} />
       </mesh>
       {/* Stand */}
       <mesh position={[deskX, 0.96, deskZ - 0.45]}>
@@ -207,9 +249,9 @@ export function MyRoom() {
         <boxGeometry args={[0.32, 0.04, 0.18]} />
         <meshPhongMaterial color={WHITE_OFF} flatShading />
       </mesh>
-      {/* Scanline */}
-      <mesh position={[deskX, 1.22, deskZ - 0.45]}>
-        <boxGeometry args={[0.8, 0.02, 0.01]} />
+      {/* Scanline — sweeps vertically via useFrame */}
+      <mesh ref={scanlineRef} position={[deskX, SCANLINE_BASE_Y, deskZ - 0.45]}>
+        <boxGeometry args={[0.95, 0.02, 0.01]} />
         <meshPhongMaterial color="#ffd0e0" emissive="#ffd0e0" emissiveIntensity={2.0} flatShading />
       </mesh>
 
@@ -228,7 +270,7 @@ export function MyRoom() {
         <cylinderGeometry args={[0.07, 0.06, 0.1, 8]} />
         <meshPhongMaterial color="#c06850" flatShading />
       </mesh>
-      <mesh position={[deskX - 0.5, 0.99, deskZ - 0.3]} castShadow>
+      <mesh ref={plantLeavesRef} position={[deskX - 0.5, 0.99, deskZ - 0.3]} castShadow>
         <sphereGeometry args={[0.1, 6, 6]} />
         <meshPhongMaterial color="#4ade80" emissive="#22c55e" emissiveIntensity={0.18} flatShading />
       </mesh>
@@ -271,55 +313,63 @@ export function MyRoom() {
         <Edges color={EDGE_COLOR} lineWidth={1} />
       </mesh>
       {/* Rug inner border — 4 thin strips */}
-      <mesh position={[bedX, 0.091, bedZ + 0.19]}>
+      <mesh position={[bedX, 0.095, bedZ + 0.19]}>
         <boxGeometry args={[1.55, 0.005, 0.04]} />
         <meshPhongMaterial color={PINK_DARK} emissive={PINK_DARK} emissiveIntensity={0.25} flatShading />
       </mesh>
-      <mesh position={[bedX, 0.091, bedZ + 1.21]}>
+      <mesh position={[bedX, 0.095, bedZ + 1.21]}>
         <boxGeometry args={[1.55, 0.005, 0.04]} />
         <meshPhongMaterial color={PINK_DARK} emissive={PINK_DARK} emissiveIntensity={0.25} flatShading />
       </mesh>
-      <mesh position={[bedX - 0.79, 0.091, bedZ + 0.7]}>
+      <mesh position={[bedX - 0.79, 0.095, bedZ + 0.7]}>
         <boxGeometry args={[0.04, 0.005, 1.06]} />
         <meshPhongMaterial color={PINK_DARK} emissive={PINK_DARK} emissiveIntensity={0.25} flatShading />
       </mesh>
-      <mesh position={[bedX + 0.79, 0.091, bedZ + 0.7]}>
+      <mesh position={[bedX + 0.79, 0.095, bedZ + 0.7]}>
         <boxGeometry args={[0.04, 0.005, 1.06]} />
         <meshPhongMaterial color={PINK_DARK} emissive={PINK_DARK} emissiveIntensity={0.25} flatShading />
       </mesh>
 
       {/* ----- FRAMED PICTURE ON WALL ----- */}
-      {/* Frame — positioned above bookshelf on back wall */}
-      <mesh position={[ox + 0.9, 1.7, oz - 1.92]} castShadow>
+      {/* Frame — raised to decrowd shelf top */}
+      <mesh position={[ox + 0.9, 1.85, oz - 1.92]} castShadow>
         <boxGeometry args={[0.5, 0.4, 0.04]} />
         <meshPhongMaterial color={FRAME_DARK} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1} />
       </mesh>
       {/* Frame center — lighter */}
-      <mesh position={[ox + 0.9, 1.7, oz - 1.9]}>
+      <mesh position={[ox + 0.9, 1.85, oz - 1.9]}>
         <boxGeometry args={[0.4, 0.3, 0.02]} />
         <meshPhongMaterial color={PINK_SOFT} emissive={PINK_SOFT} emissiveIntensity={0.2} flatShading />
       </mesh>
 
       {/* ----- CURTAINS ----- */}
-      {/* Rod */}
-      <mesh position={[bedX, 2.1, oz - 1.94]} rotation={[0, 0, Math.PI / 2]}>
+      {/* Rod — pulled forward alongside panels to avoid back-wall clip */}
+      <mesh position={[bedX, 2.1, oz - 1.89]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.025, 0.025, 1.2, 8]} />
         <meshPhongMaterial color={GOLD} flatShading />
       </mesh>
-      {/* Left curtain panel */}
-      <mesh position={[bedX - 0.45, 1.5, oz - 1.93]} castShadow>
+      {/* Left curtain panel — z shifted 0.05 forward from back wall */}
+      <mesh position={[bedX - 0.45, 1.5, oz - 1.88]} castShadow>
         <boxGeometry args={[0.3, 1.1, 0.04]} />
         <meshPhongMaterial color={PINK_SOFT} emissive={PINK_SOFT} emissiveIntensity={0.12} flatShading />
+        <Edges color={EDGE_COLOR} lineWidth={1} />
       </mesh>
       {/* Right curtain panel — slightly darker */}
-      <mesh position={[bedX + 0.45, 1.5, oz - 1.93]} castShadow>
+      <mesh position={[bedX + 0.45, 1.5, oz - 1.88]} castShadow>
         <boxGeometry args={[0.3, 1.1, 0.04]} />
         <meshPhongMaterial color={PINK_DUSTY} emissive={PINK_DUSTY} emissiveIntensity={0.12} flatShading />
+        <Edges color={EDGE_COLOR} lineWidth={1} />
       </mesh>
 
-      {/* ----- PINK ACCENT POINT LIGHT ----- */}
-      <pointLight color="#f4a8b8" intensity={0.3} distance={3} position={[bedX, 0.9, bedZ]} />
+      {/* ----- PINK ACCENT POINT LIGHT ----- breathes base 0.3, ±10% @ 0.6 Hz */}
+      <pointLight
+        ref={accentLightRef}
+        color="#f4a8b8"
+        intensity={ACCENT_LIGHT_BASE}
+        distance={3}
+        position={[bedX, 0.9, bedZ]}
+      />
     </group>
   );
 }

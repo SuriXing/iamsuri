@@ -20,12 +20,16 @@ function lerpAngle(a: number, b: number, t: number): number {
 const BODY_TOP = '#ffe352';      // lighter shoulder
 const BODY_BOTTOM = '#e6b800';   // darker waist
 const HAIR_DARK = '#1e1a2e';
-const HAIR_HILITE = '#2d2440';
+const HAIR_HILITE = '#3a2f52';   // bumped from 6% → 12% L delta for visibility
 const SKIN = '#ffcc99';
 const LEG = '#2f2f3a';
 const TOE_CAP = '#b02940';       // darker red for shoe toe-cap contrast
-const EDGE_DARK = '#1a1a2e';
-const EDGE_LIGHT = '#b8a890';
+// Hero signature: lab coat. White in dark theme, off-cream in light theme.
+const LAB_COAT_DARK = '#f5f5f5';
+const LAB_COAT_LIGHT = '#e8e3d5';
+// Outline colors — much darker in dark theme so they separate from ambient.
+const EDGE_DARK = '#0a0a14';
+const EDGE_LIGHT = '#5a4830';
 
 // Tiny helper: nudge an #rrggbb hex by a signed lightness delta (−0.05..+0.05).
 // Used once per render inside useMemo to compute deterministic per-cube tints.
@@ -100,11 +104,16 @@ export function Character() {
       blinkRef.current.scale.y = closed ? 0.1 : 1.0;
     }
 
-    // Hair sway — lerp hair group rotation.z toward lateral velocity,
-    // clamped to ±0.06 rad. dx is world-space; that's fine for a tiny
-    // decorative sway. No allocations.
+    // Hair sway — lerp hair group rotation.z toward lateral velocity
+    // relative to the character's facing (not world-space), clamped to
+    // ±0.06 rad. Project (dx, dz) onto the character right-vector so
+    // strafing while facing any direction produces sway but pure forward
+    // walking does not. Zero-alloc: pure scalar math.
     if (hairGroupRef.current) {
-      let target = -dx * 6.0;
+      const facing = smoothFacingRef.current;
+      // right-vector when rotation.y = facing is (cos, -sin) in XZ.
+      const lateral = dx * Math.cos(facing) - dz * Math.sin(facing);
+      let target = -lateral * 6.0;
       if (target > 0.06) target = 0.06;
       else if (target < -0.06) target = -0.06;
       hairSwayRef.current += (target - hairSwayRef.current) * tf;
@@ -116,6 +125,7 @@ export function Character() {
   // One re-render per theme flip — cheap, no per-frame cost.
   const theme = useWorldStore((s) => s.theme);
   const edgeColor = theme === 'dark' ? EDGE_DARK : EDGE_LIGHT;
+  const labCoatColor = theme === 'dark' ? LAB_COAT_DARK : LAB_COAT_LIGHT;
 
   // Deterministic per-instance tint table. mulberry32 seeded once; memoised
   // so we never recompute per frame or per re-render. Every cube on the
@@ -132,9 +142,12 @@ export function Character() {
       armL:      tintHex(BODY_BOTTOM, jitter()),
       armR:      tintHex(BODY_BOTTOM, jitter()),
       hairCap:   tintHex(HAIR_DARK, jitter()),
+      hairTuft:  tintHex(HAIR_HILITE, jitter()),
       hairFringe:tintHex(HAIR_DARK, jitter() + 0.02),
-      legL:      tintHex(LEG, jitter()),
-      legR:      tintHex(LEG, jitter()),
+      thighL:    tintHex(LEG, jitter()),
+      thighR:    tintHex(LEG, jitter()),
+      shinL:     tintHex(LEG, jitter() - 0.03),
+      shinR:     tintHex(LEG, jitter() - 0.03),
       shoeL:     tintHex(COLORS.red, jitter()),
       shoeR:     tintHex(COLORS.red, jitter()),
     };
@@ -153,65 +166,73 @@ export function Character() {
       </mesh>
 
       <group ref={groupRef} scale={CHARACTER.scale}>
-        {/* Head + face */}
+        {/* Head + face — bumped ~30% bigger for chibi proportions.
+            Head upper box now 0.46 × 0.36 × 0.46, jaw 0.42 × 0.16 × 0.42.
+            Pushes head-to-body ratio toward ~1.3× (chibi mascot cue). */}
         <group ref={headRef}>
-          {/* Head — slightly taller box, wider at top. The trapezoidal feel
-              comes from stacking a wide upper box over a narrower jaw box. */}
-          <mesh position={[0, 1.54, 0]} castShadow receiveShadow>
-            <boxGeometry args={[0.42, 0.28, 0.4]} />
+          {/* Head upper — bigger + outlined for silhouette pop */}
+          <mesh position={[0, 1.60, 0]} castShadow receiveShadow>
+            <boxGeometry args={[0.46, 0.36, 0.46]} />
             <meshPhongMaterial color={tints.headTop} flatShading />
-            <Edges color={edgeColor} lineWidth={1} />
+            <Edges color={edgeColor} lineWidth={1.5} />
           </mesh>
-          {/* Jaw */}
+          {/* Jaw — bigger + now outlined */}
           <mesh position={[0, 1.34, 0]} castShadow receiveShadow>
-            <boxGeometry args={[0.36, 0.16, 0.36]} />
+            <boxGeometry args={[0.42, 0.16, 0.42]} />
             <meshPhongMaterial color={tints.jaw} flatShading />
+            <Edges color={edgeColor} lineWidth={1.5} />
           </mesh>
 
-          {/* Eyes — wrapped in a group so we can scale Y for the blink. */}
+          {/* Eyes — wrapped in a group so we can scale Y for the blink.
+              Scaled larger (0.10) and shifted up to land on the bigger face. */}
           <group ref={blinkRef}>
-            <mesh position={[-0.08, 1.5, 0.2]}>
-              <boxGeometry args={[0.08, 0.08, 0.02]} />
+            <mesh position={[-0.10, 1.58, 0.23]}>
+              <boxGeometry args={[0.10, 0.10, 0.02]} />
               <meshPhongMaterial color="#222222" flatShading />
             </mesh>
-            <mesh position={[0.08, 1.5, 0.2]}>
-              <boxGeometry args={[0.08, 0.08, 0.02]} />
+            <mesh position={[0.10, 1.58, 0.23]}>
+              <boxGeometry args={[0.10, 0.10, 0.02]} />
               <meshPhongMaterial color="#222222" flatShading />
             </mesh>
           </group>
 
-          {/* Mouth */}
-          <mesh position={[0, 1.36, 0.19]}>
-            <boxGeometry args={[0.1, 0.03, 0.02]} />
+          {/* Mouth — pushed forward to z=0.225 so its front face (0.235)
+              sits 0.005 proud of the head upper front face (0.23). Fixes
+              the z-fight risk flagged by the craft review. */}
+          <mesh position={[0, 1.42, 0.225]}>
+            <boxGeometry args={[0.12, 0.035, 0.02]} />
             <meshPhongMaterial color={COLORS.red} flatShading />
           </mesh>
-          {/* Blush */}
-          <mesh position={[-0.14, 1.4, 0.19]}>
-            <boxGeometry args={[0.07, 0.04, 0.02]} />
+          {/* Blush — pushed forward to z=0.225, same clearance reason */}
+          <mesh position={[-0.16, 1.47, 0.225]}>
+            <boxGeometry args={[0.08, 0.05, 0.02]} />
             <meshPhongMaterial color="#ffaaaa" emissive="#ffaaaa" emissiveIntensity={0.3} flatShading />
           </mesh>
-          <mesh position={[0.14, 1.4, 0.19]}>
-            <boxGeometry args={[0.07, 0.04, 0.02]} />
+          <mesh position={[0.16, 1.47, 0.225]}>
+            <boxGeometry args={[0.08, 0.05, 0.02]} />
             <meshPhongMaterial color="#ffaaaa" emissive="#ffaaaa" emissiveIntensity={0.3} flatShading />
           </mesh>
 
-          {/* Hair group — rotates as a whole for the sway animation. */}
+          {/* Hair group — rotates as a whole for the sway animation.
+              Wrapped to cover the bigger head. */}
           <group ref={hairGroupRef}>
-            {/* Main hair cap */}
-            <mesh position={[0, 1.78, 0]} castShadow>
-              <boxGeometry args={[0.44, 0.16, 0.44]} />
+            {/* Main hair cap — wider to wrap bigger head */}
+            <mesh position={[0, 1.86, 0]} castShadow>
+              <boxGeometry args={[0.50, 0.16, 0.50]} />
               <meshPhongMaterial color={tints.hairCap} flatShading />
-              <Edges color={edgeColor} lineWidth={1} />
+              <Edges color={edgeColor} lineWidth={1.5} />
             </mesh>
-            {/* Top tuft — small highlight box */}
-            <mesh position={[0.06, 1.9, 0]} castShadow>
-              <boxGeometry args={[0.14, 0.08, 0.18]} />
-              <meshPhongMaterial color={HAIR_HILITE} flatShading />
+            {/* Top tuft — now tinted + outlined so it actually pops */}
+            <mesh position={[0.06, 1.99, 0]} castShadow>
+              <boxGeometry args={[0.18, 0.09, 0.22]} />
+              <meshPhongMaterial color={tints.hairTuft} flatShading />
+              <Edges color={edgeColor} lineWidth={1.5} />
             </mesh>
             {/* Front fringe / bang — sits just above the forehead */}
-            <mesh position={[-0.06, 1.66, 0.2]} castShadow>
-              <boxGeometry args={[0.28, 0.1, 0.05]} />
+            <mesh position={[-0.06, 1.72, 0.23]} castShadow>
+              <boxGeometry args={[0.32, 0.11, 0.05]} />
               <meshPhongMaterial color={tints.hairFringe} flatShading />
+              <Edges color={edgeColor} lineWidth={1.5} />
             </mesh>
           </group>
         </group>
@@ -223,64 +244,91 @@ export function Character() {
         <mesh position={[0, 1.22, 0]} castShadow receiveShadow>
           <boxGeometry args={[0.42, 0.22, 0.26]} />
           <meshPhongMaterial color={tints.bodyTop} flatShading />
-          <Edges color={edgeColor} lineWidth={1} />
+          <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
         <mesh position={[0, 0.96, 0]} castShadow receiveShadow>
           <boxGeometry args={[0.36, 0.32, 0.24]} />
           <meshPhongMaterial color={tints.bodyMid} flatShading />
+          <Edges color={edgeColor} lineWidth={1.5} />
+        </mesh>
+
+        {/* HERO ELEMENT — lab coat. Thin white box overlapping the front torso.
+            Visible at 40px, instant "scientist" silhouette read. Theme-aware
+            off-cream in light theme so it still separates from the gold. */}
+        <mesh position={[0, 1.06, 0.09]} castShadow receiveShadow>
+          <boxGeometry args={[0.42, 0.40, 0.10]} />
+          <meshPhongMaterial color={labCoatColor} flatShading />
+          <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
 
         {/* Collar / scarf — thin pink band at the neckline. Slight emissive
-            so the accent reads in the dim dark-theme ambient. */}
+            so the accent reads in the dim dark-theme ambient. Now outlined. */}
         <mesh position={[0, 1.32, 0]} castShadow>
           <boxGeometry args={[0.44, 0.05, 0.28]} />
           <meshPhongMaterial color={COLORS.pink} emissive={COLORS.pink} emissiveIntensity={0.2} flatShading />
+          <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
 
-        {/* Arms — thinner than before, no emissive (flatShading reads better) */}
-        <mesh ref={armLRef} position={[-0.3, 1.05, 0]} castShadow>
+        {/* Arms — outlined for silhouette separation from body. Pulled
+            outward to x=±0.32 so they visibly clear the body-top block
+            (half-width 0.21) and the scarf (half-width 0.22) with a
+            ~0.05 gap — prevents the "arms glued to torso" silhouette
+            and kills any grazing z-fight risk flagged by motion review. */}
+        <mesh ref={armLRef} position={[-0.32, 1.05, 0]} castShadow>
           <boxGeometry args={[0.1, 0.45, 0.1]} />
           <meshPhongMaterial color={tints.armL} flatShading />
+          <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
-        <mesh ref={armRRef} position={[0.3, 1.05, 0]} castShadow>
+        <mesh ref={armRRef} position={[0.32, 1.05, 0]} castShadow>
           <boxGeometry args={[0.1, 0.45, 0.1]} />
           <meshPhongMaterial color={tints.armR} flatShading />
+          <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
 
-        {/* Legs — thigh box */}
-        <mesh position={[-0.1, 0.65, 0]} castShadow>
-          <boxGeometry args={[0.14, 0.32, 0.14]} />
-          <meshPhongMaterial color={tints.legL} flatShading />
+        {/* Legs — restructured as thigh + tapered shin. The old 0.1-tall
+            ankle block was invisible at follow-cam distance; now we have
+            a meaningful width difference (0.14 thigh → 0.12 shin) that
+            actually reads. Shin is also slightly darker to reinforce. */}
+        {/* Thighs */}
+        <mesh position={[-0.1, 0.71, 0]} castShadow>
+          <boxGeometry args={[0.14, 0.30, 0.14]} />
+          <meshPhongMaterial color={tints.thighL} flatShading />
+          <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
-        <mesh position={[0.1, 0.65, 0]} castShadow>
-          <boxGeometry args={[0.14, 0.32, 0.14]} />
-          <meshPhongMaterial color={tints.legR} flatShading />
+        <mesh position={[0.1, 0.71, 0]} castShadow>
+          <boxGeometry args={[0.14, 0.30, 0.14]} />
+          <meshPhongMaterial color={tints.thighR} flatShading />
+          <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
-        {/* Ankles — slightly narrower to hint at a tapered leg */}
-        <mesh position={[-0.1, 0.48, 0]} castShadow>
-          <boxGeometry args={[0.11, 0.1, 0.11]} />
-          <meshPhongMaterial color={LEG} flatShading />
+        {/* Shins — narrower, slightly darker */}
+        <mesh position={[-0.1, 0.47, 0]} castShadow>
+          <boxGeometry args={[0.12, 0.18, 0.12]} />
+          <meshPhongMaterial color={tints.shinL} flatShading />
+          <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
-        <mesh position={[0.1, 0.48, 0]} castShadow>
-          <boxGeometry args={[0.11, 0.1, 0.11]} />
-          <meshPhongMaterial color={LEG} flatShading />
+        <mesh position={[0.1, 0.47, 0]} castShadow>
+          <boxGeometry args={[0.12, 0.18, 0.12]} />
+          <meshPhongMaterial color={tints.shinR} flatShading />
+          <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
 
-        {/* Shoes — main sole */}
-        <mesh position={[-0.1, 0.4, 0.03]} castShadow>
+        {/* Shoes — main sole. Positioned at the new shin bottom Y (~0.38). */}
+        <mesh position={[-0.1, 0.35, 0.03]} castShadow>
           <boxGeometry args={[0.15, 0.06, 0.2]} />
           <meshPhongMaterial color={tints.shoeL} flatShading />
+          <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
-        <mesh position={[0.1, 0.4, 0.03]} castShadow>
+        <mesh position={[0.1, 0.35, 0.03]} castShadow>
           <boxGeometry args={[0.15, 0.06, 0.2]} />
           <meshPhongMaterial color={tints.shoeR} flatShading />
+          <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
         {/* Toe-caps — darker front block to read as a shoe with a tip */}
-        <mesh position={[-0.1, 0.41, 0.14]} castShadow>
+        <mesh position={[-0.1, 0.36, 0.14]} castShadow>
           <boxGeometry args={[0.16, 0.07, 0.06]} />
           <meshPhongMaterial color={TOE_CAP} flatShading />
         </mesh>
-        <mesh position={[0.1, 0.41, 0.14]} castShadow>
+        <mesh position={[0.1, 0.36, 0.14]} castShadow>
           <boxGeometry args={[0.16, 0.07, 0.06]} />
           <meshPhongMaterial color={TOE_CAP} flatShading />
         </mesh>

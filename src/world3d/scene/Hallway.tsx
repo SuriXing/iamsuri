@@ -1,11 +1,18 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { Edges } from '@react-three/drei';
 import { ROOM, GAP, FLOOR_Y } from '../constants';
+import { useWorldStore } from '../store/worldStore';
 
 const HALL_COLOR = '#1e2233';
 const HALL_LEN = ROOM * 2 + GAP * 2 + 1;
 const HALL_WIDTH = GAP * 2;
+
+// Ceiling beam positions along the hallway Z axis (main axis).
+const BEAM_Z: ReadonlyArray<number> = [-4.5, -2.5, -0.5, 1.5, 3.5];
+// Crosshatch beams along X axis (cross-corridor).
+const BEAM_X: ReadonlyArray<number> = [-4.5, -2.5, 2.5, 4.5];
 
 interface PlantProps {
   x: number;
@@ -47,6 +54,8 @@ const STEAM_OFFSETS: ReadonlyArray<readonly [number, number, number]> = [
 
 export function Hallway() {
   const steamRef = useRef<THREE.Group>(null);
+  const theme = useWorldStore((s) => s.theme);
+  const edgeColor = theme === 'dark' ? '#0a0a14' : '#5a4830';
 
   useFrame(({ clock }) => {
     const g = steamRef.current;
@@ -95,9 +104,46 @@ export function Hallway() {
         ))}
       </group>
 
-      {/* Plants */}
+      {/* Plants — intersection corners (2x2) */}
       <Plant x={1.3} z={-0.5} />
       <Plant x={1.5} z={0.6} />
+      <Plant x={-1.35} z={0.6} />
+      <Plant x={-1.35} z={-0.55} />
+
+      {/* Runner strip (long narrow rug between corridor doors) */}
+      <mesh position={[0, FLOOR_Y + 0.005, 2.2]} receiveShadow>
+        <boxGeometry args={[0.55, 0.01, 3.0]} />
+        <meshPhongMaterial color="#6b3216" emissive="#d97034" emissiveIntensity={0.05} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh position={[0, FLOOR_Y + 0.005, -2.2]} receiveShadow>
+        <boxGeometry args={[0.55, 0.01, 3.0]} />
+        <meshPhongMaterial color="#6b3216" emissive="#d97034" emissiveIntensity={0.05} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+
+      {/* ----- CEILING BEAM TRIM (crosshatch planks along hallway axes) ----- */}
+      {/* Main beams along Z — span hallway width */}
+      {BEAM_Z.map((z) => (
+        <mesh key={`beamZ-${z}`} position={[0, 2.92, z]} castShadow>
+          <boxGeometry args={[HALL_WIDTH + 0.1, 0.1, 0.12]} />
+          <meshPhongMaterial color="#3a2510" flatShading />
+          <Edges color={edgeColor} lineWidth={1} />
+        </mesh>
+      ))}
+      {/* Cross beams along X — span cross-corridor width */}
+      {BEAM_X.map((x) => (
+        <mesh key={`beamX-${x}`} position={[x, 2.92, 0]} castShadow>
+          <boxGeometry args={[0.12, 0.1, HALL_WIDTH + 0.1]} />
+          <meshPhongMaterial color="#3a2510" flatShading />
+          <Edges color={edgeColor} lineWidth={1} />
+        </mesh>
+      ))}
+      {/* Center cross-join cap (darker hub) */}
+      <mesh position={[0, 2.96, 0]}>
+        <boxGeometry args={[0.28, 0.04, 0.28]} />
+        <meshPhongMaterial color="#241608" flatShading />
+      </mesh>
 
       {/* Rug */}
       <mesh position={[0, 0.12, 0]} receiveShadow>

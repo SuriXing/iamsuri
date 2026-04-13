@@ -12,6 +12,9 @@ interface ParticleBuffers {
   vx: Float32Array;
   vy: Float32Array;
   vz: Float32Array;
+  // Per-particle horizontal drift params (module-scope, baked at build).
+  driftAmp: Float32Array;   // XZ drift amplitude
+  driftFreq: Float32Array;  // XZ drift angular speed
   size: Float32Array;
   phase: Float32Array;
   // Color name list (resolved at mount via setColorAt)
@@ -34,6 +37,8 @@ function buildBuffers(): ParticleBuffers {
   const vx = new Float32Array(PARTICLE_COUNT);
   const vy = new Float32Array(PARTICLE_COUNT);
   const vz = new Float32Array(PARTICLE_COUNT);
+  const driftAmp = new Float32Array(PARTICLE_COUNT);
+  const driftFreq = new Float32Array(PARTICLE_COUNT);
   const size = new Float32Array(PARTICLE_COUNT);
   const phase = new Float32Array(PARTICLE_COUNT);
   const colorHex: string[] = new Array(PARTICLE_COUNT);
@@ -45,10 +50,14 @@ function buildBuffers(): ParticleBuffers {
     vx[i] = (rng() - 0.5) * 0.005;
     vy[i] = 0.003 + rng() * 0.008;
     vz[i] = (rng() - 0.5) * 0.005;
+    // Gentle horizontal drift — tiny amp, varied frequency so particles swirl
+    // organically rather than marching uniformly.
+    driftAmp[i] = 0.0015 + rng() * 0.0035;
+    driftFreq[i] = 0.4 + rng() * 0.9;
     phase[i] = rng() * Math.PI * 2;
     colorHex[i] = PARTICLE_COLORS[Math.floor(rng() * PARTICLE_COLORS.length)];
   }
-  return { px, py, pz, vx, vy, vz, size, phase, colorHex };
+  return { px, py, pz, vx, vy, vz, driftAmp, driftFreq, size, phase, colorHex };
 }
 
 const BUF: ParticleBuffers = buildBuffers();
@@ -78,17 +87,22 @@ export function Particles() {
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   }, []);
 
-  useFrame((_, delta) => {
+  useFrame(({ clock }, delta) => {
     const mesh = meshRef.current;
     if (!mesh) return;
     const dt = delta * 60; // normalize against ~60fps tick used in legacy
+    const t = clock.getElapsedTime();
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       let x = BUF.px[i];
       let y = BUF.py[i];
       let z = BUF.pz[i];
-      x += BUF.vx[i] * dt + Math.sin(BUF.phase[i] + y * 0.5) * 0.0008 * dt;
+      // Base velocity + gentle swirl: sin for X, cos for Z (quadrature).
+      const ph = BUF.phase[i];
+      const f = BUF.driftFreq[i];
+      const amp = BUF.driftAmp[i];
+      x += BUF.vx[i] * dt + Math.sin(t * f + ph) * amp * dt;
       y += BUF.vy[i] * dt;
-      z += BUF.vz[i] * dt;
+      z += BUF.vz[i] * dt + Math.cos(t * f * 0.85 + ph) * amp * dt;
       if (y > PARTICLES.ceiling) {
         y = PARTICLES.floorReset;
         x = (RESET_RNG() - 0.5) * PARTICLES.spread;

@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Edges } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -23,10 +23,54 @@ const METAL_LIGHT = '#9ba2ac';
 const PEG_BROWN = '#5a3e22';
 const WHITE_PAPER = '#f5f1e8';
 const ELECTRIC_GREEN = '#4ade80';
-const ELECTRIC_GREEN_DIM = '#22c55e';
 const ORANGE_SPARK = '#f97316';
 const AMBER_BULB = '#fbbf24';
 const CORK = '#c8985a';
+// F3.17 backlog: warm copper replaces the jarring electric-green tint on the
+// heading bar and circuit-board top so they harmonize with the amber bulb.
+const COPPER_ACCENT = '#c97a2a';
+
+// --- Ambient spark layer (F3.17) ---
+const SPARK_COUNT = 14;
+const SPARK_DRIFT_SPEED = 0.35;   // world units / sec
+const SPARK_Y_MIN = 0.95;         // just above bench top
+const SPARK_Y_MAX = 2.35;         // just below floating bulb
+
+interface SparkBuffers {
+  bx: Float32Array;     // local X offset from room center
+  by: Float32Array;     // current Y (mutated)
+  bz: Float32Array;     // local Z offset
+  speed: Float32Array;  // per-spark drift speed mult
+  isOrange: Uint8Array; // 1 = orange, 0 = warm white
+}
+
+function buildSparkBuffers(): SparkBuffers {
+  // Spec: mulberry-seeded positions. Literal 0x1dea5par isn't a valid number,
+  // so read "1dea5par" as a bespoke mnemonic seed: 0x1dea5 ^ SPARK_COUNT.
+  const rng = makeRng(0x1dea5 ^ SPARK_COUNT);
+  const bx = new Float32Array(SPARK_COUNT);
+  const by = new Float32Array(SPARK_COUNT);
+  const bz = new Float32Array(SPARK_COUNT);
+  const speed = new Float32Array(SPARK_COUNT);
+  const isOrange = new Uint8Array(SPARK_COUNT);
+  for (let i = 0; i < SPARK_COUNT; i++) {
+    // Spawn above the workbench footprint (bench is 2.6 x 0.95 centered at benchZ).
+    bx[i] = (rng() - 0.5) * 2.2;
+    // Workbench is at benchZ = oz + 0.6, footprint ~0.95 deep.
+    bz[i] = 0.6 + (rng() - 0.5) * 0.9;
+    by[i] = SPARK_Y_MIN + rng() * (SPARK_Y_MAX - SPARK_Y_MIN);
+    speed[i] = 0.7 + rng() * 0.6;
+    isOrange[i] = rng() < 0.5 ? 1 : 0;
+  }
+  return { bx, by, bz, speed, isOrange };
+}
+
+const SPARK_BUF: SparkBuffers = buildSparkBuffers();
+
+// Zero-alloc scratch for the spark useFrame loop.
+const SPARK_DUMMY = new THREE.Object3D();
+const SPARK_COLOR_ORANGE = new THREE.Color('#f97316');
+const SPARK_COLOR_WARM = new THREE.Color('#fff3a0');
 
 // --- Micro-anim constants (module scope) ---
 const GEAR_SPEED_A = 1.4;
@@ -127,8 +171,9 @@ export function IdeaLab() {
   const hangingToolRef = useRef<THREE.Group>(null);
   const solderTipRef = useRef<THREE.Mesh>(null);
   const accentLightRef = useRef<THREE.PointLight>(null);
+  const sparksRef = useRef<THREE.InstancedMesh>(null);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     const t = clock.getElapsedTime();
 
     // Floating idea bulb (vertical bob + pulse).
@@ -176,7 +221,39 @@ export function IdeaLab() {
     // Green accent light breathing.
     const al = accentLightRef.current;
     if (al) al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED) * ACCENT_LIGHT_AMPLITUDE;
+
+    // Ambient sparks — pure Y drift with wraparound. Zero-alloc: reuses
+    // SPARK_DUMMY and mutates SPARK_BUF in place.
+    const sm = sparksRef.current;
+    if (sm) {
+      for (let i = 0; i < SPARK_COUNT; i++) {
+        let y = SPARK_BUF.by[i];
+        y += SPARK_DRIFT_SPEED * SPARK_BUF.speed[i] * delta;
+        if (y > SPARK_Y_MAX) {
+          y = SPARK_Y_MIN;
+        }
+        SPARK_BUF.by[i] = y;
+        SPARK_DUMMY.position.set(SPARK_BUF.bx[i], y, SPARK_BUF.bz[i]);
+        SPARK_DUMMY.updateMatrix();
+        sm.setMatrixAt(i, SPARK_DUMMY.matrix);
+      }
+      sm.instanceMatrix.needsUpdate = true;
+    }
   });
+
+  // Initial bake of spark instance matrices + colors.
+  useEffect(() => {
+    const sm = sparksRef.current;
+    if (!sm) return;
+    for (let i = 0; i < SPARK_COUNT; i++) {
+      SPARK_DUMMY.position.set(SPARK_BUF.bx[i], SPARK_BUF.by[i], SPARK_BUF.bz[i]);
+      SPARK_DUMMY.updateMatrix();
+      sm.setMatrixAt(i, SPARK_DUMMY.matrix);
+      sm.setColorAt(i, SPARK_BUF.isOrange[i] ? SPARK_COLOR_ORANGE : SPARK_COLOR_WARM);
+    }
+    sm.instanceMatrix.needsUpdate = true;
+    if (sm.instanceColor) sm.instanceColor.needsUpdate = true;
+  }, []);
 
   // Layout anchors.
   const benchX = ox;
@@ -250,10 +327,10 @@ export function IdeaLab() {
           <meshPhongMaterial color={l.c} emissive={l.c} emissiveIntensity={0.7} flatShading />
         </mesh>
       ))}
-      {/* Heading bar (green marker) */}
+      {/* Heading bar (warm copper — F3.17 retint away from electric green) */}
       <mesh position={[ox, 1.96, oz - 1.99]}>
         <boxGeometry args={[1.6, 0.09, 0.012]} />
-        <meshPhongMaterial color={ELECTRIC_GREEN} emissive={ELECTRIC_GREEN} emissiveIntensity={1.0} flatShading />
+        <meshPhongMaterial color={COPPER_ACCENT} emissive={COPPER_ACCENT} emissiveIntensity={1.0} flatShading />
       </mesh>
       {/* Whiteboard marker tray */}
       <mesh position={[ox, 0.48, oz - 2.0]}>
@@ -324,10 +401,10 @@ export function IdeaLab() {
         <meshPhongMaterial color={METAL_MID} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
-      {/* Circuit-board top on prototype */}
+      {/* Circuit-board top on prototype (warm copper — F3.17 retint) */}
       <mesh position={[benchX, benchTopY + 0.26, benchZ]}>
         <boxGeometry args={[0.28, 0.02, 0.2]} />
-        <meshPhongMaterial color={ELECTRIC_GREEN_DIM} emissive={ELECTRIC_GREEN_DIM} emissiveIntensity={0.4} flatShading />
+        <meshPhongMaterial color={COPPER_ACCENT} emissive={COPPER_ACCENT} emissiveIntensity={0.4} flatShading />
       </mesh>
       {/* Prototype LED indicator */}
       <mesh position={[benchX + 0.1, benchTopY + 0.28, benchZ + 0.08]}>
@@ -523,6 +600,28 @@ export function IdeaLab() {
         <meshPhongMaterial color={METAL_MID} flatShading />
       </mesh>
       <pointLight ref={bulbLightRef} position={[ox, 2.5, oz + 0.4]} color="#ffe0a0" intensity={0.7} distance={9} />
+
+      {/* ----- AMBIENT SPARK LAYER (F3.17) ----- */}
+      {/* Small emissive cubes drifting upward over the workbench. Buffer
+          positions are stored in room-local space; the wrapping group applies
+          the room offset once. */}
+      <group position={[ox, 0, oz]}>
+        <instancedMesh
+          ref={sparksRef}
+          args={[undefined, undefined, SPARK_COUNT]}
+          frustumCulled={false}
+        >
+          <boxGeometry args={[0.03, 0.03, 0.03]} />
+          <meshPhongMaterial
+            color="#ffffff"
+            emissive="#ffc870"
+            emissiveIntensity={1.6}
+            transparent
+            opacity={0.9}
+            flatShading
+          />
+        </instancedMesh>
+      </group>
 
       {/* ----- GOLD ACCENT LIGHT at workbench (room accent per rooms.ts #fbbf24) ----- */}
       <pointLight

@@ -19,10 +19,12 @@ export interface MutableNumberRef {
   current: number;
 }
 
-// Default pitch = π/4 (45° above horizontal). At FOLLOW.distance = 6
-// this puts the camera at ~4.24 above and ~4.24 behind the character,
-// matching the pre-orbit framing.
-const DEFAULT_PITCH = Math.PI / 4;
+// Default pitch ≈ 57° above horizontal (bumped from π/4 = 45° per user
+// feedback: "let the perspective a bit higher"). At FOLLOW.distance = 6
+// this puts the camera at ~5.04 above and ~3.27 behind the character —
+// more top-down than the pre-ship framing, easier to see the room floor
+// plan and surrounding walls at a glance.
+const DEFAULT_PITCH = 1.0;
 
 export const followCamYawRef: MutableNumberRef = { current: 0 };
 export const followCamPitchRef: MutableNumberRef = { current: DEFAULT_PITCH };

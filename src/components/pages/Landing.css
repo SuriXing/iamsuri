@@ -135,13 +135,16 @@
   letter-spacing: var(--tracking-wide);
   justify-self: start;
   margin-top: var(--space-2);
+  /* P1.6 a11y fix: ≥44px tap target via padding instead of bare line-height. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 12px 0;
   transition: text-decoration-color 160ms ease, color 160ms ease;
 }
-.section-header__index:hover,
-.section-header__index:focus-visible {
+.section-header__index:hover {
   color: var(--accent-hover);
   text-decoration-color: var(--accent-hover);
-  outline: none;
 }
 
 /* ======================================================================
@@ -170,7 +173,9 @@
   font-family: var(--font-display);
   font-size: clamp(var(--text-4xl), 12vw, 8rem);
   font-weight: 500;
-  font-variation-settings: 'SOFT' 20, 'WONK' 1;
+  /* P1.6 designer fix: WONK axis dialed back from 1 to 0.5 so the "u"
+   * tilt reads as character, not a font-load glitch. */
+  font-variation-settings: 'SOFT' 20, 'WONK' 0.5;
   line-height: 0.9;
   letter-spacing: -0.03em;
   margin: 0;
@@ -227,12 +232,13 @@
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   align-self: flex-start;
+  /* P1.6 a11y fix: ≥44px tap target. */
+  min-height: 44px;
+  padding: 12px 0;
   transition: color 200ms ease;
 }
-.landing-hero__scroll:hover,
-.landing-hero__scroll:focus-visible {
+.landing-hero__scroll:hover {
   color: var(--accent-hover);
-  outline: none;
 }
 .landing-hero__scroll-arrow {
   animation: bounce 2s ease-in-out infinite;
@@ -374,16 +380,16 @@
 }
 
 @media (min-width: 640px) {
-  .landing-grid--work,
-  .landing-grid--ideas {
+  .landing-grid--work {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (min-width: 960px) {
-  .landing-grid--ideas {
-    grid-template-columns: repeat(3, 1fr);
-  }
+/* P1.6 designer fix: 4 ideas in a 3-col grid leaves an orphan on row 2.
+ * Use auto-fill minmax so it falls naturally into 2 cols on most desktops
+ * (4 ideas → 2×2) while still scaling up to 3 cols on very wide viewports. */
+.landing-grid--ideas {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 
 /* Writing uses a list, not a grid — lets each item span the full width. */
@@ -460,7 +466,7 @@
   font-size: clamp(var(--text-4xl), 10vw, var(--text-5xl));
   font-weight: 500;
   color: var(--accent);
-  font-variation-settings: 'SOFT' 60, 'WONK' 1;
+  font-variation-settings: 'SOFT' 60, 'WONK' 0.5;
   font-style: italic;
 }
 
@@ -483,12 +489,17 @@
 }
 
 .landing-about__contact {
+  /* <address> defaults to italic in some UAs — reset. */
+  font-style: normal;
+  margin-top: var(--space-4);
+}
+.landing-about__contact-list {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
   list-style: none;
   padding: 0;
-  margin-top: var(--space-4);
+  margin: 0;
 }
 
 .landing-about__contact-link {
@@ -499,13 +510,16 @@
   text-decoration-color: var(--border-strong);
   text-underline-offset: 4px;
   text-transform: lowercase;
+  /* P1.6 a11y fix: ≥44px tap target. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 12px 0;
   transition: color 200ms ease, text-decoration-color 200ms ease;
 }
-.landing-about__contact-link:hover,
-.landing-about__contact-link:focus-visible {
+.landing-about__contact-link:hover {
   color: var(--accent-hover);
   text-decoration-color: var(--accent-hover);
-  outline: none;
 }
 
 /* ======================================================================
@@ -548,13 +562,16 @@
   text-underline-offset: 4px;
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
+  /* P1.6 a11y fix: ≥44px tap target. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 12px 0;
   transition: color 200ms ease, text-decoration-color 200ms ease;
 }
-.landing-footer__link:hover,
-.landing-footer__link:focus-visible {
+.landing-footer__link:hover {
   color: var(--accent-hover);
   text-decoration-color: var(--accent-hover);
-  outline: none;
 }
 
 /* ======================================================================
@@ -567,5 +584,10 @@
      * Leave space so they don't overlap hero/footer content. */
     padding-top: 4rem;
     padding-bottom: 6rem;
+  }
+  /* P1.6 designer fix: shrink hero min-height on mobile so the chip
+   * row + scroll affordance don't overflow the first viewport. */
+  .landing-hero {
+    min-height: 70vh;
   }
 }

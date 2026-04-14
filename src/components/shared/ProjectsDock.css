@@ -1,3 +1,12 @@
+/**
+ * ProjectsDock styles. Reconciled with the editorial token system in
+ * P1.7 (drains P1.6 designer backlog: drops Courier New + `#ffd700` gold
+ * + the dark glass blur that fought the editorial palette).
+ *
+ * The per-project hue (set inline by the parent component as `--hue`) is
+ * still respected on the link dot + hover border, but the base chrome
+ * now lives entirely on `--bg-elevated` / `--border` / `--fg`.
+ */
 .projects-dock {
   position: fixed;
   left: 50%;
@@ -6,66 +15,75 @@
   z-index: 80;
   pointer-events: none;
 }
+
 .projects-dock ul {
   display: flex;
   gap: 8px;
   list-style: none;
   margin: 0;
   padding: 8px;
-  background: rgba(20, 23, 34, 0.82);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 215, 0, 0.18);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
   border-radius: 999px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
 }
-.projects-dock li { pointer-events: auto; }
+
+.projects-dock li {
+  pointer-events: auto;
+}
+
 .projects-dock a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 10px 16px;
+  min-height: 44px;
   border-radius: 999px;
-  color: #e5e7eb;
+  color: var(--fg);
   text-decoration: none;
-  font-family: 'Courier New', monospace;
-  font-size: 0.78rem;
-  letter-spacing: 1.2px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   border: 1px solid transparent;
-  transition: transform 120ms ease, border-color 120ms ease, background-color 120ms ease;
+  transition: transform 120ms ease, border-color 120ms ease,
+    background-color 120ms ease, color 120ms ease;
 }
-.projects-dock a:hover,
-.projects-dock a:focus-visible {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: color-mix(in srgb, var(--hue, #ffd700) 60%, transparent);
-  color: var(--hue, #ffd700);
+
+.projects-dock a:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+  color: var(--accent);
   transform: translateY(-1px);
-  outline: none;
 }
+
+.projects-dock a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .projects-dock .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--hue, #ffd700);
-  box-shadow: 0 0 8px var(--hue, #ffd700);
-}
-body.light-theme .projects-dock ul,
-body.world3d-light-theme .projects-dock ul {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(0, 0, 0, 0.12);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-}
-body.light-theme .projects-dock a,
-body.world3d-light-theme .projects-dock a {
-  color: #1a1a2e;
-}
-body.light-theme .projects-dock a:hover,
-body.world3d-light-theme .projects-dock a:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--hue, var(--accent));
+  box-shadow: 0 0 6px var(--hue, var(--accent));
 }
 
 @media (max-width: 560px) {
-  .projects-dock ul { gap: 4px; padding: 6px; }
-  .projects-dock a { padding: 6px 10px; font-size: 0.7rem; letter-spacing: 1px; }
-  .projects-dock .label { display: none; }
+  .projects-dock ul {
+    gap: 4px;
+    padding: 6px;
+  }
+  .projects-dock a {
+    padding: 8px 12px;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+  }
+  .projects-dock .label {
+    display: none;
+  }
 }

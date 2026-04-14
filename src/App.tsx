@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback } from 'react';
+import { lazy, Suspense, useCallback, useEffect } from 'react';
 import {
   BrowserRouter,
   Navigate,
@@ -9,7 +9,8 @@ import {
 import ThemeToggle from './components/shared/ThemeToggle';
 import ViewSwitcher from './components/shared/ViewSwitcher';
 import ProjectsDock from './components/shared/ProjectsDock';
-import { Placeholder } from './components/pages/Placeholder';
+import SkipLink from './components/shared/SkipLink';
+import RouteAnnouncer from './components/shared/RouteAnnouncer';
 import { NotFound } from './components/pages/NotFound';
 
 // 3D world is lazy-loaded so the 2D landing stays lightweight. three.js
@@ -25,6 +26,16 @@ const World3D = lazy(world3dImport);
 const landingImport = () => import('./components/pages/Landing');
 const Landing = lazy(landingImport);
 
+// P1.7 content pages — each is its own chunk so a deep link to
+// /writing/foo doesn't pay for /work or /ideas.
+const WorkList = lazy(() => import('./components/pages/WorkList'));
+const WorkDetail = lazy(() => import('./components/pages/WorkDetail'));
+const WritingList = lazy(() => import('./components/pages/WritingList'));
+const WritingDetail = lazy(() => import('./components/pages/WritingDetail'));
+const IdeasList = lazy(() => import('./components/pages/IdeasList'));
+const IdeaDetail = lazy(() => import('./components/pages/IdeaDetail'));
+const About = lazy(() => import('./components/pages/About'));
+
 /**
  * Pre-boot URL fixup and preload hint. Runs at module eval time, before
  * React mounts:
@@ -39,8 +50,13 @@ const Landing = lazy(landingImport);
 function bootstrapRoute() {
   if (typeof window === 'undefined') return;
   const params = new URLSearchParams(window.location.search);
-  if (params.get('view') === '3d' && window.location.pathname !== '/3d') {
-    window.history.replaceState(null, '', '/3d');
+  // P1.2 architect note: only rewrite ?view=3d when on the root path,
+  // so a hypothetical /work?view=3d link doesn't silently drop /work.
+  if (
+    params.get('view') === '3d' &&
+    window.location.pathname === '/'
+  ) {
+    window.history.replaceState(null, '', '/3d' + window.location.hash);
   }
   if (window.location.pathname === '/3d') {
     // Fire-and-forget: the lazy() above shares this in-flight promise
@@ -57,6 +73,34 @@ function bootstrapRoute() {
 bootstrapRoute();
 
 /**
+ * Suspense fallback shared by every 2D page route. Token-styled so it
+ * matches the editorial palette instead of inheriting raw UA defaults.
+ */
+function PageLoading() {
+  return (
+    <div
+      className="page-loading"
+      role="status"
+      aria-live="polite"
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'var(--fg-muted)',
+        background: 'var(--bg)',
+        fontFamily: 'var(--font-mono, system-ui, monospace)',
+        fontSize: '0.875rem',
+        letterSpacing: '0.04em',
+        textTransform: 'lowercase',
+      }}
+    >
+      loading…
+    </div>
+  );
+}
+
+/**
  * Landing route — the editorial single-scroll 2D portfolio (P1.5).
  * ThemeToggle + ViewSwitcher sit fixed top-right; ProjectsDock sits
  * fixed bottom; the Landing component is the full scroll flow.
@@ -66,29 +110,24 @@ function LandingRoute() {
     <>
       <ThemeToggle />
       <ViewSwitcher />
-      <Suspense
-        fallback={
-          <div
-            className="landing-loading"
-            role="status"
-            aria-live="polite"
-            style={{
-              minHeight: '100vh',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--fg, #ededf5)',
-              fontFamily: 'system-ui, sans-serif',
-              fontSize: '0.875rem',
-              opacity: 0.6,
-            }}
-          >
-            Loading…
-          </div>
-        }
-      >
+      <Suspense fallback={<PageLoading />}>
         <Landing />
       </Suspense>
+      <ProjectsDock />
+    </>
+  );
+}
+
+/**
+ * Generic shell for the P1.7 content pages. Same persistent chrome as
+ * the landing route, but the inner page is parameterized.
+ */
+function ContentRoute({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <ThemeToggle />
+      <ViewSwitcher />
+      <Suspense fallback={<PageLoading />}>{children}</Suspense>
       <ProjectsDock />
     </>
   );
@@ -105,10 +144,27 @@ function ThreeDRoute() {
     navigate('/');
   }, [navigate]);
 
+  useEffect(() => {
+    document.title = "3D World — Suri's Lab";
+  }, []);
+
   return (
     <Suspense
       fallback={
-        <div className="world3d-loading" role="status" aria-live="polite">
+        <div
+          className="world3d-loading"
+          role="status"
+          aria-live="polite"
+          style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#a0a0b0',
+            background: '#0a0a10',
+            fontFamily: 'system-ui, sans-serif',
+          }}
+        >
           Loading 3D world…
         </div>
       }
@@ -122,15 +178,69 @@ function ThreeDRoute() {
 export default function App() {
   return (
     <BrowserRouter>
+      {/* P1.7 a11y: skip-to-main + SR live-region announcer.
+          SkipLink is the first focusable element in DOM order so
+          keyboard users can Tab → Enter past the persistent chrome. */}
+      <SkipLink />
+      <RouteAnnouncer />
       <Routes>
         <Route path="/" element={<LandingRoute />} />
-        <Route path="/work" element={<Placeholder name="Work" />} />
-        <Route path="/work/:slug" element={<Placeholder name="Work" />} />
-        <Route path="/writing" element={<Placeholder name="Writing" />} />
-        <Route path="/writing/:slug" element={<Placeholder name="Writing" />} />
-        <Route path="/ideas" element={<Placeholder name="Ideas" />} />
-        <Route path="/ideas/:slug" element={<Placeholder name="Ideas" />} />
-        <Route path="/about" element={<Placeholder name="About" />} />
+        <Route
+          path="/work"
+          element={
+            <ContentRoute>
+              <WorkList />
+            </ContentRoute>
+          }
+        />
+        <Route
+          path="/work/:slug"
+          element={
+            <ContentRoute>
+              <WorkDetail />
+            </ContentRoute>
+          }
+        />
+        <Route
+          path="/writing"
+          element={
+            <ContentRoute>
+              <WritingList />
+            </ContentRoute>
+          }
+        />
+        <Route
+          path="/writing/:slug"
+          element={
+            <ContentRoute>
+              <WritingDetail />
+            </ContentRoute>
+          }
+        />
+        <Route
+          path="/ideas"
+          element={
+            <ContentRoute>
+              <IdeasList />
+            </ContentRoute>
+          }
+        />
+        <Route
+          path="/ideas/:slug"
+          element={
+            <ContentRoute>
+              <IdeaDetail />
+            </ContentRoute>
+          }
+        />
+        <Route
+          path="/about"
+          element={
+            <ContentRoute>
+              <About />
+            </ContentRoute>
+          }
+        />
         <Route path="/3d" element={<ThreeDRoute />} />
         <Route path="/404" element={<NotFound />} />
         <Route path="*" element={<Navigate to="/404" replace />} />

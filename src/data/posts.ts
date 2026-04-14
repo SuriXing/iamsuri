@@ -70,14 +70,17 @@ export const posts: Post[] = [
     status: 'published',
   },
   {
+    // P1.7: was 'external' linking to https://blog.iamsuri.ai/...
+    // (DNS fail). Downgraded to coming-soon so the portfolio doesn't
+    // ship a dead external link. Will become inline once the personal
+    // blog is wired up.
     slug: 'first-principles-for-8th-graders',
     title: 'First Principles, Explained for 8th Graders',
     excerpt:
-      'Cross-posted to my personal blog — a plain-language breakdown of first-principles thinking, aimed at people my age.',
-    kind: 'external',
-    href: 'https://blog.iamsuri.ai/first-principles-for-8th-graders',
+      'A plain-language breakdown of first-principles thinking, aimed at people my age. Will live on the personal blog when it ships.',
+    kind: 'coming-soon',
+    status: 'coming-soon',
     tags: ['thinking', 'learning'],
     date: '2026-01',
-    status: 'published',
   },
 ];

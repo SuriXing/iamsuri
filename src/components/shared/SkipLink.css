@@ -1,0 +1,32 @@
+/**
+ * Skip-to-content link styles. Off-screen until :focus, then pops to
+ * the top-left of the viewport with high z-index so it sits above the
+ * persistent floating chrome.
+ */
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 16px;
+  z-index: 1000;
+  padding: 12px 20px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-elevated, #151520);
+  color: var(--fg, #ededf5);
+  border: 2px solid var(--accent, #7c5cfc);
+  border-radius: 8px;
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: top 160ms ease;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 16px;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent, #7c5cfc);
+}

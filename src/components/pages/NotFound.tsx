@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import './CategoryPage.css';
 
 /**
- * 404 fallback for the catch-all route. Kept minimal until the P1.5
- * editorial landing ships — at that point this will adopt the same
- * typography system.
+ * 404 fallback. Rewritten in P1.7 to use the editorial token system
+ * (drains the P1.2 a11y backlog item: hardcoded `#7c5cfc` link failed
+ * WCAG AA on both themes; tap target was sub-44px).
  */
 export function NotFound() {
   useEffect(() => {
@@ -12,24 +13,17 @@ export function NotFound() {
   }, []);
 
   return (
-    <main
-      style={{
-        padding: '2rem',
-        maxWidth: 720,
-        margin: '0 auto',
-        minHeight: '100vh',
-        color: 'var(--text-primary, #e6e6f0)',
-      }}
-    >
-      <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>404</h1>
-      <p style={{ opacity: 0.7, marginBottom: '1.5rem' }}>
-        This page doesn&apos;t exist — yet.
-      </p>
-      <p>
-        <Link to="/" style={{ color: '#7c5cfc' }}>
-          &larr; Back to home
-        </Link>
-      </p>
+    <main className="cat-page cat-page--narrow" id="main" tabIndex={-1}>
+      <header className="cat-header">
+        <p className="cat-header__eyebrow">Error</p>
+        <h1 className="cat-header__title">404</h1>
+        <p className="cat-header__description">
+          This page doesn&apos;t exist — yet.
+        </p>
+      </header>
+      <Link to="/" className="cat-back">
+        <span aria-hidden>←</span> back to home
+      </Link>
     </main>
   );
 }

@@ -10,6 +10,8 @@ import type {
   InlinePost,
   ComingSoonPost,
 } from '../../data/schema';
+import { formatDate } from '../../lib/date';
+import { normalizeTag } from '../../lib/tags';
 // Font CSS is scoped to the Landing route so the /3d canvas route
 // doesn't pay the cost. See src/styles/fonts.css for the three
 // @fontsource-variable families.
@@ -32,7 +34,7 @@ export default function Landing() {
   }, []);
 
   return (
-    <main className="landing">
+    <main className="landing" id="main" tabIndex={-1}>
       <HeroSection />
       <WorkSection />
       <WritingSection />
@@ -103,7 +105,9 @@ function WorkSection() {
                 <span className={`badge badge--${product.status}`}>
                   {product.status.replace('-', ' ')}
                 </span>
-                <span className="card__date">{product.date}</span>
+                <time className="card__date" dateTime={product.date}>
+                  {formatDate(product.date)}
+                </time>
               </div>
               <h3 className="card__title">{product.title}</h3>
               {product.subtitle && (
@@ -113,7 +117,7 @@ function WorkSection() {
               <ul className="card__tags" aria-label={`${product.title} tags`}>
                 {product.tags.slice(0, 4).map((tag) => (
                   <li key={tag} className="chip">
-                    {tag}
+                    {normalizeTag(tag)}
                   </li>
                 ))}
               </ul>
@@ -238,7 +242,9 @@ function WritingMeta({
   return (
     <div className="card__header">
       <span className={`badge badge--${kind}`}>{label}</span>
-      <span className="card__date">{date}</span>
+      <time className="card__date" dateTime={date}>
+        {formatDate(date)}
+      </time>
     </div>
   );
 }
@@ -249,7 +255,7 @@ function WritingTags({ tags, title }: { tags: string[]; title: string }) {
     <ul className="card__tags" aria-label={`${title} tags`}>
       {tags.slice(0, 4).map((tag) => (
         <li key={tag} className="chip">
-          {tag}
+          {normalizeTag(tag)}
         </li>
       ))}
     </ul>
@@ -293,7 +299,7 @@ function IdeasSection() {
               <ul className="card__tags" aria-label={`${idea.title} tags`}>
                 {idea.tags.slice(0, 4).map((tag) => (
                   <li key={tag} className="chip">
-                    {tag}
+                    {normalizeTag(tag)}
                   </li>
                 ))}
               </ul>
@@ -338,42 +344,44 @@ function AboutSection() {
               {para}
             </p>
           ))}
-          <ul className="landing-about__contact" aria-label="Contact">
-            {about.contact.email && (
-              <li>
-                <a
-                  href={`mailto:${about.contact.email}`}
-                  className="landing-about__contact-link"
-                >
-                  Email
-                </a>
-              </li>
-            )}
-            {about.contact.github && (
-              <li>
-                <a
-                  href={about.contact.github}
-                  className="landing-about__contact-link"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  GitHub
-                </a>
-              </li>
-            )}
-            {about.contact.twitter && (
-              <li>
-                <a
-                  href={about.contact.twitter}
-                  className="landing-about__contact-link"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Twitter
-                </a>
-              </li>
-            )}
-          </ul>
+          <address className="landing-about__contact" aria-label="Contact">
+            <ul className="landing-about__contact-list">
+              {about.contact.email && (
+                <li>
+                  <a
+                    href={`mailto:${about.contact.email}`}
+                    className="landing-about__contact-link"
+                  >
+                    Email
+                  </a>
+                </li>
+              )}
+              {about.contact.github && (
+                <li>
+                  <a
+                    href={about.contact.github}
+                    className="landing-about__contact-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    GitHub
+                  </a>
+                </li>
+              )}
+              {about.contact.twitter && (
+                <li>
+                  <a
+                    href={about.contact.twitter}
+                    className="landing-about__contact-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Twitter
+                  </a>
+                </li>
+              )}
+            </ul>
+          </address>
         </div>
       </div>
     </section>

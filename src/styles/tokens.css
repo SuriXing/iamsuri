@@ -78,6 +78,8 @@
 
   /* ----- Accent (see contrast note above) ------------------------------ */
   --accent: #7c5cfc;
+  /* Dark-theme hover stays at #9279ff (~5.0:1 vs #0a0a10). Light-theme
+   * override below uses a darker shade for AA compliance. */
   --accent-hover: #9279ff;
 
   /* ----- Dark theme (default) ------------------------------------------ */
@@ -94,11 +96,38 @@
 /* ----- Light theme ---------------------------------------------------- */
 :root[data-theme='light'] {
   --bg: #faf9f5;
-  --bg-elevated: #ffffff;
-  --bg-hover: #f0ede6;
+  /* P1.6 designer fix: warm off-white instead of pure #ffffff so cards
+   * read against the cream page background. ~3% delta gives elevation. */
+  --bg-elevated: #f5f2ea;
+  --bg-hover: #ede9dd;
   --fg: #0a0a10;
   --fg-secondary: #40404a;
   --fg-muted: #80808a;
-  --border: #e5e5ea;
-  --border-strong: #c8c8d0;
+  --border: #e0dccf;
+  --border-strong: #c8c4b6;
+  /* P1.6 a11y fix: dark-violet hover variant for light theme. #5b3fd9
+   * vs #faf9f5 ≈ 5.5:1 — clears WCAG AA for body text. */
+  --accent-hover: #5b3fd9;
+}
+
+/* ----- Global focus-visible ring (P1.7 a11y) -------------------------- */
+/* Drains the P1.6 backlog: every interactive element now gets a real
+ * 2px outline on keyboard focus, not just a color swap. */
+a:focus-visible,
+button:focus-visible,
+[role='button']:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:not([tabindex='-1']):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* The route-target <main id="main" tabIndex={-1}> is moved focus on
+ * navigation. Don't draw a ring on it — the page itself is the focus. */
+main[tabindex='-1']:focus,
+main[tabindex='-1']:focus-visible {
+  outline: none;
 }

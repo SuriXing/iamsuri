@@ -1,3 +1,8 @@
+/**
+ * ThemeToggle styles. Reconciled with the editorial token system in P1.7
+ * (drains P1.6 designer backlog: drops legacy `--bg-secondary` /
+ * `--shadow-room` and the implicit "system-ui round button" look).
+ */
 .theme-toggle {
   position: fixed;
   top: 20px;
@@ -5,20 +10,27 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--fg);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-  transition: transform 0.2s, box-shadow 0.2s;
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 1.1rem;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
   z-index: 100;
-  box-shadow: var(--shadow-room);
 }
 
 .theme-toggle:hover {
-  transform: scale(1.1);
-  box-shadow: var(--shadow-room-hover);
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+  transform: scale(1.05);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent);
 }

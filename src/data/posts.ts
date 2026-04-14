@@ -1,0 +1,83 @@
+/**
+ * Canonical writing entries for the 2D rich portfolio.
+ *
+ * Shape: `Post` from `./schema`. Collapses the legacy 3D `bookRoom.ts`
+ * blog-post stub list into a typed `Post[]` and adds two external-link
+ * examples so P1.7 can demo both body-rendering paths (`inline` vs
+ * `external`) without guesswork.
+ *
+ * Titles + dates preserved from bookRoom.ts — "Why I Build Things" /
+ * "Learning by Shipping" — with scaffolded inline body text.
+ */
+
+import type { Post } from './schema';
+
+export type { Post } from './schema';
+
+export const posts: Post[] = [
+  {
+    slug: 'why-i-build-things',
+    title: 'Why I Build Things',
+    excerpt:
+      'Building is how I think. A short note on why I ship small, rough, real things instead of polished essays about them.',
+    kind: 'inline',
+    body: [
+      'I don\'t build things because I want to launch a company. I build them because I don\'t understand an idea until I\'ve tried to make it real.',
+      '',
+      'Writing an essay about an idea lets you skip the hard parts. Code won\'t. The compiler catches every hand-wave, and the user catches every one the compiler missed.',
+      '',
+      'So: ship small, ship rough, ship real. The polish comes after the idea survives contact with reality.',
+    ].join('\n'),
+    tags: ['meta', 'building', 'philosophy'],
+    date: '2026-04',
+    status: 'published',
+  },
+  {
+    slug: 'learning-by-shipping',
+    title: 'Learning by Shipping',
+    excerpt:
+      'School teaches you to optimize for grades. Shipping teaches you to optimize for whether the thing actually works.',
+    kind: 'inline',
+    body: [
+      'In school, the feedback loop is a grade at the end of a semester. By the time you get it, you\'ve already forgotten what you did wrong.',
+      '',
+      'Shipping has a different loop. You put something in front of a real user and within minutes you know where it breaks. The failure mode is specific, the fix is specific, and the next version is better because of it.',
+      '',
+      'Every project I\'ve shipped has taught me something no class ever did. Not because classes are bad — because the feedback is too slow to be memorable.',
+    ].join('\n'),
+    tags: ['learning', 'building', 'education'],
+    date: '2026-03',
+    status: 'published',
+  },
+  {
+    slug: 'what-im-reading',
+    title: 'What I\'m Reading',
+    excerpt: 'A running list of the books shaping how I think right now.',
+    kind: 'inline',
+    status: 'coming-soon',
+    tags: ['reading', 'books'],
+    date: '2026-05',
+  },
+  {
+    slug: 'debate-as-thinking-practice',
+    title: 'Debate as Thinking Practice (guest post)',
+    excerpt:
+      'A longer piece I wrote for a debate-coaching blog on how round prep maps onto general-purpose thinking skills.',
+    kind: 'external',
+    href: 'https://medium.com/@iamsuri/debate-as-thinking-practice',
+    tags: ['debate', 'thinking', 'guest'],
+    date: '2026-02',
+    status: 'published',
+  },
+  {
+    slug: 'first-principles-for-8th-graders',
+    title: 'First Principles, Explained for 8th Graders',
+    excerpt:
+      'Cross-posted to my personal blog — a plain-language breakdown of first-principles thinking, aimed at people my age.',
+    kind: 'external',
+    href: 'https://blog.iamsuri.ai/first-principles-for-8th-graders',
+    tags: ['thinking', 'learning'],
+    date: '2026-01',
+    status: 'published',
+  },
+];

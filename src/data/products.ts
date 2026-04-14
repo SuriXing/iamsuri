@@ -1,33 +1,74 @@
-export interface Product {
-  id: string;
-  name: string;
-  icon: string;
-  description: string;
-  url: string;
-  status: 'live' | 'coming-soon';
-  colorVar: string;
-  tags: string[];
-}
+/**
+ * Canonical product catalogue for the 2D rich portfolio.
+ *
+ * Shape: `Product` from `./schema`. Vercel URLs are authoritative (they are
+ * the current live URLs per the 3D ProductRoom). The legacy GitHub Pages
+ * URLs are kept in `repo`-adjacent notes only where useful.
+ */
+
+import type { Product } from './schema';
+
+// Re-export the canonical type so existing importers that did
+// `import { Product } from '../../data/products'` keep compiling.
+export type { Product } from './schema';
 
 export const products: Product[] = [
   {
-    id: 'problem-solver',
-    name: 'Problem Solver',
-    icon: '💡',
-    description: 'AI-powered worry helper. Drop your problem in, get clarity out.',
-    url: 'https://surixing.github.io/ProblemSolver/',
-    status: 'live',
-    colorVar: 'purple',
-    tags: ['React', 'AI', 'Supabase'],
+    slug: 'problem-solver',
+    title: 'Problem Solver',
+    subtitle: 'AI-powered worry helper',
+    excerpt:
+      'Drop your worry in, get help thinking it through. An AI thinking partner for when your brain is stuck in a loop.',
+    body: [
+      '## Why I built it',
+      '',
+      'I kept getting stuck in thought loops — worries that went round and round without ever resolving. I wanted a tool that would help me *think*, not just comfort me.',
+      '',
+      '## What it does',
+      '',
+      'You type in whatever is bugging you — a problem, a worry, a decision you\'re sitting on. Problem Solver turns it into a structured thinking exercise: reframes, clarifying questions, and concrete next steps.',
+      '',
+      '## Stack',
+      '',
+      'React + Supabase for persistence + an LLM backend. Shipped in a weekend; iterated on the prompt for two months.',
+    ].join('\n'),
+    tags: ['React', 'AI', 'Supabase', 'Mental Health'],
+    date: '2025-11',
+    status: 'shipped',
+    href: 'https://problem-solver.vercel.app',
+    repo: 'https://github.com/surixing/ProblemSolver',
+    metrics: [
+      { label: 'users', value: '120+' },
+      { label: 'sessions', value: '400+' },
+    ],
   },
   {
-    id: 'mentor-table',
-    name: 'Mentor Table',
-    icon: '⭐',
-    description: "Chat with history's greatest minds about your real problems.",
-    url: 'https://surixing.github.io/MentorTable/',
-    status: 'live',
-    colorVar: 'pink',
-    tags: ['React', 'AI', 'Personas'],
+    slug: 'mentor-table',
+    title: 'Mentor Table',
+    subtitle: 'Chat with history\'s greatest minds',
+    excerpt:
+      'Practice thinking with AI versions of historical figures. Ask Feynman about physics, Marcus Aurelius about fear, Ada Lovelace about first code.',
+    body: [
+      '## Why I built it',
+      '',
+      'Books are one-way. You can\'t ask a dead author a follow-up question. Mentor Table is my attempt to fix that — not to *replace* reading, but to turn it into a conversation.',
+      '',
+      '## What it does',
+      '',
+      'Pick a mentor. Ask a question. Get a response grounded in that person\'s actual writing, style, and worldview. The prompt engineering keeps the personas from sliding into generic assistant-speak.',
+      '',
+      '## Stack',
+      '',
+      'React + a small cast of carefully tuned persona prompts. No database — the whole thing is intentionally ephemeral, like a real conversation.',
+    ].join('\n'),
+    tags: ['React', 'AI', 'Personas', 'Education'],
+    date: '2026-01',
+    status: 'shipped',
+    href: 'https://mentor-table.vercel.app',
+    repo: 'https://github.com/surixing/MentorTable',
+    metrics: [
+      { label: 'mentors', value: '8' },
+      { label: 'users', value: '500+' },
+    ],
   },
 ];

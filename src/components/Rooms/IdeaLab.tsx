@@ -17,8 +17,8 @@ export default function IdeaLab() {
       {/* Idea cards */}
       <div className="idea-lab__grid">
         {ideas.map(idea => (
-          <div key={idea.id} className="idea-card">
-            <span className="idea-card__icon">{idea.icon}</span>
+          <div key={idea.slug} className="idea-card">
+            {idea.icon && <span className="idea-card__icon">{idea.icon}</span>}
             <h3 className="idea-card__title">{idea.title}</h3>
             <p className="idea-card__why">{idea.why}</p>
           </div>

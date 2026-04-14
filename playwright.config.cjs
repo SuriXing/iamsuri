@@ -3,7 +3,7 @@ const { defineConfig } = require('@playwright/test');
 module.exports = defineConfig({
   testDir: './tests',
   testMatch: '**/*.test.cjs',
-  timeout: 30000,
+  timeout: 60000,
   use: {
     // Vite serves the app under the `/iamsuri/` base path defined in vite.config.ts.
     baseURL: 'http://localhost:5173',

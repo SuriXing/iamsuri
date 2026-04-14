@@ -59,15 +59,18 @@ export const posts: Post[] = [
     date: '2026-05',
   },
   {
+    // P1.8 gate fix: was 'external' linking to a placeholder medium.com URL
+    // that returned 403. Downgraded to coming-soon so we don't ship a dead
+    // external link on a published post. Will become inline once the guest
+    // piece is actually published on a real host.
     slug: 'debate-as-thinking-practice',
     title: 'Debate as Thinking Practice (guest post)',
     excerpt:
       'A longer piece I wrote for a debate-coaching blog on how round prep maps onto general-purpose thinking skills.',
-    kind: 'external',
-    href: 'https://medium.com/@iamsuri/debate-as-thinking-practice',
+    kind: 'coming-soon',
     tags: ['debate', 'thinking', 'guest'],
     date: '2026-02',
-    status: 'published',
+    status: 'coming-soon',
   },
   {
     // P1.7: was 'external' linking to https://blog.iamsuri.ai/...

@@ -103,6 +103,13 @@ export function StarField() {
 
   return (
     <points geometry={geometry}>
+      {/*
+        Post-ship fix: pairing `transparent + depthWrite={false}` with the
+        also-transparent Particles layer caused order-dependent alpha
+        artifacts (whichever drew last in buffer order kept poking through
+        the other). Additive blending makes stars pure add-on-top — they
+        just brighten whatever's behind them, no sort needed.
+      */}
       <pointsMaterial
         ref={matRef}
         vertexColors
@@ -110,7 +117,9 @@ export function StarField() {
         sizeAttenuation
         transparent
         opacity={1}
+        blending={THREE.AdditiveBlending}
         depthWrite={false}
+        toneMapped={false}
       />
     </points>
   );

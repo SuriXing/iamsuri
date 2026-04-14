@@ -39,9 +39,11 @@ const FAN_SPEED = 6.0;
 const SCANLINE_BASE_Y = 1.88;
 const SCANLINE_AMPLITUDE = 0.22;
 const SCANLINE_SPEED = 2.3;
+// Post-ship flicker fix: ≤5% amplitude + 0.6 Hz across all 4 rooms so
+// their collective ambient breathing doesn't superimpose into a strobe.
 const ACCENT_LIGHT_BASE = 0.7;
-const ACCENT_LIGHT_AMPLITUDE = 0.1;
-const ACCENT_LIGHT_SPEED = 0.9;
+const ACCENT_LIGHT_AMPLITUDE = 0.035;
+const ACCENT_LIGHT_SPEED = 0.6;
 
 // Deterministic seed for band tints.
 const BAND_SEED = 0xc0de01;

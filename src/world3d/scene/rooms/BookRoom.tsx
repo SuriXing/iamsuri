@@ -50,9 +50,14 @@ const DUST_SPEED = 0.6;
 const PAGE_BASE_ROT = 0.02;
 const PAGE_AMPLITUDE = 0.04;
 const PAGE_SPEED = 1.5;
+// Post-ship fix: the 4 room accent lights were each pulsing at distinct
+// frequencies (0.6 / 1.3 / 1.9 / 2.0 Hz) with amplitudes 10–20%, and
+// their superposition on the shared scene looked like visible flicker
+// rather than ambient breathing. Clamped all to ≤5% per-light and to a
+// single slow 0.6 Hz so the wall luminance holds roughly steady.
 const ACCENT_LIGHT_BASE = 0.8;
-const ACCENT_LIGHT_AMPLITUDE = 0.12;
-const ACCENT_LIGHT_SPEED = 1.9;
+const ACCENT_LIGHT_AMPLITUDE = 0.04;
+const ACCENT_LIGHT_SPEED = 0.6;
 // F3.15 — hero focal animations: slow globe spin + gold frame breathing glow.
 const GLOBE_SPIN_SPEED = 0.35;
 const FRAME_GLOW_BASE = 0.35;

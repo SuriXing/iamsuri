@@ -105,19 +105,23 @@ const GEAR_SPEED_B = -1.9;
 const GEAR_SPEED_C = 2.3;
 const BULB_FLOAT_AMPLITUDE = 0.08;
 const BULB_FLOAT_SPEED = 1.2;
+// Post-ship flicker fix: bulb, solder-tip, accent-light all pulsed hard
+// enough (>20% amplitude) at different fast frequencies that their
+// superposition on the shared scene read as flicker. Amplitudes are now
+// <=5% of base, frequencies aligned to a slow 0.6 Hz for cohesion.
 const BULB_PULSE_BASE = 2.8;
-const BULB_PULSE_AMPLITUDE = 0.6;
-const BULB_PULSE_SPEED = 2.0;
+const BULB_PULSE_AMPLITUDE = 0.14;
+const BULB_PULSE_SPEED = 0.6;
 const PROTOTYPE_VIBRATE_AMPLITUDE = 0.008;
 const PROTOTYPE_VIBRATE_SPEED = 18.0;
 const HANGING_TOOL_SWING_AMPLITUDE = 0.06;
 const HANGING_TOOL_SWING_SPEED = 1.3;
 const SOLDER_TIP_PULSE_BASE = 1.6;
-const SOLDER_TIP_PULSE_AMPLITUDE = 0.7;
-const SOLDER_TIP_PULSE_SPEED = 3.1;
+const SOLDER_TIP_PULSE_AMPLITUDE = 0.08;
+const SOLDER_TIP_PULSE_SPEED = 0.6;
 const ACCENT_LIGHT_BASE = 0.75;
-const ACCENT_LIGHT_AMPLITUDE = 0.15;
-const ACCENT_LIGHT_SPEED = 1.3;
+const ACCENT_LIGHT_AMPLITUDE = 0.04;
+const ACCENT_LIGHT_SPEED = 0.6;
 
 interface BoardLine {
   c: string;

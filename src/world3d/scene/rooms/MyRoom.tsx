@@ -53,9 +53,11 @@ const SCANLINE_SWEEP_SPEED = 2.0;
 // Plant foliage breathing: ±3% scale pulse.
 const PLANT_BREATH_AMPLITUDE = 0.03;
 const PLANT_BREATH_SPEED = 0.8;
-// Pink accent light breathing: base 0.3, ±10% at slow 0.6 Hz — ambient feel.
+// Pink accent light breathing: base 0.3, ~5% at slow 0.6 Hz. Dampened
+// from 10% post-ship when the combined 4-room pulse superposition read
+// as flicker.
 const ACCENT_LIGHT_BASE = 0.3;
-const ACCENT_LIGHT_AMPLITUDE = 0.03; // 10% of base
+const ACCENT_LIGHT_AMPLITUDE = 0.015;
 const ACCENT_LIGHT_SPEED = 0.6;
 
 // Folded clothes stack — small boxes in pink/white.

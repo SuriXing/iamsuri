@@ -134,12 +134,22 @@ export function Particles() {
       frustumCulled={false}
     >
       <boxGeometry args={[0.04, 0.04, 0.04]} />
-      <meshPhongMaterial
-        emissive="#ffffff"
-        emissiveIntensity={0.9}
+      {/*
+        Post-ship fix: InstancedMesh has no per-instance depth sort, so
+        `transparent + opacity 0.75` caused alpha-blend flicker whenever
+        the camera drifted (follow mode wobble → instances reshuffle
+        depth relative to each other each frame → visible strobe across
+        all 150 cubes). Additive blending is depth-independent — particles
+        just add brightness on top of whatever's behind them. Also cranked
+        emissive and dropped depthWrite since additive is brightness-only.
+      */}
+      <meshBasicMaterial
+        color="#ffe4b0"
         transparent
-        opacity={0.75}
-        flatShading
+        opacity={0.8}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+        toneMapped={false}
       />
     </instancedMesh>
   );

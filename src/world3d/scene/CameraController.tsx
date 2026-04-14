@@ -10,13 +10,65 @@ import {
   targetCamYawRef,
   targetCamPitchRef,
 } from './cameraRefs';
+import { listColliders } from './colliders';
 
 // Room-entry / room-exit tween duration.
 const ROOM_TWEEN_DURATION = 1.0;
 
+// Camera wall-clip pushback: minimum distance the camera must stand in
+// front of the character. If a wall would put the camera further than
+// this, pull the camera to max-out here instead.
+const CAMERA_MIN_DIST = 1.6;
+// Radius of the camera "puck" used to push it off wall surfaces so the
+// near plane doesn't slice into the wall geometry.
+const CAMERA_PUSHBACK = 0.35;
+
 // Shared scratch vectors — avoid per-frame allocation in useFrame.
 const scratchPos = new THREE.Vector3();
 const scratchLook = new THREE.Vector3();
+
+/**
+ * Swept XZ test from the character origin toward a target camera
+ * position. Returns a clamped distance (0..requestedDist) — whatever
+ * part of the sweep is free of wall colliders. Zero per-frame alloc.
+ *
+ * Uses the same AABB collider registry that PlayerController sweeps
+ * against, so camera + character share a single source of truth for
+ * "wall" geometry. Character is at (cx, cz), camera's raw placement is
+ * (tx, tz) at `dist` units out along the sweep direction.
+ */
+function sweepCamera(
+  cx: number,
+  cz: number,
+  tx: number,
+  tz: number,
+  dist: number,
+): number {
+  const dx = tx - cx;
+  const dz = tz - cz;
+  const len = Math.hypot(dx, dz);
+  if (len < 1e-4) return dist;
+  const nx = dx / len;
+  const nz = dz / len;
+  // March in small steps from character to target, stopping at the
+  // first collider hit. Step size ~0.2m is finer than any wall width.
+  const step = 0.2;
+  let traveled = 0;
+  while (traveled < dist) {
+    const px = cx + nx * traveled;
+    const pz = cz + nz * traveled;
+    for (const box of listColliders()) {
+      const ddx = Math.abs(px - box.x) - (box.hx + CAMERA_PUSHBACK);
+      const ddz = Math.abs(pz - box.z) - (box.hz + CAMERA_PUSHBACK);
+      if (ddx < 0 && ddz < 0) {
+        // Hit — return the distance just before the collider.
+        return Math.max(CAMERA_MIN_DIST, traveled - step);
+      }
+    }
+    traveled += step;
+  }
+  return dist;
+}
 
 interface TweenState {
   active: boolean;
@@ -258,10 +310,24 @@ export function CameraController(): null {
       const sinP = Math.sin(pitch);
       const cosP = Math.cos(pitch);
 
+      // Wall-clip pushback: sweep from character to the ideal camera
+      // position in XZ against the same collider registry the player
+      // uses. If a wall would push the camera through it, clamp the
+      // camera distance so it sits in front of the wall instead. Fixes
+      // the 穿模 on perspective change when orbiting into a wall.
+      const rawTx = charPos.x - sinY * cosP * FOLLOW.distance;
+      const rawTz = charPos.z - cosY * cosP * FOLLOW.distance;
+      const freeDist = sweepCamera(
+        charPos.x,
+        charPos.z,
+        rawTx,
+        rawTz,
+        FOLLOW.distance,
+      );
       scratchPos.set(
-        charPos.x - sinY * cosP * FOLLOW.distance,
-        FOLLOW.lookHeight + sinP * FOLLOW.distance,
-        charPos.z - cosY * cosP * FOLLOW.distance,
+        charPos.x - sinY * cosP * freeDist,
+        FOLLOW.lookHeight + sinP * freeDist,
+        charPos.z - cosY * cosP * freeDist,
       );
       const posFactor = 1 - Math.exp(-FOLLOW.lerp * delta);
       camera.position.lerp(scratchPos, posFactor);

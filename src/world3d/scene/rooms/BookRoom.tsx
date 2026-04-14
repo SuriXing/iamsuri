@@ -40,10 +40,13 @@ const DUSTY_SPINES: ReadonlyArray<string> = [
 ];
 
 // --- Micro-anim constants (module scope = zero per-frame alloc) ---
+// Post-ship flicker fix #2: the two-wave candle flicker (7.3 + 11.7 rad/s
+// with ±23% amplitude) read as harsh flicker rather than warm candle.
+// Replaced with the same slow 0.6 Hz carrier the other rooms use at ≤5%
+// amplitude — now it breathes instead of flickers.
 const LAMP_FLICKER_BASE = 1.5;
-const LAMP_FLICKER_AMPLITUDE = 0.35;
-const LAMP_FLICKER_SPEED_A = 7.3;
-const LAMP_FLICKER_SPEED_B = 11.7;
+const LAMP_FLICKER_AMPLITUDE = 0.06;
+const LAMP_FLICKER_SPEED = 0.6;
 const DUST_BASE_Y = 1.35;
 const DUST_AMPLITUDE = 0.12;
 const DUST_SPEED = 0.6;
@@ -102,12 +105,11 @@ export function BookRoom() {
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
-    // Lamp flicker (two-wave noise combo → emissive intensity).
+    // Lamp breathing (slow 0.6 Hz carrier, ≤5% — matches the other rooms).
     const lamp = lampGlowRef.current;
     if (lamp) {
-      const flick = Math.sin(t * LAMP_FLICKER_SPEED_A) * 0.6 + Math.sin(t * LAMP_FLICKER_SPEED_B) * 0.4;
       const mat = lamp.material as THREE.MeshPhongMaterial;
-      mat.emissiveIntensity = LAMP_FLICKER_BASE + flick * LAMP_FLICKER_AMPLITUDE;
+      mat.emissiveIntensity = LAMP_FLICKER_BASE + Math.sin(t * LAMP_FLICKER_SPEED) * LAMP_FLICKER_AMPLITUDE;
     }
 
     // Amber accent light — breathing + flicker echo.

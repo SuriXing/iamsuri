@@ -44,27 +44,64 @@ export interface Product {
   metrics?: ProductMetric[];
 }
 
-export type PostKind = 'inline' | 'external';
+export type PostKind = 'inline' | 'external' | 'coming-soon';
 
 export type PostStatus = 'published' | 'draft' | 'coming-soon';
 
 /**
- * A writing entry. Two kinds:
- *   - 'inline'   → full body rendered in-app. `body` is REQUIRED.
- *   - 'external' → link out to an external platform. `href` is REQUIRED.
+ * Shared fields every post variant carries. Individual variants narrow
+ * the `kind`/`body`/`href`/`status` fields so the compiler forces the
+ * correct shape at the call site.
  */
-export interface Post {
+interface PostBase {
   slug: string;
   title: string;
   excerpt: string;
-  kind: PostKind;
-  body?: string;
-  href?: string;
   tags: string[];
+  /** ISO date — accepts YYYY-MM-DD or YYYY-MM. */
   date: string;
+  /** Optional cover image URL/path. */
   cover?: string;
-  status: PostStatus;
 }
+
+/**
+ * Full body rendered in-app. `body` is required; `href` is forbidden.
+ * Status is either `published` or `draft`.
+ */
+export interface InlinePost extends PostBase {
+  kind: 'inline';
+  body: string;
+  href?: never;
+  status: 'published' | 'draft';
+}
+
+/**
+ * Link out to an external platform (Medium, personal blog, etc.).
+ * `href` is required; `body` is forbidden.
+ */
+export interface ExternalPost extends PostBase {
+  kind: 'external';
+  href: string;
+  body?: never;
+  status: 'published' | 'draft';
+}
+
+/**
+ * Placeholder card shown while the post is still being written.
+ * Neither `body` nor `href` is present; status is pinned to `coming-soon`.
+ */
+export interface ComingSoonPost extends PostBase {
+  kind: 'coming-soon';
+  body?: never;
+  href?: never;
+  status: 'coming-soon';
+}
+
+/**
+ * A writing entry. Discriminated union — narrow on `kind` to access
+ * variant-specific fields type-safely.
+ */
+export type Post = InlinePost | ExternalPost | ComingSoonPost;
 
 export type IdeaStatus = 'brewing' | 'prototyping' | 'shelved';
 

@@ -53,7 +53,7 @@ export const posts: Post[] = [
     slug: 'what-im-reading',
     title: 'What I\'m Reading',
     excerpt: 'A running list of the books shaping how I think right now.',
-    kind: 'inline',
+    kind: 'coming-soon',
     status: 'coming-soon',
     tags: ['reading', 'books'],
     date: '2026-05',

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useState } from 'react';
+import { lazy, Suspense, useCallback } from 'react';
 import {
   BrowserRouter,
   Navigate,
@@ -6,13 +6,6 @@ import {
   Routes,
   useNavigate,
 } from 'react-router-dom';
-import { rooms } from './data/rooms';
-import FloorPlan from './components/World/FloorPlan';
-import RoomView from './components/Rooms/RoomView';
-import MyRoom from './components/Rooms/MyRoom';
-import ProductRoom from './components/Rooms/ProductRoom';
-import BookRoom from './components/Rooms/BookRoom';
-import IdeaLab from './components/Rooms/IdeaLab';
 import ThemeToggle from './components/shared/ThemeToggle';
 import ViewSwitcher from './components/shared/ViewSwitcher';
 import ProjectsDock from './components/shared/ProjectsDock';
@@ -25,12 +18,12 @@ import { NotFound } from './components/pages/NotFound';
 const world3dImport = () => import('./world3d/App3D');
 const World3D = lazy(world3dImport);
 
-const roomComponents: Record<string, React.ComponentType> = {
-  'my-room': MyRoom,
-  'product-room': ProductRoom,
-  'book-room': BookRoom,
-  'idea-lab': IdeaLab,
-};
+// Landing is also lazy so the /3d cold boot doesn't have to evaluate
+// Landing.tsx (and its webfont CSS graph) just to render a canvas. On
+// the `/` route the pre-boot fire-and-forget below hydrates it before
+// React reaches the Suspense boundary.
+const landingImport = () => import('./components/pages/Landing');
+const Landing = lazy(landingImport);
 
 /**
  * Pre-boot URL fixup and preload hint. Runs at module eval time, before
@@ -53,42 +46,49 @@ function bootstrapRoute() {
     // Fire-and-forget: the lazy() above shares this in-flight promise
     // so the Suspense fallback resolves as soon as possible.
     void world3dImport();
+  } else {
+    // Same trick for the Landing route — kick off the dynamic import so
+    // the editorial page + font CSS stream in parallel with React
+    // bootstrap instead of waiting for the Suspense boundary.
+    void landingImport();
   }
 }
 
 bootstrapRoute();
 
 /**
- * Landing route — still wraps the current FloorPlan + RoomView pair.
- * This whole component dies in P1.5 when the editorial landing ships.
- * For P1.1 the goal is routing only, so the 2D behavior stays identical
- * (including the useState-driven room overlay).
+ * Landing route — the editorial single-scroll 2D portfolio (P1.5).
+ * ThemeToggle + ViewSwitcher sit fixed top-right; ProjectsDock sits
+ * fixed bottom; the Landing component is the full scroll flow.
  */
-function Landing() {
-  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
-
-  const handleEnterRoom = useCallback((roomId: string) => {
-    setActiveRoomId(roomId);
-  }, []);
-
-  const handleBack = useCallback(() => {
-    setActiveRoomId(null);
-  }, []);
-
-  const activeRoom = activeRoomId ? rooms.find((r) => r.id === activeRoomId) : null;
-  const ActiveComponent = activeRoomId ? roomComponents[activeRoomId] : null;
-
+function LandingRoute() {
   return (
     <>
       <ThemeToggle />
       <ViewSwitcher />
-      {activeRoom && ActiveComponent ? (
-        <RoomView room={activeRoom} onBack={handleBack}>
-          <ActiveComponent />
-        </RoomView>
-      ) : (
-        <FloorPlan onEnterRoom={handleEnterRoom} />
-      )}
+      <Suspense
+        fallback={
+          <div
+            className="landing-loading"
+            role="status"
+            aria-live="polite"
+            style={{
+              minHeight: '100vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--fg, #ededf5)',
+              fontFamily: 'system-ui, sans-serif',
+              fontSize: '0.875rem',
+              opacity: 0.6,
+            }}
+          >
+            Loading…
+          </div>
+        }
+      >
+        <Landing />
+      </Suspense>
       <ProjectsDock />
     </>
   );
@@ -123,7 +123,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<LandingRoute />} />
         <Route path="/work" element={<Placeholder name="Work" />} />
         <Route path="/work/:slug" element={<Placeholder name="Work" />} />
         <Route path="/writing" element={<Placeholder name="Writing" />} />

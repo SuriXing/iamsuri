@@ -1,0 +1,24 @@
+/**
+ * Webfont imports for the editorial typography system (P1.5).
+ *
+ * All fonts ship via @fontsource-variable npm packages — no external CDN,
+ * no network round-trip at runtime, fonts are fingerprint-hashed and
+ * bundled by Vite. Variable fonts so we get full weight/optical-size
+ * range without shipping 6 separate files per family.
+ *
+ *   - Fraunces        → display serif (h1/h2/h3 + editorial flourishes)
+ *   - Inter           → body sans (paragraphs, cards, nav, buttons)
+ *   - JetBrains Mono  → mono (eyebrows, tags, code-ish chips)
+ */
+
+/* Fraunces variable font (wght + opsz). `index.css` imports the standard
+ * set which is good enough for this portfolio — opsz.css exists if we
+ * want optical sizing later, but for now Vite will keep the payload
+ * reasonable. */
+@import '@fontsource-variable/fraunces';
+
+/* Inter variable (wght). */
+@import '@fontsource-variable/inter';
+
+/* JetBrains Mono variable (wght). */
+@import '@fontsource-variable/jetbrains-mono';

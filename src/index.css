@@ -4,9 +4,35 @@
   box-sizing: border-box;
 }
 
+html {
+  /* Keeps 1rem = 16px predictable for the 1.25 type scale in tokens.css. */
+  font-size: 100%;
+}
+
 html, body {
   margin: 0;
-  background: var(--bg-primary);
+  background: var(--bg, var(--bg-primary));
+  color: var(--fg, var(--text-primary));
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100vh;
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

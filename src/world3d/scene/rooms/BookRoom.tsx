@@ -61,11 +61,14 @@ const PAGE_SPEED = 1.5;
 const ACCENT_LIGHT_BASE = 0.8;
 const ACCENT_LIGHT_AMPLITUDE = 0.04;
 const ACCENT_LIGHT_SPEED = 0.6;
-// F3.15 — hero focal animations: slow globe spin + gold frame breathing glow.
+// F3.15 — hero focal animations: slow globe spin + gold frame breathing.
+// Flicker-fix pass #3: FRAME_GLOW was ±23% at 1.3 rad/s — too much
+// amplitude too fast. Now ±8% at the shared 0.6 Hz carrier like every
+// other pulse in the 4 rooms.
 const GLOBE_SPIN_SPEED = 0.35;
 const FRAME_GLOW_BASE = 0.35;
-const FRAME_GLOW_AMPLITUDE = 0.08;
-const FRAME_GLOW_SPEED = 1.3;
+const FRAME_GLOW_AMPLITUDE = 0.03;
+const FRAME_GLOW_SPEED = 0.6;
 
 // Dust mote scatter (deterministic).
 const DUST_SEED = 0xb00c2a;

@@ -98,7 +98,9 @@ export function Hallway() {
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
-    // ----- Steam (existing) — refactored to indexed for-loop, zero closure alloc -----
+    // ----- Steam — position bob kept, opacity pulse removed. Alpha on a
+    //       transparent mesh creates sort-dependent flicker; the slow
+    //       position bob alone reads as subtle steam without the blink. -----
     const g = steamRef.current;
     if (g) {
       const children = g.children;
@@ -106,8 +108,6 @@ export function Hallway() {
       for (let i = 0; i < n; i++) {
         const child = children[i];
         child.position.y = STEAM_OFFSETS[i][1] + Math.sin(t * 2 + i) * 0.05;
-        const mat = (child as THREE.Mesh).material as THREE.MeshPhongMaterial;
-        mat.opacity = 0.2 + 0.15 * Math.sin(t * 2 + i);
       }
     }
 
@@ -119,13 +119,11 @@ export function Hallway() {
       p.rotation.z = Math.sin(t * 0.4 + PLANT_PHASES[i]) * 0.02;
     }
 
-    // ----- Beam dust drift (idle loop #3) — single emissive mote bobbing
-    //       under the central beam crossroads. Scalar Y + opacity only. -----
+    // ----- Beam dust drift (idle loop #3) — Y bob only. Opacity pulse
+    //       removed (transparent mesh alpha flicker). -----
     const dust = dustMoteRef.current;
     if (dust) {
       dust.position.y = 2.55 + Math.sin(t * 0.7) * 0.08;
-      const dmat = dust.material as THREE.MeshPhongMaterial;
-      dmat.opacity = 0.35 + 0.15 * Math.sin(t * 1.1);
     }
 
     // ----- Runner rug pulse (idle loop #4) — subtle ±1% scale breathing.

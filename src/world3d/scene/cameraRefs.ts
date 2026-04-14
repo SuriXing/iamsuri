@@ -19,12 +19,12 @@ export interface MutableNumberRef {
   current: number;
 }
 
-// Default pitch ≈ 57° above horizontal (bumped from π/4 = 45° per user
-// feedback: "let the perspective a bit higher"). At FOLLOW.distance = 6
-// this puts the camera at ~5.04 above and ~3.27 behind the character —
-// more top-down than the pre-ship framing, easier to see the room floor
-// plan and surrounding walls at a glance.
-const DEFAULT_PITCH = 1.0;
+// Default pitch ≈ 63° above horizontal. Iterated on user feedback:
+// 45° (π/4) read too close to horizon, 50° (0.87 rad) made the character
+// look squashed/foreshortened, 63° (1.1 rad) gives a clearer overhead
+// walking-sim read without being fully top-down. Camera sits ~5.34 above
+// and ~2.72 behind the character at FOLLOW.distance = 6.
+const DEFAULT_PITCH = 1.1;
 
 export const followCamYawRef: MutableNumberRef = { current: 0 };
 export const followCamPitchRef: MutableNumberRef = { current: DEFAULT_PITCH };

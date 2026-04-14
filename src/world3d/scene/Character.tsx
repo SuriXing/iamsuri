@@ -96,12 +96,14 @@ export function Character() {
     if (armRRef.current) armRRef.current.rotation.x = -swing;
     if (headRef.current) headRef.current.rotation.z = Math.sin(t * 1.5) * 0.05;
 
-    // Blink — deterministic: a 4.0s period, 120ms closure starting at phase 0.
-    // Scale eye-group y → 0.1 during the closure window, else 1.0.
+    // Blink — deterministic: 6.0s period, 200ms partial-closure.
+    // Flicker-fix pass #3: was 4.0s period + 120ms full close + scale 0.1
+    // (eyes vanishing to a sliver). That read as a fast pop-out. Now 6s
+    // period, 200ms partial close, scale 0.4 (gentle squint, not a slam).
     if (blinkRef.current) {
-      const cycle = t % 4.0;
-      const closed = cycle < 0.12;
-      blinkRef.current.scale.y = closed ? 0.1 : 1.0;
+      const cycle = t % 6.0;
+      const closed = cycle < 0.2;
+      blinkRef.current.scale.y = closed ? 0.4 : 1.0;
     }
 
     // Hair sway — lerp hair group rotation.z toward lateral velocity

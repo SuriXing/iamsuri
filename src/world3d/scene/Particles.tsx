@@ -135,21 +135,19 @@ export function Particles() {
     >
       <boxGeometry args={[0.04, 0.04, 0.04]} />
       {/*
-        Post-ship fix: InstancedMesh has no per-instance depth sort, so
-        `transparent + opacity 0.75` caused alpha-blend flicker whenever
-        the camera drifted (follow mode wobble → instances reshuffle
-        depth relative to each other each frame → visible strobe across
-        all 150 cubes). Additive blending is depth-independent — particles
-        just add brightness on top of whatever's behind them. Also cranked
-        emissive and dropped depthWrite since additive is brightness-only.
+        Flicker-fix pass #3: additive blending + toneMapped:false was a
+        worse cure than the disease. Additive makes 150 instances SUM
+        brightness whenever they overlap from the camera's view, so as
+        particles drift past each other their pileup reads as luminance
+        flicker. Now using normal blending with lower opacity, depthWrite
+        off for sort-agnosticism, and tone mapping back on so they never
+        push past the tone mapper's ceiling.
       */}
       <meshBasicMaterial
         color="#ffe4b0"
         transparent
-        opacity={0.8}
-        blending={THREE.AdditiveBlending}
+        opacity={0.45}
         depthWrite={false}
-        toneMapped={false}
       />
     </instancedMesh>
   );

@@ -34,13 +34,21 @@ const DESK_LEGS: ReadonlyArray<readonly [number, number]> = [
 ];
 
 // ---- Micro-anim constants (module-scope = zero per-frame alloc) ----
-const LED_BLINK_SPEED = 4.0;
+// Flicker-fix pass #3: every emissive mutation in this room is now clamped
+// to the shared slow 0.6 Hz carrier with ≤5% amplitude. Previously the
+// power LED was a discrete binary blink at 4 rad/s (1.8..4.5 = +150%) and
+// the 6 rack LEDs phased ±1.5 at 3 rad/s — both dominated the visible
+// luminance. They now breathe instead of flicker.
 const FAN_SPEED = 6.0;
 const SCANLINE_BASE_Y = 1.88;
 const SCANLINE_AMPLITUDE = 0.22;
 const SCANLINE_SPEED = 2.3;
-// Post-ship flicker fix: ≤5% amplitude + 0.6 Hz across all 4 rooms so
-// their collective ambient breathing doesn't superimpose into a strobe.
+const LED_PULSE_BASE = 2.5;
+const LED_PULSE_AMPLITUDE = 0.12;
+const LED_PULSE_SPEED = 0.6;
+const RACK_LED_BASE = 2.0;
+const RACK_LED_AMPLITUDE = 0.1;
+const RACK_LED_SPEED = 0.6;
 const ACCENT_LIGHT_BASE = 0.7;
 const ACCENT_LIGHT_AMPLITUDE = 0.035;
 const ACCENT_LIGHT_SPEED = 0.6;
@@ -152,20 +160,21 @@ export function ProductRoom() {
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
-    // Power LED blink (discrete step).
-    const blink = (Math.sin(t * LED_BLINK_SPEED) + 1) * 0.5 > 0.5 ? 1 : 0.2;
+    // Power LED slow breath — no more binary blink.
+    const ledPulse = LED_PULSE_BASE + Math.sin(t * LED_PULSE_SPEED) * LED_PULSE_AMPLITUDE;
     const d1 = dot1Ref.current;
-    if (d1) (d1.material as THREE.MeshPhongMaterial).emissiveIntensity = 1.5 + blink * 3;
+    if (d1) (d1.material as THREE.MeshPhongMaterial).emissiveIntensity = ledPulse;
     const d2 = dot2Ref.current;
-    if (d2) (d2.material as THREE.MeshPhongMaterial).emissiveIntensity = 1.5 + blink * 3;
+    if (d2) (d2.material as THREE.MeshPhongMaterial).emissiveIntensity = ledPulse;
 
-    // Server rack LEDs — phased blink.
+    // Server rack LEDs — slow breath with tiny phase offsets so they're
+    // not all in perfect sync, but never more than ±5% from base.
     const leds = rackLedRefs.current;
     for (let i = 0; i < leds.length; i++) {
       const m = leds[i];
       if (!m) continue;
       const mat = m.material as THREE.MeshPhongMaterial;
-      mat.emissiveIntensity = 2.0 + Math.sin(t * 3 + i * 0.9) * 1.5;
+      mat.emissiveIntensity = RACK_LED_BASE + Math.sin(t * RACK_LED_SPEED + i * 0.3) * RACK_LED_AMPLITUDE;
     }
 
     // Fan rotation (spins around Z).

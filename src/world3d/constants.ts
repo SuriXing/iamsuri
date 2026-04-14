@@ -35,9 +35,11 @@ export const CAMERA = {
 /** Third-person follow camera (orbit around character). */
 export const FOLLOW = {
   /** Spherical distance from character — orbit radius. */
-  distance: 6.0,
-  /** Look target height on the character (slightly below head). */
-  lookHeight: 0.8,
+  distance: 9.0,
+  /** Look target height on the character. 1.0 puts the aim point at
+   *  the character's chest/shoulders instead of the waist — more
+   *  cinematic third-person feel. */
+  lookHeight: 1.0,
   /** How far forward of the character the camera aims. Positive values
    *  show more of the upcoming path. */
   lookAhead: 1.0,

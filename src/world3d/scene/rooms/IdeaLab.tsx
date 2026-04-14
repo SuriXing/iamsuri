@@ -112,8 +112,11 @@ const BULB_FLOAT_SPEED = 1.2;
 const BULB_PULSE_BASE = 2.8;
 const BULB_PULSE_AMPLITUDE = 0.14;
 const BULB_PULSE_SPEED = 0.6;
-const PROTOTYPE_VIBRATE_AMPLITUDE = 0.008;
-const PROTOTYPE_VIBRATE_SPEED = 18.0;
+// Flicker-fix pass #3: 18 rad/s (~2.86 Hz) vibration at ±0.008m was a
+// high-frequency position shake that read as mesh flicker even though
+// it's position not brightness. Slowed to 0.6 Hz breath, same amplitude.
+const PROTOTYPE_VIBRATE_AMPLITUDE = 0.003;
+const PROTOTYPE_VIBRATE_SPEED = 0.6;
 const HANGING_TOOL_SWING_AMPLITUDE = 0.06;
 const HANGING_TOOL_SWING_SPEED = 1.3;
 const SOLDER_TIP_PULSE_BASE = 1.6;
@@ -219,7 +222,9 @@ export function IdeaLab() {
     const bulbLight = bulbLightRef.current;
     if (bulbLight) {
       bulbLight.position.y = 2.5 + yOffset;
-      bulbLight.intensity = 0.6 + Math.sin(t * BULB_PULSE_SPEED) * 0.15;
+      // Flicker-fix pass #3: ±25% was visible breathing bordering on
+      // flicker. ±5% keeps it alive without pumping the scene.
+      bulbLight.intensity = 0.6 + Math.sin(t * BULB_PULSE_SPEED) * 0.03;
     }
 
     // Gears — counter-rotating.

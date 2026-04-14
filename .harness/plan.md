@@ -1,160 +1,132 @@
-# F3 — 3D World Polish Pass Plan
+# 2D Rich Portfolio — Phase 1: Structural
 
-Goal: every visible component in `src/world3d/scene/**` reads as 精致 (refined)
-instead of blocky-prototype. Architecture and feature set are FROZEN.
+Task: Rebuild 2D view as a rich editorial portfolio. Phase 1 delivers the
+structural foundation (routing, data model, editorial skeleton, content
+pages). Phase 2 (search, craft polish, hero art) runs after user review.
 
-## Project Context (re-read each tick)
+**Hard scope: 2D ONLY.** Do not touch `src/world3d/` or its constants.
+The 3D view is a shipped, polished artifact (commits `f70f73b` and
+earlier) and stays as-is — accessible via `/3d` route but never modified.
 
-- Working dir: `/Users/surixing/Code/iamsuri`
-- Stack: React 19 + TypeScript + Vite + R3F 9 + drei 10 + zustand 5
-- Node: 23.7 (works fine despite engines warning)
-- Constants in `src/world3d/constants.ts` — may ADD new keys, may NOT change
-  FOLLOW / CAMERA / FP / INTRO / ROOM / GAP
-- Shared parts at `src/world3d/scene/parts/`: Bookshelf, TableWithLegs, DeskLamp.
-  Add new shared parts here when 3+ rooms repeat the same primitive.
-- Mulberry32 seeded RNG at `src/world3d/util/rand.ts` — use this for any
-  deterministic per-instance variation.
-- Theme: `src/world3d/scene/ThemeEffect.tsx` mutates scene background + ground
-  + walls based on `useWorldStore((s) => s.theme)`. Any new colour must
-  respect both dark and light themes.
-- Materials: keep `flatShading: true` for voxel-art look. Vary specular and
-  shininess to differentiate wood / metal / fabric.
-- Architecture / movement / camera / store / HUD files are FROZEN.
-- No mouse, no questions — make decisions and keep building.
+**Principle:** 2D stops being a minimap of 3D. Every unit additively
+enriches user-facing features while subtractively deleting 3D-mirror
+scaffolding (FloorPlan, RoomTile, Character ghost, RoomView wrapper).
 
-## Available Validators
+**Current status:** P1.1 already committed as `cf47d57`. Loop resumes
+at P1.2 (review-routing).
 
-- `npx tsc -b` (typecheck)
-- `npm run lint` (eslint)
-- `npm run build` (vite production)
-- `npx playwright test --config=playwright.config.cjs` (12 tests, ~1.5 min)
-- Dev server: `npm run dev` then visit `http://localhost:5173/?view=3d`
-- Test seam: `window.__worldStore` exposes the zustand store
-- `window.navigateToRoom('myroom'|'product'|'book'|'idealab')` jumps directly
-  into a room (force-unlocks)
-- `setIntroPhase('follow')` skips intro for screenshot tests
+## Phase 1 units (8 total)
 
-## Units
+- P1.1: implement-routing — ✅ DONE (commit cf47d57)
+  Added react-router-dom@7.14.1, 10-route URL schema, replaced useState
+  view flag with BrowserRouter + Routes, lazy-loaded 3D at /3d, created
+  Placeholder.tsx + NotFound.tsx.
 
-- F3.1: implement-character — Refine `Character.tsx`. Smoother proportions,
-  small color variation on body cubes, optional accent (scarf / hat band),
-  preserve chibi feel and the existing rig (head/hair/body/arms/legs/shoes
-  refs used by useFrame). DO NOT change `CHARACTER.scale = 0.9` or the
-  collider radius. Add deterministic micro-animation if it improves life
-  (subtle blink, hair sway).
-  - verify: `npx tsc -b && npm run lint && npm run build && npx playwright test --config=playwright.config.cjs` all pass; screenshot of character in dialogue phase
-  - eval: avatar reads as crafted, not stamped; flatShading preserved; no per-frame allocation in useFrame
-
-- F3.2: review-character — 2 designer subagents review the new character
-  visually + read the code. Score against rubric dimensions: character
-  refinement, micro-animations, color harmony, performance feel.
-  - verify: 2 eval files with 🔴/🟡/🔵 markers; weighted score
-  - eval: severity emojis present; specific file:line refs; constructive
-
-- F3.3: fix-character — Address any 🔴 / 🟡 from F3.2.
-  - verify: build+lint+tsc+tests all clean; new screenshot
-  - eval: every flagged finding traced to a concrete diff
-
-- F3.4: review-fix-character — Confirm fixes landed. 2 fresh subagents,
-  short re-review.
+- P1.2: review-routing — 2 fresh subagents (frontend architect + a11y
+  reviewer). Verify URL schema, back button, keyboard focus on route
+  change, bundle split (3D lazy-loaded still), SPA fallback works on
+  production build, deep-link refresh works.
   - verify: 2 eval files
-  - eval: previous findings resolved, no regressions
+  - eval: routing is production-quality, no a11y regressions,
+    `playwright.config.cjs` timeout bump from 30s→60s is acceptable
 
-- F3.5: implement-doors-walls — Refine `Door.tsx` (door panel woodgrain,
-  knob detail, lock design, lantern shape) and `Walls.tsx` (baseboard trim,
-  top edge cap, gentle pattern via drei Edges). Keep all existing
-  collider registrations. Door open/close animation untouched.
-  - verify: all build/test gates clean; screenshot of a door close-up
-  - eval: door panel reads as crafted; lock indicator more refined; lantern
-    outline pops; walls have visible trim
+- P1.3: implement-data-model — Consolidate parallel data sources. Define
+  canonical types in `src/data/schema.ts`: `Product`, `Post`, `Idea`,
+  `AboutSuri`. Each needs slug, title, excerpt, body, tags, date, cover,
+  status. `Post` supports hybrid bodies — `kind: 'inline' | 'external'`,
+  with `body: string` for inline and `href: string` for external.
+  Migrate content from `src/data/products.ts`, `productRoom.ts`,
+  `ideas.ts`, `ideaLab.ts`, `bookRoom.ts`, inline `BookRoom.tsx` posts.
+  Scaffold missing fields with realistic placeholders (lorem for
+  bodies, real titles). Keep `src/world3d/data/rooms.ts` untouched —
+  it's shared room metadata.
+  - verify: all gates; new `src/data/schema.ts` + migrated content files
+  - eval: one canonical source per content type; all existing callers
+    updated to canonical types; no duplicate data; 3D view still loads
 
-- F3.6: review-doors-walls — 2 fresh subagents.
+- P1.4: review-data-model — 2 fresh subagents (frontend architect +
+  content/schema reviewer). Verify type rigor, no `any`, all existing
+  callers migrated, 3D view still reads its content correctly.
   - verify: 2 eval files
-  - eval: as F3.2
+  - eval: data model is production-quality, types are strict, 3D not
+    broken
 
-- F3.7: fix-doors-walls — Address findings.
-  - verify: as F3.3
-  - eval: as F3.3
+- P1.5: implement-2d-skeleton — Delete 2D-as-3D-minimap scaffolding:
+  `src/components/World/FloorPlan.tsx`, `RoomTile.tsx`,
+  `World/Character.tsx`, `Rooms/RoomView.tsx`. Create new single-scroll
+  editorial landing at `src/components/pages/Landing.tsx`: hero section
+  → work (featured products) → writing (recent posts) → ideas (featured
+  ideas) → about (bio + photo slot) → footer. Real typography system
+  via CSS vars: one display serif (Fraunces or similar via @fontsource),
+  one body sans, one mono. Font scale 1.25. One accent color `#7c5cfc`.
+  Dark/light theme via CSS vars, driven by existing ThemeToggle.
+  Semantic HTML5 (`<main>`, `<article>`, `<section>`, `<nav>`,
+  `<footer>`). No polish/micro-interactions yet — structure only.
+  Mobile-responsive from the start (≥320px).
+  - verify: all gates; screenshots of dark landing, light landing,
+    mobile landing (390×844)
+  - eval: landing renders hero + 4 sections in one scroll, type system
+    visible, accent color used, 3 themes work, no minimap scaffolding
 
-- F3.8: review-fix-doors-walls — Confirm fixes.
-  - verify: as F3.4
-  - eval: as F3.4
-
-- F3.9: implement-myroom — Refine `rooms/MyRoom.tsx`. Bed (pink Monet) needs
-  better proportions (thicker mattress, pillow indent, blanket fold). White
-  desk gets gold trim accents. Bookshelf (use shared part) book color
-  variation. Add 1–2 clutter props (folded clothes, framed picture). Add
-  accent pink point light to enrich the room. Respect both themes.
-  - verify: all gates; screenshot inside My Room (use navigateToRoom('myroom'))
-  - eval: every furniture object reads as polished; no equal-thickness slabs
-
-- F3.10: review-myroom — 2 fresh subagents.
+- P1.6: review-2d-skeleton — 2 fresh subagents (designer + frontend
+  architect). Designer rubric: typography, color, hierarchy, density,
+  mobile, craft. Architect rubric: semantic HTML, a11y, code structure.
   - verify: 2 eval files
-  - eval: as F3.2
+  - eval: no 🔴 findings, average ≥80 on 10-dimension rubric
 
-- F3.11: fix-myroom — Address findings.
-  - verify: as F3.3
-  - eval: as F3.3
+- P1.7: implement-content-pages — Build parameterized `CategoryView`
+  component that renders Product/Post/Idea detail pages. Routes
+  `/work/:slug`, `/writing/:slug`, `/ideas/:slug` resolve to this
+  component with appropriate content type. Post bodies support both
+  inline (render with typography) and external (excerpt + "Read full
+  post →" link). Ideas get filterable tag + status display. Products
+  get hero image slot, metrics row, case study body. About page gets
+  bio + photo slot + contact footer. Collapse MyRoom.tsx, ProductRoom.
+  tsx, BookRoom.tsx, IdeaLab.tsx into one parameterized
+  `CategoryListView` + config. Delete the 4 originals. Related-content
+  strip at end of each detail page.
+  - verify: all gates; screenshots of each page template
+  - eval: one CategoryView + config replaces 4 room components; all
+    detail pages render; inline vs external post bodies both work;
+    filters work on ideas page
 
-- F3.12: review-fix-myroom — Confirm fixes.
-  - verify: as F3.4
-  - eval: as F3.4
+- P1.8: review-phase-1 — 3 fresh reviewers (PM + designer + frontend
+  architect) audit the full Phase 1 output as the phase gate. Weighted
+  rubric: routing quality (15), data model rigor (15), visual hierarchy
+  (10), typography (10), spacing (10), information density (10),
+  mobile (10), interaction baseline (10), a11y (5), performance (5).
+  - verify: 3 eval files with full rubric scores
+  - eval: weighted average ≥85, zero 🔴, ready for Phase 2 polish
 
-- F3.13: implement-other-rooms — Refine `rooms/ProductRoom.tsx`,
-  `rooms/BookRoom.tsx`, `rooms/IdeaLab.tsx`. Same checklist as MyRoom:
-  proportions, accents, clutter, accent lights, shared parts. Each room
-  must visually read as a different vibe (Product=tech, Book=cozy library,
-  Idea Lab=workshop).
-  - verify: all gates; 3 screenshots (one per room)
-  - eval: each room visually distinct and refined
+## Phase 2 (not in this loop — user reviews first)
 
-- F3.14: review-other-rooms — 2 fresh subagents (one per pair: PR+BR, IL).
-  - verify: 2 eval files
-  - eval: as F3.2
+Search + keyboard nav, craft pass (hover/transitions/RSS/404), hero
+art + monogram, final ≥88 gate, ship.
 
-- F3.15: fix-other-rooms — Address findings.
-  - verify: as F3.3
-  - eval: as F3.3
+## Hard constraints (all units)
 
-- F3.16: review-fix-other-rooms — Confirm fixes.
-  - verify: as F3.4
-  - eval: as F3.4
+- Do NOT touch `src/world3d/` (ENTIRE 3D subtree — F3 polish frozen)
+- Do NOT touch `src/data/rooms.ts` (shared with 3D)
+- Do NOT touch tests in `tests/` directory
+- `playwright.config.cjs` timeout bumps are OK if justified by commit
+  message (exempted from freeze for e2e reliability)
+- Keep 3D lazy-loaded (bundle split preserved; App3D chunk stays split)
+- Mobile-responsive from start (≥320px viewport)
+- Dark/light via CSS vars (no new CSS framework)
+- One accent color `#7c5cfc` across all 2D
+- Real typography system (not system defaults)
+- Semantic HTML5, keyboard accessible by default
+- TypeScript strict, no `any`, no `as unknown`
+- Performance: 2D first paint < 100 KB gzip, Lighthouse perf ≥ 95
+- All implement/fix units run: `npx tsc --noEmit && npx eslint . &&
+  npm run build && npx playwright test --config=playwright.config.cjs`
+  before commit
+- Each implement/fix unit produces a git commit
+- Each review unit produces ≥2 independent subagent eval files
 
-- F3.17: implement-ambient — Refine `StarField.tsx` (color variation,
-  twinkle phase variation), `Particles.tsx` (gentle drift acceleration),
-  `Hallway.tsx` (rug detail, ceiling beam trim, plant accents),
-  `HallwayLanterns.tsx` (lantern frame detail, warmer glow, gentle bob).
-  - verify: all gates; screenshot of overview
-  - eval: ambient layer feels alive but not distracting
+## Fail-fast rule (added after P1.1 80-min burn incident)
 
-- F3.18: review-ambient — 2 fresh subagents.
-  - verify: 2 eval files
-  - eval: as F3.2
-
-- F3.19: fix-ambient — Address findings.
-  - verify: as F3.3
-  - eval: as F3.3
-
-- F3.20: review-fix-ambient — Confirm fixes.
-  - verify: as F3.4
-  - eval: as F3.4
-
-- F3.21: implement-final-polish — Cross-cutting tweaks based on what
-  reviewers flagged repeatedly across F3.2/6/10/14/18. Examples: shared
-  Edges color constant, light theme color tuning, perf optimization if
-  any frame budget overrun was noted.
-  - verify: all gates; screenshots of dialogue, my room, product room,
-    book room, idea lab, dark and light theme overview
-  - eval: any cross-cutting issue addressed
-
-- F3.22: review-final — Final independent gate. 2 fresh designer
-  subagents apply the full visual rubric (8 dimensions, weighted). The
-  averaged score MUST be ≥ 88 with no 🔴 findings.
-  - verify: 2 eval files with full rubric scores
-  - eval: weighted average ≥ 88; zero 🔴 findings
-
-- F3.23: ship — Final atomic commit (or final summary commit if previous
-  ticks already committed atomically). Push tag `polish-pass-shipped`.
-  Update `.harness/progress.md` with summary.
-  - verify: `git status` clean; full test+build suite green post-commit
-  - eval: ship checklist complete
+- Subagents must report and exit if they hit 20 min of continuous work
+  OR a single gate fails 3 times in a row. Do NOT retry through
+  thermal throttling. Surrender + report honestly is better than
+  burning an hour of tool uses on retries.

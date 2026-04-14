@@ -1,170 +1,37 @@
 {
-  "tick": 22,
-  "unit": "F3.22",
-  "description": "F3.22 FINAL GATE PASS: Designer A 92/100 🔵 (zero 🔴, top 🟡: wall-strip tint jitter could push +15%, IdeaLab hero focal underanchored vs BookRoom's reading lamp), Designer B 89/100 🔵 (zero 🔴, top 🟡: MyRoom visibly lighter on props than siblings 375 vs 699 lines, IdeaLab floating-bulb hero not visible from default room-entry cam). AVERAGED SCORE 90.5/100 ≥88 REQUIREMENT. ZERO 🔴 FINDINGS ACROSS BOTH REVIEWERS. Polish pass SHIPS. All non-blocking 🟡 concerns noted but do not gate F3.23.",
+  "tick": 0,
+  "unit": null,
+  "description": "Loop initialized",
   "status": "in_progress",
-  "artifacts": [
-    ".harness/nodes/F3.22/run_1/eval-designer-A.md",
-    ".harness/nodes/F3.22/run_1/eval-designer-B.md"
-  ],
-  "next_unit": "F3.23",
+  "artifacts": [],
+  "next_unit": "P1.1",
   "blockers": [],
   "review_of_previous": "",
   "plan_file": ".harness/plan.md",
-  "units_total": 23,
+  "units_total": 8,
   "unit_ids": [
-    "F3.1",
-    "F3.2",
-    "F3.3",
-    "F3.4",
-    "F3.5",
-    "F3.6",
-    "F3.7",
-    "F3.8",
-    "F3.9",
-    "F3.10",
-    "F3.11",
-    "F3.12",
-    "F3.13",
-    "F3.14",
-    "F3.15",
-    "F3.16",
-    "F3.17",
-    "F3.18",
-    "F3.19",
-    "F3.20",
-    "F3.21",
-    "F3.22",
-    "F3.23"
+    "P1.1",
+    "P1.2",
+    "P1.3",
+    "P1.4",
+    "P1.5",
+    "P1.6",
+    "P1.7",
+    "P1.8"
   ],
   "_written_by": "opc-harness",
-  "_plan_hash": "705fc25a2838abd3",
-  "_last_modified": "2026-04-13T20:13:44.043Z",
-  "_git_head": "2b156ae3d6e536e9044cdbf6ec332f5f1d3e185d",
-  "_tick_history": [
-    {
-      "unit": "F3.1",
-      "tick": 1,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.2",
-      "tick": 2,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.3",
-      "tick": 3,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.4",
-      "tick": 4,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.5",
-      "tick": 5,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.6",
-      "tick": 6,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.7",
-      "tick": 7,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.8",
-      "tick": 8,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.9",
-      "tick": 9,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.10",
-      "tick": 10,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.11",
-      "tick": 11,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.12",
-      "tick": 12,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.13",
-      "tick": 13,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.14",
-      "tick": 14,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.15",
-      "tick": 15,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.16",
-      "tick": 16,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.17",
-      "tick": 17,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.18",
-      "tick": 18,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.19",
-      "tick": 19,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.20",
-      "tick": 20,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.21",
-      "tick": 21,
-      "status": "completed"
-    },
-    {
-      "unit": "F3.22",
-      "tick": 22,
-      "status": "completed"
-    }
-  ],
-  "_max_total_ticks": 69,
-  "_started_at": "2026-04-13T16:09:00.449Z",
+  "_plan_hash": "1b392536aa8e5419",
+  "_last_modified": "2026-04-14T10:46:44.417Z",
+  "_git_head": "45f2609c9cde8c402df252ce99fe1ea5d2504fda",
+  "_tick_history": [],
+  "_max_total_ticks": 24,
+  "_started_at": "2026-04-14T10:46:31.060Z",
   "_max_duration_hours": 24,
-  "_write_nonce": "62e3d2ce7a4ffc2b",
+  "_write_nonce": "06c043b461427bd0",
   "_external_validators": {
     "pre_commit_hooks": false,
     "test_script": false,
     "lint_script": true,
     "typecheck_script": false
-  },
-  "_last_review_evals": {
-    ".harness/nodes/F3.22/run_1/eval-designer-A.md": "eedfe9d9e8811f82",
-    ".harness/nodes/F3.22/run_1/eval-designer-B.md": "121a69f08bcb2395"
   }
 }

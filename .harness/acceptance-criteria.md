@@ -1,79 +1,64 @@
-# Acceptance Criteria — F3 Polish Pass
+# Phase 1 — Acceptance Criteria
 
-## What "done" looks like
+"2D rich portfolio — structural foundation"
 
-The 3D world (`src/world3d/scene/**`) reads as **精致** (refined, well-crafted)
-rather than blocky-prototype. Every visible furniture, character, room and
-ambient component has been touched in at least one of these ways:
+## Definition of Done for Phase 1
 
-- material variation (per-instance hue/lightness, deterministic via mulberry32)
-- bevels / trim / contrasting top edges or baseboards
-- drei `<Edges>` outline pop on key silhouettes
-- subtle ambient micro-animations (≤ ±5% pulse, ≤ ±2° flutter)
-- improved proportions (no equal-thickness slab look)
-- joint detail (chamfer / corner block / bracket)
-- material expressiveness (wood matte, metal slight specular)
-- 1–2 clutter props per room
-- accent point lights to break up flat shading
+1. **Routing works** (P1.1 ✅ done commit cf47d57) — URLs reflect app
+   state. `/`, `/work`, `/work/:slug`, `/writing`, `/writing/:slug`,
+   `/ideas`, `/ideas/:slug`, `/about`, `/3d`, `/404`. Back button moves
+   through history. Deep linking to any URL renders the right view.
+   Refresh on deep link works. 3D stays lazy-loaded.
 
-## Hard constraints (must NOT change)
+2. **Data model is canonical** (P1.3) — One source of truth per content
+   type. `Product`, `Post`, `Idea`, `AboutSuri` types exported from
+   `src/data/schema.ts`. Old parallel sources collapsed. `Post`
+   supports hybrid bodies (inline + external). TypeScript strict.
 
-- `src/world3d/data/rooms.ts`
-- `src/world3d/scene/CameraController.tsx`
-- `src/world3d/scene/PlayerController.tsx`
-- `src/world3d/scene/MouseOrbitController.tsx`
-- `src/world3d/scene/colliders.ts` (and existing collider registrations)
-- `src/world3d/store/worldStore.ts`
-- `src/world3d/hud/*`
-- `src/world3d/constants.ts` FOLLOW / CAMERA / FP / INTRO / ROOM / GAP
-- 4-room layout, door positions, character scale (0.9), intro flow
-- `tests/3d-world.test.cjs` test assertions
-- Any file outside `src/world3d/scene/` and `src/world3d/util/`
+3. **2D is an editorial portfolio, not a minimap** (P1.5) —
+   `FloorPlan.tsx`, `RoomTile.tsx`, `World/Character.tsx`,
+   `RoomView.tsx` deleted. Single-scroll landing renders hero + work +
+   writing + ideas + about. Semantic HTML. Typography system. One
+   accent color `#7c5cfc`. Dark + light both work.
 
-## How to verify each tick
+4. **Rich detail pages** (P1.7) — `CategoryView` + config renders
+   product/post/idea detail pages. Inline vs external post bodies both
+   work. Ideas have tag/status filters. About has bio + photo + contact.
+   Related-content strips. Replaces the 4 room detail components.
 
-- `cd /Users/surixing/Code/iamsuri && npx tsc -b` — clean
-- `npm run lint` — clean (no new violations beyond baseline 0)
-- `npm run build` — clean
-- `npx playwright test --config=playwright.config.cjs` — **12/12 passing**
-- Per implement tick: a Playwright screenshot of the affected component, saved
-  to `.harness/nodes/{NODE_ID}/run_{N}/screenshot-*.png`
-- Per review tick: at least 2 independent subagent eval files with severity
-  emojis (🔴 / 🟡 / 🔵)
+5. **Mobile responsive** — 390×844 and 320×568 usable. No horizontal
+   scroll. Tap targets ≥44px.
 
-## Performance budget
+6. **3D view untouched** — `src/world3d/` has zero modifications. F3
+   polish commits pristine. `/3d` route renders existing 3D view.
 
-- 60fps on mid-range hardware (no visible jank)
-- Triangle count growth ≤ 50% (currently ~5k)
-- Draw call growth ≤ 30% (currently ~80)
-- All useFrame callbacks: zero per-frame allocation (no `new THREE.Vector3()`
-  inside the loop). Use module-scope scratch vectors.
-- All derived geometry / arrays inside `useMemo`
+7. **Performance** — 2D first paint < 100 KB gzip. 3D lazy-loaded.
+   Lighthouse perf ≥ 95. Initial paint has usable content.
 
-## How quality is evaluated (final gate)
+8. **All gates green** — `tsc --noEmit`, `eslint .`, `npm run build`,
+   `npx playwright test --config=playwright.config.cjs` on every
+   implement/fix commit.
 
-Two independent designer subagents review with this rubric:
+## Quality bar for Phase 1 gate (P1.8)
 
-| Dimension | Weight |
-|---|---|
-| Material variation | 15 |
-| Edge / silhouette pop | 15 |
-| Proportions | 15 |
-| Micro-animations | 15 |
-| Color harmony | 10 |
-| Clutter / props | 10 |
-| Character refinement | 10 |
-| Performance feel | 10 |
+3 independent reviewers (PM + designer + frontend architect), weighted:
+- Routing quality (15), Data model rigor (15)
+- Visual hierarchy (10), Typography (10), Spacing (10),
+  Info density (10), Mobile (10), Interaction baseline (10)
+- a11y (5), Performance (5)
 
-Score 0–100 each, average them. Ship gate: **≥ 88 AND no 🔴 critical findings**.
-Any dimension < 70% from a reviewer = 🟡 ITERATE → fix unit before re-scoring.
+**Gate to proceed to Phase 2: averaged ≥ 85, zero 🔴 findings.**
 
-## No regressions checklist
+## Hard freeze list
 
-- collision still blocks walking through walls
-- door unlock still requires walking up + U key
-- intro static→zoom→dialogue→follow flow still plays
-- mouse orbit drag still rotates camera
-- arrow keys still walk character (Up forward, Down back, Left/Right strafe)
-- theme toggle still flips both HTML overlay and 3D scene background
-- 2D ↔ 3D switcher still works
+- `src/world3d/**` (ENTIRE 3D subtree — F3 frozen)
+- `src/data/rooms.ts` (shared with 3D)
+- Tests under `tests/`
+- `package.json` scripts (adding deps OK, don't change scripts)
+- `vite.config.ts`, `tsconfig.json` (unless routing requires tweak —
+  justify in commit)
+
+## Exempted from freeze (justified case-by-case)
+
+- `playwright.config.cjs` timeout values (60s bump from 30s accepted
+  for 3D e2e reliability; don't touch anything else in this file)

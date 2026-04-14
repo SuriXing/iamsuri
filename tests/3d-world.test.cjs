@@ -122,12 +122,15 @@ test.describe('3D World Landing Page', () => {
   });
 
   test('page loads in reasonable time', async ({ page }) => {
-    // Threshold generous for headless chromium (real browsers load in <1s)
+    // P1.9: threshold bumped 5000 → 8000ms after switching Playwright from
+    // `vite dev` (warm optimizeDeps cache) to `vite preview` (cold static
+    // build). Headless chromium cold-loading the ~1 MB App3D chunk measures
+    // ~6.5s on M1. Real browsers with cached chunks hit <1s.
     const start = Date.now();
     await page.goto('/?view=3d');
     await page.waitForSelector('canvas');
     const elapsed = Date.now() - start;
-    expect(elapsed).toBeLessThan(5000);
+    expect(elapsed).toBeLessThan(8000);
   });
 
   test('keyboard flow: teleport → unlock → enter → exit', async ({ page }) => {

@@ -115,10 +115,10 @@ export function BookRoom() {
       mat.emissiveIntensity = LAMP_FLICKER_BASE + Math.sin(t * LAMP_FLICKER_SPEED) * LAMP_FLICKER_AMPLITUDE;
     }
 
-    // Amber accent light — breathing + flicker echo.
+    // Amber accent — phase π offset (out-of-phase with MyRoom 0).
     const al = accentLightRef.current;
     if (al) {
-      al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED) * ACCENT_LIGHT_AMPLITUDE;
+      al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED + 3.14) * ACCENT_LIGHT_AMPLITUDE;
     }
 
     // Open-book page flutter.

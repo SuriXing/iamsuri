@@ -135,18 +135,19 @@ export function Particles() {
     >
       <boxGeometry args={[0.04, 0.04, 0.04]} />
       {/*
-        Flicker-fix pass #3: additive blending + toneMapped:false was a
-        worse cure than the disease. Additive makes 150 instances SUM
-        brightness whenever they overlap from the camera's view, so as
-        particles drift past each other their pileup reads as luminance
-        flicker. Now using normal blending with lower opacity, depthWrite
-        off for sort-agnosticism, and tone mapping back on so they never
-        push past the tone mapper's ceiling.
+        Feel pass: previous pass dropped additive + lowered opacity to
+        0.45, which killed twinkle and made particles read as opaque
+        cubes. Restoring additive but keeping opacity low enough that
+        even at 150-instance overlap the brightness sum never blows the
+        tone mapper. toneMapped: true (the default) means the renderer
+        compresses any hot pixels — additive pileup reads as gentle
+        glow rather than strobe.
       */}
       <meshBasicMaterial
         color="#ffe4b0"
         transparent
-        opacity={0.45}
+        opacity={0.32}
+        blending={THREE.AdditiveBlending}
         depthWrite={false}
       />
     </instancedMesh>

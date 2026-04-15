@@ -35,7 +35,7 @@ export const CAMERA = {
 /** Third-person follow camera (orbit around character). */
 export const FOLLOW = {
   /** Spherical distance from character — orbit radius. */
-  distance: 9.0,
+  distance: 13.0,
   /** Look target height on the character. 1.0 puts the aim point at
    *  the character's chest/shoulders instead of the waist — more
    *  cinematic third-person feel. */
@@ -43,10 +43,18 @@ export const FOLLOW = {
   /** How far forward of the character the camera aims. Positive values
    *  show more of the upcoming path. */
   lookAhead: 1.0,
-  /** Softness of the camera follow position lerp (higher = snappier). */
-  lerp: 6,
-  /** Softness of the yaw / pitch lerp toward mouse drag targets. */
-  yawLerp: 6,
+  /** Position lerp rate. Lower = more trailing / heavier feel.
+   *  Was 6 (snappy/rigid). 3 gives a noticeable settle behind the
+   *  character without feeling sluggish. */
+  lerp: 3,
+  /** Yaw/pitch lerp toward mouse drag targets. Lower = more inertia
+   *  on mouse drag. Was 6 — felt mechanical. 3.5 lets the orbit feel
+   *  like it has weight. */
+  yawLerp: 3.5,
+  /** Auto-recenter strength: when walking, how fast the camera yaw
+   *  drifts to put the character forward. 0 disables. 0.6 = slow
+   *  organic drift over ~2s (won't fight active mouse drag). */
+  autoYawDrift: 0.6,
 } as const;
 
 /** Duration of intro phases in seconds. */
@@ -81,7 +89,10 @@ export const DOOR = {
   frameHeight: 1.9,
   postW: 0.15,
   openAngle: -Math.PI * 0.55,
-  hingeLerp: 0.12,
+  // Hinge lerp coefficient — used as `1 - exp(-hingeLerp * 60 * delta)`.
+  // Was 0.12 → ≈50% per frame at 60 fps (snappy slam). 0.05 → ≈26% per
+  // frame, gives the door a heavier physical swing.
+  hingeLerp: 0.05,
 } as const;
 
 // F3.7 — door/wall polish tunables (additive, not in frozen blocks).

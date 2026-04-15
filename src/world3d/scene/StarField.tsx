@@ -87,10 +87,11 @@ export function StarField() {
     const baseOp = STAR_BUFFERS.baseOpacity;
     const t = clock.getElapsedTime();
     for (let i = 0; i < STAR_COUNT; i++) {
-      // Per-star shimmer: 0.90..1.0 range (±5% amplitude) at 0.6 rad/s
-      // per the flicker-fix pass. Original 0.55..1.0 at 1.6 rad/s read
-      // as fast brightness flicker across 500 stars.
-      const shimmer = 0.90 + 0.10 * (0.5 + 0.5 * Math.sin(t * 0.6 + phases[i]));
+      // Per-star shimmer — feel-pass tune: 0.70..1.0 range (±15%) with
+      // varied per-star speeds (0.5–0.9 rad/s) so 500 stars never peak
+      // in lockstep. Slow enough to read as twinkle, not flicker.
+      const speed = 0.5 + (i % 5) * 0.1;
+      const shimmer = 0.70 + 0.30 * (0.5 + 0.5 * Math.sin(t * speed + phases[i]));
       const op = baseOp[i] * shimmer;
       const i3 = i * 3;
       arr[i3 + 0] = srcColors[i3 + 0] * op;

@@ -255,9 +255,9 @@ export function IdeaLab() {
       mat.emissiveIntensity = SOLDER_TIP_PULSE_BASE + Math.sin(t * SOLDER_TIP_PULSE_SPEED) * SOLDER_TIP_PULSE_AMPLITUDE;
     }
 
-    // Green accent light breathing.
+    // Gold/copper accent — phase 3π/2 offset (last quadrant of cycle).
     const al = accentLightRef.current;
-    if (al) al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED) * ACCENT_LIGHT_AMPLITUDE;
+    if (al) al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED + 4.71) * ACCENT_LIGHT_AMPLITUDE;
 
     // Ambient sparks — pure Y drift with wraparound, zero-alloc.
     // Two sub-buffers rendered by two InstancedMesh components so each

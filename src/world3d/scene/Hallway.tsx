@@ -98,9 +98,10 @@ export function Hallway() {
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
-    // ----- Steam — position bob kept, opacity pulse removed. Alpha on a
-    //       transparent mesh creates sort-dependent flicker; the slow
-    //       position bob alone reads as subtle steam without the blink. -----
+    // ----- Steam — position bob + a SLOW gentle opacity drift. The
+    //       earlier flicker came from 0.32 Hz ±43% pulse on alpha; this
+    //       is 0.16 Hz ±15% with phase offsets so it reads as drifting
+    //       wisps not blinking dots. Each cube has its own phase. -----
     const g = steamRef.current;
     if (g) {
       const children = g.children;
@@ -108,15 +109,18 @@ export function Hallway() {
       for (let i = 0; i < n; i++) {
         const child = children[i];
         child.position.y = STEAM_OFFSETS[i][1] + Math.sin(t * 2 + i) * 0.05;
+        const mat = (child as THREE.Mesh).material as THREE.MeshPhongMaterial;
+        mat.opacity = 0.25 + 0.15 * Math.sin(t * 1.0 + i * 1.7);
       }
     }
 
-    // ----- Plant sway (idle loop #2) — gentle ±0.02 rad rotation per plant -----
+    // ----- Plant sway — was ±0.02 rad (invisible). Bumped to ±0.06 rad
+    //       at 0.7 rad/s with per-plant phase offsets. Reads as actual sway. -----
     const plants = plantRefs.current;
     for (let i = 0; i < 4; i++) {
       const p = plants[i];
       if (!p) continue;
-      p.rotation.z = Math.sin(t * 0.4 + PLANT_PHASES[i]) * 0.02;
+      p.rotation.z = Math.sin(t * 0.7 + PLANT_PHASES[i]) * 0.06;
     }
 
     // ----- Beam dust drift (idle loop #3) — Y bob only. Opacity pulse

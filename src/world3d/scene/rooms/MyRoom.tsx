@@ -114,10 +114,10 @@ export function MyRoom() {
       const s = 1 + Math.sin(t * PLANT_BREATH_SPEED) * PLANT_BREATH_AMPLITUDE;
       leaves.scale.setScalar(s);
     }
-    // Pink accent point-light breathing.
+    // Pink accent point-light breathing — phase 0.0 (arbitrary anchor).
     const al = accentLightRef.current;
     if (al) {
-      al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED) * ACCENT_LIGHT_AMPLITUDE;
+      al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED + 0.0) * ACCENT_LIGHT_AMPLITUDE;
     }
   });
 

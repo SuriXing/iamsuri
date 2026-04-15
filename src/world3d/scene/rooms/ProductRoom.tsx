@@ -187,9 +187,9 @@ export function ProductRoom() {
     const b2 = bar2Ref.current;
     if (b2) b2.position.y = SCANLINE_BASE_Y + Math.sin(t * SCANLINE_SPEED + 1.3) * SCANLINE_AMPLITUDE;
 
-    // Cyan accent point-light breathing.
+    // Cyan accent — phase π/2 offset so it never peaks with MyRoom (0).
     const al = accentLightRef.current;
-    if (al) al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED) * ACCENT_LIGHT_AMPLITUDE;
+    if (al) al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED + 1.57) * ACCENT_LIGHT_AMPLITUDE;
   });
 
   const leftX = ox - 0.95;

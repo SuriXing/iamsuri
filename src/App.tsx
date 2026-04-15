@@ -11,6 +11,7 @@ import ViewSwitcher from './components/shared/ViewSwitcher';
 import ProjectsDock from './components/shared/ProjectsDock';
 import SkipLink from './components/shared/SkipLink';
 import RouteAnnouncer from './components/shared/RouteAnnouncer';
+import SearchBox from './components/shared/SearchBox';
 import { NotFound } from './components/pages/NotFound';
 
 // 3D world is lazy-loaded so the 2D landing stays lightweight. three.js
@@ -108,6 +109,7 @@ function PageLoading() {
 function LandingRoute() {
   return (
     <>
+      <SearchBox />
       <ThemeToggle />
       <ViewSwitcher />
       <Suspense fallback={<PageLoading />}>
@@ -125,6 +127,7 @@ function LandingRoute() {
 function ContentRoute({ children }: { children: React.ReactNode }) {
   return (
     <>
+      <SearchBox />
       <ThemeToggle />
       <ViewSwitcher />
       <Suspense fallback={<PageLoading />}>{children}</Suspense>

@@ -11,7 +11,7 @@ import { search, type SearchHit, type SearchKind } from '../../lib/search';
 import './SearchBox.css';
 
 /**
- * Global SearchBox (P2.1).
+ * Global SearchBox (P2.1, a11y-polished in P2.3).
  *
  * Visual: a pill button that sits in the app shell near ThemeToggle.
  * Pressing `/` from any non-input element OR clicking the button opens
@@ -24,12 +24,16 @@ import './SearchBox.css';
  *   - `↓` / `j`     highlight next result
  *   - `↑` / `k`     highlight prev result
  *   - `Enter`       navigate to highlighted result
+ *   - `Tab`/`S+Tab` cycle focus between input and close button only
  *
  * a11y:
  *   - button has aria-label with keybind hint
  *   - overlay is role="dialog" aria-modal
+ *   - background siblings get `inert` while open so AT virtual cursors
+ *     cannot reach them (aria-modal alone is not enough)
  *   - results are role="listbox" with aria-activedescendant pointing
  *     at the highlighted option
+ *   - empty-state / no-results messages are role="status" aria-live
  *   - focus is trapped inside the overlay while open; closing restores
  *     focus to the trigger button
  */
@@ -66,40 +70,32 @@ function groupHits(hits: readonly SearchHit[]): GroupedHits[] {
 export default function SearchBox() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [debounced, setDebounced] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
 
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
   const listboxId = useId();
   const titleId = useId();
 
   const navigate = useNavigate();
 
-  // Debounce query → debounced at 50ms to coalesce fast typing without
-  // feeling laggy.
-  useEffect(() => {
-    if (query === debounced) return;
-    const t = window.setTimeout(() => setDebounced(query), 50);
-    return () => window.clearTimeout(t);
-  }, [query, debounced]);
-
   // Flat results (for keyboard navigation by index) + grouped view
   // (for rendering). Both derive from the same source of truth so the
   // aria-activedescendant id always matches the rendered DOM.
+  // P2.3 (from P2.2 architect 🟡): dropped the 50ms debounce — client-
+  // side search over tens of docs is instant; the debounce was
+  // over-engineering that also stalled aria-activedescendant updates.
   const results = useMemo<SearchHit[]>(() => {
-    if (debounced.trim().length === 0) return [];
-    return search(debounced, { limit: 12 });
-  }, [debounced]);
+    if (query.trim().length === 0) return [];
+    return search(query, { limit: 12 });
+  }, [query]);
 
   const grouped = useMemo(() => groupHits(results), [results]);
 
-  // Derived-state reset: when the results array identity changes we
-  // want to reset the highlight to 0. Use the React 19 "adjust state
-  // during render" pattern (https://react.dev/reference/react/useState
-  // #storing-information-from-previous-renders) — compare a tracker
-  // state to the current results; if they differ, schedule a clean
-  // update and skip rendering stale highlight.
+  // Reset highlight to 0 whenever the results identity changes.
+  // React 19 "adjust state during render" pattern:
+  // https://react.dev/reference/react/useState#storing-information-from-previous-renders
   const [trackedResults, setTrackedResults] =
     useState<readonly SearchHit[]>(results);
   if (trackedResults !== results) {
@@ -151,14 +147,50 @@ export default function SearchBox() {
     return () => window.removeEventListener('keydown', onKeydown);
   }, [openOverlay]);
 
-  // When the overlay opens, lock body scroll. Restore on close so the
-  // behind-page isn't stuck.
+  // When the overlay opens, lock body scroll + mark background as inert
+  // so AT virtual cursors + Tab cannot reach elements behind the dialog.
+  // Clean up on close.
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+
+    // Mark every top-level body child (except the one hosting the
+    // portal-less dialog, which is also a body child — we scope by
+    // className to skip it) as `inert`. P2.3 a11y fix (P2.2 🔴).
+    const touched: HTMLElement[] = [];
+    const bodyChildren = Array.from(document.body.children);
+    for (const child of bodyChildren) {
+      if (!(child instanceof HTMLElement)) continue;
+      // The dialog backdrop is rendered into #root alongside the rest
+      // of the app, so we can't exclude by DOM parent alone. Instead
+      // apply inert to #root's children except the search dialog.
+      if (child.id === 'root') {
+        for (const inner of Array.from(child.children)) {
+          if (!(inner instanceof HTMLElement)) continue;
+          if (inner.classList.contains('search-backdrop')) continue;
+          if (!inner.hasAttribute('inert')) {
+            inner.setAttribute('inert', '');
+            inner.setAttribute('aria-hidden', 'true');
+            touched.push(inner);
+          }
+        }
+        continue;
+      }
+      if (child.classList.contains('search-backdrop')) continue;
+      if (!child.hasAttribute('inert')) {
+        child.setAttribute('inert', '');
+        child.setAttribute('aria-hidden', 'true');
+        touched.push(child);
+      }
+    }
+
     return () => {
       document.body.style.overflow = prev;
+      for (const el of touched) {
+        el.removeAttribute('inert');
+        el.removeAttribute('aria-hidden');
+      }
     };
   }, [open]);
 
@@ -203,18 +235,40 @@ export default function SearchBox() {
     [activeIndex, closeOverlay, handleNavigate, results],
   );
 
-  // Focus trap: Tab / Shift+Tab on the overlay cycles within it. With a
-  // single input + result rows this is simple — we keep focus on the
-  // input, and mouse clicks on rows dispatch navigation directly.
+  // P2.3 a11y fix (P2.2 🔴): real focus trap. Cycle Tab / Shift+Tab
+  // between input and close button. Previous implementation pinned
+  // focus to the input, so the close button was keyboard-unreachable.
   const onDialogKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (event.key === 'Tab') {
-        // Only the input should hold focus; keep it there.
+      if (event.key === 'Escape') {
         event.preventDefault();
-        inputRef.current?.focus();
+        closeOverlay();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const input = inputRef.current;
+      const close = closeRef.current;
+      if (!input || !close) return;
+
+      const focusables: HTMLElement[] = [input, close];
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey) {
+        if (active === first || !focusables.includes(active as HTMLElement)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (active === last) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     },
-    [],
+    [closeOverlay],
   );
 
   // Overlay backdrop click closes the dialog.
@@ -229,6 +283,10 @@ export default function SearchBox() {
   const activeDescendantId = activeHit
     ? `${listboxId}-option-${activeHit.id}`
     : undefined;
+
+  const trimmed = query.trim();
+  const showEmptyHint = trimmed.length === 0;
+  const showNoResults = trimmed.length > 0 && results.length === 0;
 
   return (
     <>
@@ -311,6 +369,7 @@ export default function SearchBox() {
                 spellCheck={false}
               />
               <button
+                ref={closeRef}
                 type="button"
                 className="search-dialog__close"
                 onClick={closeOverlay}
@@ -326,16 +385,26 @@ export default function SearchBox() {
               role="listbox"
               aria-label="Search results"
             >
-              {debounced.trim().length === 0 && (
-                <p className="search-dialog__empty">
-                  Type to search across work, writing, and ideas.
-                </p>
-              )}
-              {debounced.trim().length > 0 && results.length === 0 && (
-                <p className="search-dialog__empty">
-                  No results for &ldquo;{debounced}&rdquo;.
-                </p>
-              )}
+              {/* P2.3 a11y fix (P2.2 🟡): polite live region so screen
+                  readers announce "no results" / empty-state guidance
+                  instead of going silent after input. */}
+              <div
+                className="search-dialog__live"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {showEmptyHint && (
+                  <p className="search-dialog__empty">
+                    Type to search across work, writing, and ideas.
+                  </p>
+                )}
+                {showNoResults && (
+                  <p className="search-dialog__empty">
+                    No results for &ldquo;{trimmed}&rdquo;.
+                  </p>
+                )}
+              </div>
               {grouped.map((group) => (
                 <section
                   key={group.kind}

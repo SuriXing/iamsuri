@@ -13,14 +13,18 @@
 .search-trigger {
   position: fixed;
   top: 20px;
-  right: 76px; /* 20px + 44px (ThemeToggle) + 12px gap */
-  height: 36px;
-  padding: 0 10px 0 12px;
+  /* 20 (edge) + 44 (ThemeToggle) + 12 (gap) + ~90 (ViewSwitcher) + 12 (gap)
+   * P2.3 fix: previously collided with ViewSwitcher at right: 76px. */
+  right: 178px;
+  /* P2.3 a11y: ≥44×44 tap target (WCAG 2.5.5). Was 36px. */
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px 0 14px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 22px;
   background: var(--bg-elevated);
   color: var(--fg-secondary);
   font-family: var(--font-body, system-ui, sans-serif);
@@ -73,11 +77,14 @@
 }
 
 /* Hide the text label (but keep icon + kbd) on narrow screens where
- * the full pill would collide with ThemeToggle / ViewSwitcher. */
+ * the full pill would collide with ThemeToggle / ViewSwitcher. The
+ * button itself stays ≥44×44 via the base rule above (P2.3 a11y). */
 @media (max-width: 640px) {
   .search-trigger {
-    right: 72px;
-    padding: 0 10px;
+    /* Mobile: ThemeToggle 20-64, ViewSwitcher 76-166, SearchBox 178-222. */
+    right: 178px;
+    padding: 0 12px;
+    justify-content: center;
   }
   .search-trigger__label,
   .search-trigger__kbd {
@@ -168,34 +175,49 @@
 }
 
 .search-dialog__input::placeholder {
+  /* P2.3 a11y: --fg-muted is now tuned to clear 4.5:1. Kept for parity. */
   color: var(--fg-muted);
 }
 
+/* P2.3 a11y fix (P2.2 🔴): restore a visible focus ring. The input is
+ * the primary focusable element of the dialog — stripping its
+ * focus-visible indicator failed WCAG 2.4.7. */
 .search-dialog__input:focus-visible {
-  outline: none;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .search-dialog__close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
-  padding: 0 8px;
+  /* P2.3 a11y: ≥44×44 tap target (WCAG 2.5.5). Was 28h×~28w. */
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 10px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 6px;
   background: var(--bg);
-  color: var(--fg-muted);
+  color: var(--fg-secondary);
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: var(--text-xs);
   cursor: pointer;
   transition:
     border-color 160ms ease,
-    color 160ms ease;
+    color 160ms ease,
+    background 160ms ease;
 }
 
 .search-dialog__close:hover {
   border-color: var(--border-strong);
   color: var(--fg);
+  background: var(--bg-hover);
+}
+
+.search-dialog__close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* --------- Results region --------- */
@@ -205,10 +227,17 @@
   padding: 8px 0;
 }
 
+.search-dialog__live {
+  /* Wrapper for the aria-live region. No visual chrome — the child
+   * .search-dialog__empty carries the padding. */
+  display: contents;
+}
+
 .search-dialog__empty {
   padding: 24px 20px;
   text-align: center;
-  color: var(--fg-muted);
+  /* P2.3 a11y: was --fg-muted; promoted to --fg-secondary for 4.5:1+. */
+  color: var(--fg-secondary);
   font-size: var(--text-sm);
   margin: 0;
 }
@@ -262,6 +291,12 @@
   outline-offset: -2px;
 }
 
+/* P2.3 a11y: ensure mouse-driven focus on a row is visible too. */
+.search-dialog__row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .search-dialog__rowTitle {
   grid-column: 1;
   grid-row: 1;
@@ -275,7 +310,9 @@
   grid-column: 1;
   grid-row: 2;
   font-size: var(--text-sm);
-  color: var(--fg-muted);
+  /* P2.3 a11y: use --fg-secondary (higher contrast) for small body text
+   * so excerpts clear 4.5:1 without relying on --fg-muted alone. */
+  color: var(--fg-secondary);
   line-height: var(--leading-normal);
   display: -webkit-box;
   -webkit-line-clamp: 2;

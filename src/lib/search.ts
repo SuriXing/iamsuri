@@ -61,18 +61,10 @@ export interface SearchOptions {
 
 const DEFAULT_LIMIT = 12;
 
-function productExcerpt(value: string): string {
-  // Products already have short excerpts, but keep a ceiling to match
-  // the other content kinds.
-  return truncate(value, 180);
-}
+const EXCERPT_MAX = 180;
 
-function postExcerpt(value: string): string {
-  return truncate(value, 180);
-}
-
-function ideaExcerpt(value: string): string {
-  return truncate(value, 180);
+function excerptFor(value: string): string {
+  return truncate(value, EXCERPT_MAX);
 }
 
 function truncate(value: string, max: number): string {
@@ -91,7 +83,7 @@ function collectDocs(): SearchDoc[] {
     docs.push({
       id: `work:${p.slug}`,
       title: p.title,
-      excerpt: productExcerpt(p.excerpt),
+      excerpt: excerptFor(p.excerpt),
       body: p.body,
       tagsText: p.tags.join(' '),
       kind: 'work',
@@ -106,7 +98,7 @@ function collectDocs(): SearchDoc[] {
     docs.push({
       id: `writing:${post.slug}`,
       title: post.title,
-      excerpt: postExcerpt(post.excerpt),
+      excerpt: excerptFor(post.excerpt),
       body,
       tagsText: post.tags.join(' '),
       kind: 'writing',
@@ -120,7 +112,7 @@ function collectDocs(): SearchDoc[] {
     docs.push({
       id: `ideas:${idea.slug}`,
       title: idea.title,
-      excerpt: ideaExcerpt(idea.why),
+      excerpt: excerptFor(idea.why),
       body: idea.body,
       tagsText: idea.tags.join(' '),
       kind: 'ideas',
@@ -131,7 +123,7 @@ function collectDocs(): SearchDoc[] {
   docs.push({
     id: 'about:suri',
     title: about.name,
-    excerpt: truncate(about.tagline, 180),
+    excerpt: excerptFor(about.tagline),
     body: about.bio,
     tagsText: about.tags.join(' '),
     kind: 'about',

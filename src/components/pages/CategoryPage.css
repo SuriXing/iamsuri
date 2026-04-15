@@ -394,7 +394,9 @@
 
 @media (min-width: 720px) {
   .cat-related__grid {
-    grid-template-columns: repeat(2, 1fr);
+    /* auto-fit so the 3-card row collapses gracefully on narrow pages
+     * (cat-page--narrow is 760px max) instead of cramping at 3×220px. */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
 }
 

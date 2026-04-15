@@ -5,6 +5,7 @@ import { formatDate } from '../../lib/date';
 import { normalizeTags } from '../../lib/tags';
 import { relatedByTags } from '../../lib/related';
 import { Prose } from '../../lib/prose';
+import ReadingProgress from '../shared/ReadingProgress';
 import '../../styles/fonts.css';
 import './Landing.css';
 import './CategoryPage.css';
@@ -28,7 +29,7 @@ export default function WritingDetail() {
   }, [post]);
 
   const related = useMemo(
-    () => (post ? relatedByTags(post, posts, 2) : []),
+    () => (post ? relatedByTags(post, posts, 3) : []),
     [post],
   );
 
@@ -45,6 +46,7 @@ export default function WritingDetail() {
 
   return (
     <main className="cat-page cat-page--narrow" id="main" tabIndex={-1}>
+      {post.kind === 'inline' && <ReadingProgress />}
       <Link to="/writing" className="cat-back">
         <span aria-hidden>←</span> all writing
       </Link>

@@ -87,8 +87,10 @@
   --bg-elevated: #151520;
   --bg-hover: #1c1c2a;
   --fg: #ededf5;
-  --fg-secondary: #a0a0b0;
-  --fg-muted: #6f6f80;
+  --fg-secondary: #b8b8c8;
+  /* P2.3 a11y fix: was #6f6f80 (~3.9:1) — bumped to #9a9aae for ≥4.6:1 vs
+   * --bg #0a0a10 so body text using --fg-muted clears WCAG AA 4.5:1. */
+  --fg-muted: #9a9aae;
   --border: #2a2a3a;
   --border-strong: #3a3a50;
 }
@@ -102,7 +104,9 @@
   --bg-hover: #ede9dd;
   --fg: #0a0a10;
   --fg-secondary: #40404a;
-  --fg-muted: #80808a;
+  /* P2.3 a11y fix: was #80808a (~3.6:1) — darkened to #595964 for ≥5.4:1
+   * vs --bg #faf9f5 so body text using --fg-muted clears WCAG AA 4.5:1. */
+  --fg-muted: #595964;
   --border: #e0dccf;
   --border-strong: #c8c4b6;
   /* P1.6 a11y fix: dark-violet hover variant for light theme. #5b3fd9
@@ -130,4 +134,13 @@ select:focus-visible,
 main[tabindex='-1']:focus,
 main[tabindex='-1']:focus-visible {
   outline: none;
+}
+
+/* ----- Smooth anchor scroll (P2.3) ------------------------------------ */
+/* Gate behind prefers-reduced-motion: no-preference so reduced-motion
+ * users get an instant jump on hash-link nav. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }

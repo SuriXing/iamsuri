@@ -245,7 +245,14 @@ export default function App() {
           }
         />
         <Route path="/3d" element={<ThreeDRoute />} />
-        <Route path="/404" element={<NotFound />} />
+        <Route
+          path="/404"
+          element={
+            <ContentRoute>
+              <NotFound />
+            </ContentRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>
     </BrowserRouter>

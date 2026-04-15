@@ -1,0 +1,30 @@
+/**
+ * Reading progress bar (P2.3). Fixed top-of-viewport 3px strip that
+ * fills left→right in --accent as the user scrolls through the page.
+ *
+ * Uses transform: scaleX() rather than width so browsers can composite
+ * on the GPU without layout/paint.
+ */
+
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  z-index: 150;
+  pointer-events: none;
+}
+
+.reading-progress__bar {
+  height: 100%;
+  width: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+  transform: scaleX(0);
+  /* No transition — bar updates directly from scroll progress. This
+   * keeps it honest (scaleX matches scrollY) and avoids any lerp that
+   * reduced-motion users could perceive as animation. */
+  will-change: transform;
+}

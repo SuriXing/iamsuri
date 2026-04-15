@@ -30,7 +30,7 @@ export default function WorkDetail() {
     return <Navigate to="/404" replace />;
   }
 
-  const related = relatedByTags(product, products, 2);
+  const related = relatedByTags(product, products, 3);
 
   return (
     <main className="cat-page cat-page--narrow" id="main" tabIndex={-1}>

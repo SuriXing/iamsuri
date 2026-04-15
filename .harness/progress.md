@@ -19,3 +19,4 @@ first paint measured at 19 KB + 60 KB gzip = ~79 KB gzip (under 100 KB
 budget). App3D chunk remains split at 264 KB gzip. All 4 gates green.
 playwright.config.cjs timeout bumped 30s → 60s (exempted from freeze,
 justified by 3D route load time).
+- **Tick 1** [P1.1] (implement-routing): P1.1 routing done at upstream commit cf47d57: react-router-dom@7.14.1, 10-route schema, BrowserRouter in App.tsx, lazy /3d, Placeholder+NotFound pages, ViewSwitcher <Link>, legacy ?view=3d redirect, 2D first paint 79 KB gzip (budget 100), App3D lazy at 264 KB gzip, all 4 gates green, playwright timeout 30→60s exempted. — 2026-04-14T10:47:50.579Z

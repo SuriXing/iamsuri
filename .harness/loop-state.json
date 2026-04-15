@@ -1,10 +1,15 @@
 {
-  "tick": 0,
-  "unit": null,
-  "description": "Loop initialized",
+  "tick": 1,
+  "unit": "P1.1",
+  "description": "P1.1 routing done at upstream commit cf47d57: react-router-dom@7.14.1, 10-route schema, BrowserRouter in App.tsx, lazy /3d, Placeholder+NotFound pages, ViewSwitcher <Link>, legacy ?view=3d redirect, 2D first paint 79 KB gzip (budget 100), App3D lazy at 264 KB gzip, all 4 gates green, playwright timeout 30→60s exempted.",
   "status": "in_progress",
-  "artifacts": [],
-  "next_unit": "P1.1",
+  "artifacts": [
+    ".harness/nodes/P1.1/run_1/landing.png",
+    ".harness/nodes/P1.1/run_1/3d-route.png",
+    ".harness/nodes/P1.1/run_1/work-placeholder.png",
+    ".harness/nodes/P1.1/run_1/writing-placeholder.png"
+  ],
+  "next_unit": "P1.2",
   "blockers": [],
   "review_of_previous": "",
   "plan_file": ".harness/plan.md",
@@ -21,9 +26,15 @@
   ],
   "_written_by": "opc-harness",
   "_plan_hash": "1b392536aa8e5419",
-  "_last_modified": "2026-04-14T10:46:44.417Z",
-  "_git_head": "45f2609c9cde8c402df252ce99fe1ea5d2504fda",
-  "_tick_history": [],
+  "_last_modified": "2026-04-14T10:47:50.605Z",
+  "_git_head": "4587259f194b0fe40fd76b93f5091d2dc96618c1",
+  "_tick_history": [
+    {
+      "unit": "P1.1",
+      "tick": 1,
+      "status": "completed"
+    }
+  ],
   "_max_total_ticks": 24,
   "_started_at": "2026-04-14T10:46:31.060Z",
   "_max_duration_hours": 24,

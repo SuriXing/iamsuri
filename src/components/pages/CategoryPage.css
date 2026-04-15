@@ -441,6 +441,12 @@
   font-style: italic;
 }
 
+/* P2.5: inline-SVG monogram replaces the text initial. */
+.cat-about__monogram {
+  display: block;
+  color: var(--accent);
+}
+
 .cat-about__bio p {
   color: var(--fg-secondary);
   margin: 0;

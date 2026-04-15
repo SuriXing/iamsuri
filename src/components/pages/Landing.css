@@ -198,8 +198,27 @@
   color: var(--fg-muted);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  margin-top: var(--space-5);
+  margin-top: var(--space-3);
   margin-bottom: var(--space-6);
+}
+
+/* P2.5: small SVG accent between the headline and the tagline. Uses
+ * `color` (consumed by currentColor in the <svg>) so it picks up the
+ * accent token in both themes without hardcoding. */
+.landing-hero__accent {
+  display: block;
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-1);
+  color: var(--accent);
+  /* Pull slightly into the left padding so the curve reads as a real
+   * underline under the "S" rather than a detached widget. */
+  margin-left: 2px;
+}
+@media (max-width: 640px) {
+  .landing-hero__accent {
+    width: 120px;
+    height: 12px;
+  }
 }
 
 .landing-hero__intro {
@@ -492,6 +511,14 @@
   color: var(--accent);
   font-variation-settings: 'SOFT' 60, 'WONK' 0.5;
   font-style: italic;
+}
+
+/* P2.5: inline-SVG monogram replaces the text initial. `color` feeds
+ * the SVG's currentColor so the mark lives on the accent token in both
+ * themes. `display: block` kills baseline whitespace under the svg. */
+.landing-about__monogram {
+  display: block;
+  color: var(--accent);
 }
 
 .landing-about__body {

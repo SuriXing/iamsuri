@@ -12,6 +12,7 @@ import type {
 } from '../../data/schema';
 import { formatDate } from '../../lib/date';
 import { normalizeTag } from '../../lib/tags';
+import Monogram from '../shared/Monogram';
 // Font CSS is scoped to the Landing route so the /3d canvas route
 // doesn't pay the cost. See src/styles/fonts.css for the three
 // @fontsource-variable families.
@@ -60,6 +61,7 @@ function HeroSection() {
           {about.name.slice(firstName.length)}
         </span>
       </h1>
+      <HeroAccent />
       <p className="landing-hero__tagline">{about.tagline}</p>
       <p className="landing-hero__intro">
         I&apos;m a Grade 8 builder who ships small, rough, real things to
@@ -331,11 +333,13 @@ function AboutSection() {
         indexHref="/about"
       />
       <div className="landing-about">
-        <div className="landing-about__photo" aria-hidden>
+        <div className="landing-about__photo" aria-hidden="true">
           <div className="landing-about__photo-inner">
-            <span className="landing-about__photo-initial">
-              {about.name[0]}
-            </span>
+            <Monogram
+              size="60%"
+              className="landing-about__monogram"
+              title="Suri Xing monogram"
+            />
           </div>
         </div>
         <div className="landing-about__body">
@@ -423,6 +427,39 @@ interface SectionHeaderProps {
   description: string | null;
   indexLabel: string;
   indexHref: string;
+}
+
+/**
+ * Small inline-SVG accent that sits between the hero headline and the
+ * tagline. Decorative only — a hand-drawn underline sweep anchored by
+ * three dots (the three content pillars: work / writing / ideas).
+ *
+ * Uses `currentColor` so it inherits the accent color set on the root
+ * element. On <=640px it shrinks and drops one dot to keep the row from
+ * crowding the stacked hero block.
+ */
+function HeroAccent() {
+  return (
+    <svg
+      className="landing-hero__accent"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 160 16"
+      width="160"
+      height="16"
+    >
+      <path
+        d="M2 10 C 28 2, 56 14, 92 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <circle cx="108" cy="7" r="2" fill="currentColor" />
+      <circle cx="122" cy="7" r="2" fill="currentColor" />
+      <circle cx="136" cy="7" r="2" fill="currentColor" />
+    </svg>
+  );
 }
 
 function SectionHeader({

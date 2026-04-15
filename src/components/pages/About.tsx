@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { about } from '../../data/about';
 import { normalizeTags } from '../../lib/tags';
+import Monogram from '../shared/Monogram';
 import '../../styles/fonts.css';
 import './Landing.css';
 import './CategoryPage.css';
@@ -32,8 +33,12 @@ export default function About() {
       </header>
 
       <div className="cat-about">
-        <div className="cat-about__photo" aria-hidden>
-          <span className="cat-about__photo-initial">{about.name[0]}</span>
+        <div className="cat-about__photo" aria-hidden="true">
+          <Monogram
+            size="60%"
+            className="cat-about__monogram"
+            title="Suri Xing monogram"
+          />
         </div>
 
         <div className="cat-about__bio">

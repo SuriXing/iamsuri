@@ -28,7 +28,13 @@ export const CAMERA = {
   position: [0, 20, 14] as const,
   lookAt: [0, 0, 0] as const,
   fov: 50,
-  near: 0.1,
+  // near 0.5 (was 0.1). Belt-and-braces with logarithmicDepthBuffer:
+  // even with logarithmic depth, narrowing the near plane gives extra
+  // precision near the camera. Nothing inside the scene is closer than
+  // ~1.6 units to the camera (the wall-clip pushback enforces it), so
+  // 0.5 is safe. Was 0.1 / far 200 → 2000:1 ratio = catastrophic depth
+  // precision at distance 13. New ratio 400:1.
+  near: 0.5,
   far: 200,
 } as const;
 
@@ -72,7 +78,13 @@ export const LIGHTS = {
 export const GROUND = {
   size: 30,
   color: '#111827',
-  y: -0.01,
+  // Ground sat at y=-0.01, only 1cm below the room floor stack (which
+  // bottoms at y=0). At distance-13 camera that gap was inside the depth
+  // precision noise floor, contributing to the "rooms swap positions"
+  // z-fight. Pulled to -0.5 — way below any floor mesh, no possible
+  // coplanar fight. Visually identical (the rooms occlude it from any
+  // playing angle).
+  y: -0.5,
 } as const;
 
 export const FOG_DENSITY = 0.002;

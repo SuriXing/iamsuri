@@ -62,6 +62,7 @@ export interface WorldState {
   setFp: (active: boolean, yaw?: number, pitch?: number) => void;
   addFpDelta: (dYaw: number, dPitch: number) => void;
   unlockDoor: (id: RoomId) => void;
+  lockDoor: (id: RoomId) => void;
   toggleTheme: () => void;
   setNearbyRoom: (id: RoomId | null) => void;
   setFocusedInteractable: (i: InteractableData | null) => void;
@@ -122,7 +123,14 @@ export const useWorldStore = create<WorldState>((set) => ({
   nearbyRoom: null,
   focusedInteractable: null,
   modalInteractable: null,
-  introPhase: 'intro-static',
+  // Skip the 4-second intro for repeat visitors in the same session.
+  // First visit shows the static→zoom→dialogue cinematic; subsequent
+  // entries to /3d during this session jump straight into 'follow' mode
+  // so the user can move immediately. Cleared on full page close.
+  introPhase:
+    typeof window !== 'undefined' && window.sessionStorage?.getItem('suri-intro-played') === '1'
+      ? 'follow'
+      : 'intro-static',
   dialogueIndex: 0,
 
   setViewMode: (v) => {
@@ -158,6 +166,14 @@ export const useWorldStore = create<WorldState>((set) => ({
       saveUnlocks(next);
       return { unlockedDoors: next };
     }),
+  lockDoor: (id) =>
+    set((s) => {
+      if (!s.unlockedDoors.has(id)) return {};
+      const next = new Set(s.unlockedDoors);
+      next.delete(id);
+      saveUnlocks(next);
+      return { unlockedDoors: next };
+    }),
   toggleTheme: () =>
     set((s) => {
       const next = s.theme === 'dark' ? 'light' : 'dark';
@@ -189,12 +205,20 @@ export const useWorldStore = create<WorldState>((set) => ({
       focusedInteractable: null,
       modalInteractable: null,
     }),
-  setIntroPhase: (p) => set({ introPhase: p }),
+  setIntroPhase: (p) => {
+    if (p === 'follow' && typeof window !== 'undefined') {
+      window.sessionStorage?.setItem('suri-intro-played', '1');
+    }
+    set({ introPhase: p });
+  },
   advanceDialogue: () =>
     set((s) => {
       // For now there's only a single line; advancing ends the intro
       // and drops the player into 'follow' mode. When more lines are
       // added later, this is the place to increment dialogueIndex.
+      if (typeof window !== 'undefined') {
+        window.sessionStorage?.setItem('suri-intro-played', '1');
+      }
       return { introPhase: 'follow', dialogueIndex: s.dialogueIndex + 1 };
     }),
 }));

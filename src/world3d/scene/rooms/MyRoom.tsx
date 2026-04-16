@@ -1,4 +1,5 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { registerCollider, unregisterCollider } from '../colliders';
 import { Edges } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -7,6 +8,7 @@ import { Bookshelf } from '../parts/Bookshelf';
 import { DeskLamp } from '../parts/DeskLamp';
 import { MY_ROOM_CONTENT } from '../../../data/myRoom';
 import { makeRng } from '../../util/rand';
+import { useWorldStore } from '../../store/worldStore';
 import type { InteractableData } from '../../store/worldStore';
 
 const HEADBOARD_INTERACTABLE: InteractableData = MY_ROOM_CONTENT.dialogues.bed;
@@ -32,12 +34,13 @@ const BED_LEGS: ReadonlyArray<readonly [number, number]> = [
   [0.7, 0.95],
 ];
 
-// Tapered desk legs: top square + slight inset bottom handled via two stacked boxes.
+// Tapered desk legs — dz tightened from ±0.7 to ±0.4 to match the
+// shorter (depth=1.0, was 1.6) desk top.
 const DESK_LEGS: ReadonlyArray<readonly [number, number]> = [
-  [-0.6, -0.7],
-  [0.6, -0.7],
-  [-0.6, 0.7],
-  [0.6, 0.7],
+  [-0.6, -0.4],
+  [0.6, -0.4],
+  [-0.6, 0.4],
+  [0.6, 0.4],
 ];
 
 const SHELF_BOOK_COLORS: ReadonlyArray<string> = MY_ROOM_CONTENT.shelfBookColors;
@@ -57,8 +60,6 @@ const PLANT_BREATH_SPEED = 0.8;
 // from 10% post-ship when the combined 4-room pulse superposition read
 // as flicker.
 const ACCENT_LIGHT_BASE = 0.3;
-const ACCENT_LIGHT_AMPLITUDE = 0.015;
-const ACCENT_LIGHT_SPEED = 0.6;
 
 // Folded clothes stack — small boxes in pink/white.
 interface ClothesBoxSpec {
@@ -78,12 +79,25 @@ export function MyRoom() {
   const { center } = ROOM_BY_ID.myroom;
   const ox = center.x;
   const oz = center.z;
-  const bedX = ox - 1.0;
+  // Bed pushed left, desk pushed right — wider gap between them
+  // (was ±1.0, now ±1.5 → 3.0 units between centers, was 2.0).
+  const bedX = ox - 1.5;
   const bedZ = oz - 0.3;
-  const deskX = ox + 1.0;
+  const deskX = ox + 1.5;
   const deskZ = oz - 0.3;
   const shelfX = ox - 0.1;
   const shelfZ = oz - 1.7;
+
+  // Furniture colliders (player-only — camera ignores).
+  useEffect(() => {
+    const items = [
+      { id: 'mr-bed',   x: bedX,   z: bedZ,   hx: 0.78, hz: 1.05 },
+      { id: 'mr-desk',  x: deskX,  z: deskZ,  hx: 0.7,  hz: 0.5  },
+      { id: 'mr-shelf', x: shelfX, z: shelfZ, hx: 0.85, hz: 0.20 },
+    ] as const;
+    for (const it of items) registerCollider({ ...it, playerOnly: true });
+    return () => { for (const it of items) unregisterCollider(it.id); };
+  }, [bedX, bedZ, deskX, deskZ, shelfX, shelfZ]);
 
   // Deterministic pillow tints — subtle variation, stable per mount.
   const pillowTints = useMemo<readonly [string, string]>(() => {
@@ -114,11 +128,12 @@ export function MyRoom() {
       const s = 1 + Math.sin(t * PLANT_BREATH_SPEED) * PLANT_BREATH_AMPLITUDE;
       leaves.scale.setScalar(s);
     }
-    // Pink accent point-light breathing — phase 0.0 (arbitrary anchor).
-    const al = accentLightRef.current;
-    if (al) {
-      al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED + 0.0) * ACCENT_LIGHT_AMPLITUDE;
-    }
+    // Pink accent point-light: zero-brightness-motion pass removed the
+    // breathing intensity mutation. Light is now static at base value;
+    // user reports ANY brightness motion as flicker so we keep all
+    // intensity/emissive/opacity static and let physical motion (bob,
+    // rotate, scale, position) carry all the life.
+    // (intentionally empty)
   });
 
   return (
@@ -186,16 +201,16 @@ export function MyRoom() {
         </mesh>
       ))}
 
-      {/* ----- DESK ----- */}
+      {/* ----- DESK ----- (depth shortened 1.6 → 1.0) */}
       {/* Desk top */}
       <mesh position={[deskX, 0.78, deskZ]} castShadow receiveShadow>
-        <boxGeometry args={[1.4, 0.08, 1.6]} />
+        <boxGeometry args={[1.4, 0.08, 1.0]} />
         <meshPhongMaterial color={WHITE} emissive={WHITE} emissiveIntensity={0.05} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1.2} />
       </mesh>
       {/* Trim board under desk top edge */}
       <mesh position={[deskX, 0.72, deskZ]} castShadow>
-        <boxGeometry args={[1.38, 0.02, 1.58]} />
+        <boxGeometry args={[1.38, 0.02, 0.98]} />
         <meshPhongMaterial color={WHITE_OFF} flatShading />
       </mesh>
       {/* Tapered desk legs — top chunk */}
@@ -212,14 +227,14 @@ export function MyRoom() {
           <meshPhongMaterial color={WHITE_OFF} flatShading />
         </mesh>
       ))}
-      {/* Drawer face */}
-      <mesh position={[deskX, 0.6, deskZ + 0.5]} castShadow>
-        <boxGeometry args={[1.3, 0.22, 0.5]} />
+      {/* Drawer face — moved forward to match the shorter desk depth */}
+      <mesh position={[deskX, 0.6, deskZ + 0.3]} castShadow>
+        <boxGeometry args={[1.3, 0.22, 0.3]} />
         <meshPhongMaterial color={WHITE_OFF} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1.2} />
       </mesh>
       {/* Gold drawer handle — small sphere */}
-      <mesh position={[deskX, 0.6, deskZ + 0.77]}>
+      <mesh position={[deskX, 0.6, deskZ + 0.47]}>
         <sphereGeometry args={[0.028, 8, 6]} />
         <meshPhongMaterial color={GOLD} emissive={GOLD} emissiveIntensity={0.3} flatShading />
       </mesh>
@@ -307,6 +322,149 @@ export function MyRoom() {
         heroBookCount={3}
         edgeColor={EDGE_COLOR}
       />
+
+      {/* ----- TROPHY DISPLAY (top of bookshelf) -----
+          4 NHSDLC debate trophies — 2 silver (Runners-up) + 2 gold
+          (Champion). Top cap plank above the books, then trophies on
+          top of the cap with hover-visible labels. */}
+      {/* Top cap plank */}
+      <mesh position={[shelfX, 1.85, shelfZ]} receiveShadow>
+        <boxGeometry args={[1.25, 0.04, 0.32]} />
+        <meshPhongMaterial color={WOOD} flatShading />
+        <Edges color={EDGE_COLOR} lineWidth={1} />
+      </mesh>
+      {[
+        {
+          dx: -0.36,
+          color: '#cbd5e1',
+          short: 'Online2',
+          title: 'NHSDLC Fall 2025 — Online 2 (Runners-up)',
+          body:
+            "🥈 Silver — Novice Division\n" +
+            "Tournament: NHSDLC Fall Online 2\n" +
+            "Format: Public Forum, two-person teams, 4 prelim rounds + elimination bracket.\n\n" +
+            "First serious finish of the fall season. Made it to the grand final by out-prepping every team in the bracket on the second contention, then ran out of road in the last round when the opp side dropped a framework I hadn't seen before. Silver tasted like motivation, not consolation — knew exactly what to fix for the next one.",
+        },
+        {
+          dx: -0.12,
+          color: '#cbd5e1',
+          short: 'Online4',
+          title: 'NHSDLC 2025 — Online 4 (Runners-up)',
+          body:
+            "🥈 Silver — Novice Division\n" +
+            "Tournament: NHSDLC Online 4\n" +
+            "Format: Public Forum, two-person teams.\n\n" +
+            "Back-to-back runners-up. Online 4 was a turnaround tournament — sharper case prep, faster rebuttals, finally felt comfortable in cross-fire. Lost the final on a single dropped link in summary that the other team weaponized in the last 30 seconds. Closer than the score suggests, and the prep work from this run carried straight into the BJ offline win.",
+        },
+        {
+          dx: 0.12,
+          color: '#fbbf24',
+          short: 'BJ Offline',
+          title: 'NHSDLC Fall 2025 — Beijing Offline (CHAMPION)',
+          body:
+            "🥇 Gold — Novice Division CHAMPION\n" +
+            "Tournament: NHSDLC Fall Beijing Offline\n" +
+            "Format: Public Forum, in-person, three days, six elimination rounds.\n\n" +
+            "First in-person tournament. First in-person win. Different energy from online — judges in the room with you, real handshakes, the silence after a closing argument that lands. The semifinal was the hardest round of the season; the final felt almost calm by comparison because everything we'd practiced from the silver finishes was finally muscle memory. Walked out with the cup and the sense that I actually belonged here.",
+        },
+        {
+          dx: 0.36,
+          color: '#fbbf24',
+          short: 'Online6',
+          title: 'NHSDLC Fall 2025 — Online 6 (CHAMPION)',
+          body:
+            "🥇 Gold — Novice Division CHAMPION\n" +
+            "Tournament: NHSDLC Online 6\n" +
+            "Format: Public Forum, two-person teams.\n\n" +
+            "Second championship of the fall season. Online 6 closed the run with another novice-division win — same partner, same prep system, but with a year's worth of confidence built up. The final round was the cleanest debate I've given so far: tight framework, three independent links, every rebuttal pre-flagged in case construction. This trophy is here because the fall season started with two losses in finals and ended with two wins — and the gap between those two pairs is the entire reason this room exists.",
+        },
+      ].map((t, i) => {
+        const interactable = { title: t.title, body: t.body };
+        const handleClick = (e: { stopPropagation: () => void }) => {
+          e.stopPropagation();
+          useWorldStore.getState().openModal(interactable);
+        };
+        const handlePointerOver = (e: { stopPropagation: () => void }) => {
+          e.stopPropagation();
+          document.body.style.cursor = 'pointer';
+        };
+        const handlePointerOut = (e: { stopPropagation: () => void }) => {
+          e.stopPropagation();
+          document.body.style.cursor = '';
+        };
+        const attachInteractable = (m: THREE.Mesh | null) => {
+          if (m) m.userData.interactable = interactable;
+        };
+        return (
+          <group key={`trophy-${i}`} position={[shelfX + t.dx, 0, shelfZ + 0.05]}>
+            {/* Dark wood base — clickable */}
+            <mesh
+              position={[0, 1.92, 0]}
+              castShadow
+              onClick={handleClick}
+              onPointerOver={handlePointerOver}
+              onPointerOut={handlePointerOut}
+              ref={attachInteractable}
+            >
+              <boxGeometry args={[0.085, 0.035, 0.07]} />
+              <meshPhongMaterial color="#2a1810" flatShading />
+              <Edges color={EDGE_COLOR} lineWidth={1} />
+            </mesh>
+            {/* Stem — clickable */}
+            <mesh
+              position={[0, 1.965, 0]}
+              castShadow
+              onClick={handleClick}
+              onPointerOver={handlePointerOver}
+              onPointerOut={handlePointerOut}
+              ref={attachInteractable}
+            >
+              <boxGeometry args={[0.022, 0.04, 0.022]} />
+              <meshPhongMaterial color={t.color} emissive={t.color} emissiveIntensity={0.35} flatShading />
+            </mesh>
+            {/* Cup — primary click target */}
+            <mesh
+              position={[0, 2.025, 0]}
+              castShadow
+              onClick={handleClick}
+              onPointerOver={handlePointerOver}
+              onPointerOut={handlePointerOut}
+              ref={attachInteractable}
+            >
+              <boxGeometry args={[0.075, 0.06, 0.05]} />
+              <meshPhongMaterial color={t.color} emissive={t.color} emissiveIntensity={0.4} flatShading />
+              <Edges color={EDGE_COLOR} lineWidth={1.2} />
+            </mesh>
+            {/* Side handles — also clickable */}
+            <mesh
+              position={[-0.045, 2.025, 0]}
+              onClick={handleClick}
+              onPointerOver={handlePointerOver}
+              onPointerOut={handlePointerOut}
+              ref={attachInteractable}
+            >
+              <boxGeometry args={[0.012, 0.035, 0.012]} />
+              <meshPhongMaterial color={t.color} emissive={t.color} emissiveIntensity={0.35} flatShading />
+            </mesh>
+            <mesh
+              position={[0.045, 2.025, 0]}
+              onClick={handleClick}
+              onPointerOver={handlePointerOver}
+              onPointerOut={handlePointerOut}
+              ref={attachInteractable}
+            >
+              <boxGeometry args={[0.012, 0.035, 0.012]} />
+              <meshPhongMaterial color={t.color} emissive={t.color} emissiveIntensity={0.35} flatShading />
+            </mesh>
+            {/* No floating labels — discoverability comes from:
+                (a) the cursor changing to a pointer on hover, and
+                (b) the existing InteractTooltip in the HUD that says
+                "Click to read · or press E" when looking at any
+                trophy in FP mode. Way less visually noisy than the
+                always-visible labels and gold "click to read" pill. */}
+          </group>
+        );
+      })}
 
       {/* ----- RUG + INNER BORDER ----- */}
       <mesh position={[bedX, 0.075, bedZ + 0.7]} receiveShadow>

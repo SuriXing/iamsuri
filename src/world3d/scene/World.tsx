@@ -1,4 +1,7 @@
+import { useEffect } from 'react';
 import { Html } from '@react-three/drei';
+import { useThree } from '@react-three/fiber';
+import { EnterPrompt3D } from './EnterPrompt3D';
 import { ROOMS } from '../data/rooms';
 import { COLORS, LIGHTS, SHADOW_MAP_SIZE, FOG_DENSITY } from '../constants';
 // NOTE: scene.background and scene.fog.color are set imperatively in
@@ -9,7 +12,6 @@ import { RoomFloor } from './RoomFloor';
 import { Walls } from './Walls';
 import { StarField } from './StarField';
 import { Particles } from './Particles';
-import { HallwayLanterns } from './HallwayLanterns';
 import { Hallway } from './Hallway';
 import { Character } from './Character';
 import { MyRoom } from './rooms/MyRoom';
@@ -22,7 +24,6 @@ import { MouseOrbitController } from './MouseOrbitController';
 import { InteractionManager } from './InteractionManager';
 import { InteractionRaycaster } from './InteractionRaycaster';
 import { ThemeEffect } from './ThemeEffect';
-import { EnterPrompt3D } from './EnterPrompt3D';
 import { SpeechBubble3D } from './SpeechBubble3D';
 import { useWorldStore } from '../store/worldStore';
 
@@ -34,6 +35,38 @@ const ROOM_LIGHTS: ReadonlyArray<{ pos: [number, number, number]; color: string 
 ];
 
 const LIGHT_BG = '#f0ede6';
+
+/**
+ * Compile every material's shader program ONCE at mount, before the
+ * intro zoom starts. Without this, the GPU compiles shaders lazily on
+ * first draw call — and with logarithmicDepthBuffer: true on the
+ * WebGLRenderer, every fragment shader is rebuilt with a custom depth
+ * uniform. That means the first frame stutters for ~1.5s while the GPU
+ * compiles ~30 different material variants, exactly when the intro
+ * camera tween is playing → the user sees the zoom-in lag.
+ *
+ * gl.compile(scene, camera) walks the scene graph and forces every
+ * material to compile + link its shader program synchronously. After
+ * this runs, the next animation frame paints with no compile delay.
+ *
+ * Placed as a child of the World <group> so it runs AFTER all room
+ * meshes have mounted (an effect at the World level would race the
+ * children's mount).
+ */
+function ShaderWarmup() {
+  const { gl, scene, camera } = useThree();
+  useEffect(() => {
+    // requestAnimationFrame defers compile by one frame so React has
+    // committed every child mesh into the scene graph by the time we
+    // walk it. Without this, gl.compile() can run before InstancedMesh
+    // children have inserted their materials.
+    const raf = requestAnimationFrame(() => {
+      gl.compile(scene, camera);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [gl, scene, camera]);
+  return null;
+}
 
 export function World() {
   const viewMode = useWorldStore((s) => s.viewMode);
@@ -94,7 +127,6 @@ export function World() {
 
       {/* Hallway */}
       <Hallway />
-      <HallwayLanterns />
 
       {/* Rooms */}
       <MyRoom />
@@ -106,6 +138,7 @@ export function World() {
       <Character />
 
       {/* Controllers / managers — invisible, but render null and run logic */}
+      <ShaderWarmup />
       <CameraController />
       <PlayerController />
       <MouseOrbitController />

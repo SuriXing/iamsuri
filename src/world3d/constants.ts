@@ -40,8 +40,10 @@ export const CAMERA = {
 
 /** Third-person follow camera (orbit around character). */
 export const FOLLOW = {
-  /** Spherical distance from character — orbit radius. */
-  distance: 13.0,
+  /** Spherical distance from character — orbit radius.
+   *  16.0 (was 13) per user "let the perspective zoom out a bit" after
+   *  seeing the corridor view crushed in. */
+  distance: 16.0,
   /** Look target height on the character. 1.0 puts the aim point at
    *  the character's chest/shoulders instead of the waist — more
    *  cinematic third-person feel. */
@@ -90,9 +92,13 @@ export const GROUND = {
 export const FOG_DENSITY = 0.002;
 export const SHADOW_MAP_SIZE = 1024;
 
-// World counts
-export const STAR_COUNT = 500;
-export const PARTICLE_COUNT = 150;
+// World counts — perf pass cut these from 500/150 → 200/60.
+// Stars don't animate any more (zero-brightness pass), so the per-frame
+// cost is purely fragment shading + draw call overhead. 200 stars still
+// reads as a sky. Particles are now opaque cubes (no additive pile-up
+// risk), so 60 keeps a sense of dust without dominating fill rate.
+export const STAR_COUNT = 200;
+export const PARTICLE_COUNT = 60;
 
 // Door geometry
 export const DOOR = {

@@ -42,30 +42,40 @@ export default function App3D({ onExitTo2D }: Props) {
     <ExitContext.Provider value={onExitTo2D ?? null}>
       <div className="world3d-root">
         <Canvas
-          shadows
-          // Render at retina (DPR up to 2). Without this R3F uses the
-          // browser default which can leave 1px lines aliased on Mac
-          // retina displays — at distance 13 the wall outlines start
-          // to read as wavy/non-straight even though geometry is exact.
-          dpr={[1, 2]}
+          // Bump this key any time the gl prop below changes — forces
+          // React to unmount + remount the Canvas so a fresh
+          // WebGLRenderer is constructed with the new config.
+          key="canvas-v5-drop-logdepth-2026-04-15"
+          // shadows REMOVED — was the single largest per-frame cost.
+          // Each frame the directional light re-rendered the entire
+          // scene into a 1024×1024 shadow map = ~1M extra fragment
+          // evaluations per frame. Combined with logarithmicDepthBuffer
+          // and DPR 2 on retina, the M1 was missing frame budget on
+          // every character move → "一顿一顿的" stutter.
+          // Voxel/flatShading style still reads cleanly without shadows.
+          // dpr capped at 1.5 (was [1, 2]). Retina at 2× = 4× pixels =
+          // 4× fragment shader work. 1.5 keeps edges crisp without
+          // doubling pixel count. Single number forces fixed ratio
+          // instead of dynamic clamping.
+          dpr={1.5}
           camera={{
             position: [...CAMERA.position],
             fov: CAMERA.fov,
             near: CAMERA.near,
             far: CAMERA.far,
           }}
-          // antialias: true → browser-native MSAA on default framebuffer.
-          // logarithmicDepthBuffer: true is the critical fix for the
-          // "rooms swap positions" z-fighting bug. With far=200/near=0.1
-          // (2000:1 ratio) the standard 24-bit depth buffer has only ~21cm
-          // of precision at 13-unit camera distance, so multiple coplanar
-          // floor surfaces (1cm apart) fight for the same pixel and the
-          // winner shifts as the camera moves. Logarithmic depth gives
-          // ~1µm precision at any distance — kills the entire class of
-          // bug. Small perf cost, paid once per fragment.
+          // logarithmicDepthBuffer DROPPED — was the largest single GPU
+          // cost (~2× fragment shading on M1) and turned out to be
+          // unnecessary: the other z-fight fixes alone are sufficient.
+          //   - Ground.y at -0.5 (50cm gap below room floors)
+          //   - RoomFloor opaque (no transparent sort flicker)
+          //   - CAMERA.near 0.5 (5× linear depth precision improvement)
+          //   - Floor stack has 50cm of headroom in the depth buffer
+          // At distance 16 with near 0.5, linear depth precision is
+          // ~11cm — coarser than logarithmic, but the floor surfaces
+          // are now 50cm apart so it's plenty.
           gl={{
             antialias: true,
-            logarithmicDepthBuffer: true,
             powerPreference: 'high-performance',
           }}
         >

@@ -18,7 +18,7 @@ const doorEdge = GAP + 0.05; // horizontal wall z-offset from origin
 export const ROOMS: readonly RoomDef[] = [
   { id: 'myroom',  label: 'My Room',      center: { x: -half, z: -half }, door: { x: -half, z: -doorEdge }, color: '#8B5A2B',    accentColor: COLORS.pink },
   { id: 'product', label: 'Product Room', center: { x:  half, z: -half }, door: { x:  half, z: -doorEdge }, color: '#3b82f6',    accentColor: '#60a5fa'   },
-  { id: 'book',    label: 'Book Room',    center: { x: -half, z:  half }, door: { x: -half, z:  doorEdge }, color: COLORS.green, accentColor: '#4ade80'   },
+  { id: 'book',    label: 'Book Room',    center: { x: -half, z:  half }, door: { x: -half, z:  doorEdge }, color: '#9f1239',    accentColor: '#f43f5e'   },
   { id: 'idealab', label: 'Idea Lab',     center: { x:  half, z:  half }, door: { x:  half, z:  doorEdge }, color: COLORS.gold,  accentColor: '#fbbf24'   },
 ] as const;
 

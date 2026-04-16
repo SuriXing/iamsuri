@@ -4,40 +4,12 @@ import * as THREE from 'three';
 import { Edges } from '@react-three/drei';
 import { ROOM, GAP, FLOOR_Y } from '../constants';
 import { useWorldStore } from '../store/worldStore';
-import { makeRng } from '../util/rand';
 
 const HALL_COLOR = '#1e2233';
 const HALL_LEN = ROOM * 2 + GAP * 2 + 1;
 const HALL_WIDTH = GAP * 2;
 
-// Ceiling beam positions along the hallway Z axis (main axis).
-const BEAM_Z: ReadonlyArray<number> = [-4.5, -2.5, -0.5, 1.5, 3.5];
-// Crosshatch beams along X axis (cross-corridor).
-const BEAM_X: ReadonlyArray<number> = [-4.5, -2.5, 2.5, 4.5];
-
-// F3.21: per-beam color tint pool — mulberry32-seeded ±3% lightness jitter
-// breaks the "all 9 beams identical" silhouette. Hoisted to module scope so
-// tints are baked once and never re-allocate.
-const BEAM_BASE_HEX = '#3a2510';
-
-function buildBeamTints(count: number, seed: number): string[] {
-  const rng = makeRng(seed);
-  const base = new THREE.Color(BEAM_BASE_HEX);
-  const hsl = { h: 0, s: 0, l: 0 };
-  base.getHSL(hsl);
-  const out: string[] = new Array(count);
-  for (let i = 0; i < count; i++) {
-    // ±0.03 lightness delta = ~±3%
-    const dl = (rng() - 0.5) * 0.06;
-    const c = new THREE.Color();
-    c.setHSL(hsl.h, hsl.s, Math.max(0, Math.min(1, hsl.l + dl)));
-    out[i] = `#${c.getHexString()}`;
-  }
-  return out;
-}
-
-const BEAM_Z_TINTS: ReadonlyArray<string> = buildBeamTints(BEAM_Z.length, 0xb3a17);
-const BEAM_X_TINTS: ReadonlyArray<string> = buildBeamTints(BEAM_X.length, 0xb3a18);
+// Ceiling beams + tint pool deleted with the wood-blocks-in-corridor pass.
 
 interface PlantProps {
   x: number;
@@ -98,10 +70,8 @@ export function Hallway() {
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
-    // ----- Steam — position bob + a SLOW gentle opacity drift. The
-    //       earlier flicker came from 0.32 Hz ±43% pulse on alpha; this
-    //       is 0.16 Hz ±15% with phase offsets so it reads as drifting
-    //       wisps not blinking dots. Each cube has its own phase. -----
+    // ----- Steam — position bob ONLY. Opacity drift removed in the
+    //       zero-brightness-motion pass. -----
     const g = steamRef.current;
     if (g) {
       const children = g.children;
@@ -109,8 +79,6 @@ export function Hallway() {
       for (let i = 0; i < n; i++) {
         const child = children[i];
         child.position.y = STEAM_OFFSETS[i][1] + Math.sin(t * 2 + i) * 0.05;
-        const mat = (child as THREE.Mesh).material as THREE.MeshPhongMaterial;
-        mat.opacity = 0.25 + 0.15 * Math.sin(t * 1.0 + i * 1.7);
       }
     }
 
@@ -205,31 +173,9 @@ export function Hallway() {
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
 
-      {/* ----- CEILING BEAM TRIM (crosshatch planks along hallway axes) -----
-          F3.21: each beam pulls a per-instance tint from the mulberry32 pool
-          (BEAM_Z_TINTS / BEAM_X_TINTS) so the 9 beams no longer share one
-          identical color slab. ±3% lightness jitter, deterministic. */}
-      {/* Main beams along Z — span hallway width */}
-      {BEAM_Z.map((z, i) => (
-        <mesh key={`beamZ-${z}`} position={[0, 2.92, z]} castShadow>
-          <boxGeometry args={[HALL_WIDTH + 0.1, 0.1, 0.12]} />
-          <meshPhongMaterial color={BEAM_Z_TINTS[i]} flatShading />
-          <Edges color={edgeColor} lineWidth={1} />
-        </mesh>
-      ))}
-      {/* Cross beams along X — span cross-corridor width */}
-      {BEAM_X.map((x, i) => (
-        <mesh key={`beamX-${x}`} position={[x, 2.92, 0]} castShadow>
-          <boxGeometry args={[0.12, 0.1, HALL_WIDTH + 0.1]} />
-          <meshPhongMaterial color={BEAM_X_TINTS[i]} flatShading />
-          <Edges color={edgeColor} lineWidth={1} />
-        </mesh>
-      ))}
-      {/* Center cross-join cap (darker hub) */}
-      <mesh position={[0, 2.96, 0]}>
-        <boxGeometry args={[0.28, 0.04, 0.28]} />
-        <meshPhongMaterial color="#241608" flatShading />
-      </mesh>
+      {/* Ceiling beams + center hub deleted per user request — the
+          wood blocks hanging in the corridor were paired with the
+          (already-removed) HallwayLanterns. */}
 
       {/* F3.21: beam-dust mote — single tiny emissive cube floating below
           the cross-hub. Drifts on Y + opacity for a "shaft of dusty light"
@@ -256,19 +202,9 @@ export function Hallway() {
         <meshPhongMaterial color="#a0522d" flatShading />
       </mesh>
 
-      {/* Ceiling light strips (cross pattern) */}
-      {[-3, 0, 3].map((z) => (
-        <mesh key={`hz-${z}`} position={[0, 2.8, z]}>
-          <boxGeometry args={[0.6, 0.04, 0.1]} />
-          <meshPhongMaterial color="#ffd700" emissive="#ffd700" emissiveIntensity={0.8} flatShading />
-        </mesh>
-      ))}
-      {[-3, 0, 3].map((x) => (
-        <mesh key={`vx-${x}`} position={[x, 2.8, 0]}>
-          <boxGeometry args={[0.1, 0.04, 0.6]} />
-          <meshPhongMaterial color="#ffd700" emissive="#ffd700" emissiveIntensity={0.8} flatShading />
-        </mesh>
-      ))}
+      {/* Ceiling light strips (gold cross pattern) deleted per user
+          request — they were the "white plus signs hanging on the
+          ceiling" once the lanterns + beams were removed. */}
     </group>
   );
 }

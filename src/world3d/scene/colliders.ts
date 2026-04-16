@@ -13,6 +13,12 @@ export interface Aabb {
   // Half extents (XZ only — colliders are full height along Y)
   hx: number;
   hz: number;
+  /** When true, the camera wall-clip sweep IGNORES this collider.
+   *  Used for furniture (couches, desks, beds) — the player should
+   *  collide against them but the camera doesn't need to dodge them
+   *  because the camera is high up and far away in overview mode,
+   *  and the player is in FP mode when actually inside a room. */
+  playerOnly?: boolean;
 }
 
 const store: Map<string, Aabb> = new Map();
@@ -30,8 +36,21 @@ export function listColliders(): Iterable<Aabb> {
 }
 
 /**
+ * Iterator over WALL-only colliders (excludes furniture flagged playerOnly).
+ * Used by the camera wall-clip sweep so furniture doesn't crowd the camera
+ * when the player is in the corridor near a room.
+ */
+export function listWallColliders(): Iterable<Aabb> {
+  const out: Aabb[] = [];
+  for (const box of store.values()) {
+    if (!box.playerOnly) out.push(box);
+  }
+  return out;
+}
+
+/**
  * Test if a point `(px, pz)` with given `radius` overlaps any collider.
- * Returns the first overlapping collider, or `null`.
+ * Returns the first overlapping collider, or `null`. Includes furniture.
  */
 export function hitTest(px: number, pz: number, radius: number): Aabb | null {
   for (const box of store.values()) {

@@ -3,6 +3,7 @@ import { Edges } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
+import { registerCollider, unregisterCollider } from '../colliders';
 import { FLOOR_Y } from '../../constants';
 import { IDEA_LAB_CONTENT } from '../../../data/ideaLab';
 import { useWorldStore } from '../../store/worldStore';
@@ -110,8 +111,6 @@ const BULB_FLOAT_SPEED = 1.2;
 // superposition on the shared scene read as flicker. Amplitudes are now
 // <=5% of base, frequencies aligned to a slow 0.6 Hz for cohesion.
 const BULB_PULSE_BASE = 2.8;
-const BULB_PULSE_AMPLITUDE = 0.14;
-const BULB_PULSE_SPEED = 0.6;
 // Flicker-fix pass #3: 18 rad/s (~2.86 Hz) vibration at ±0.008m was a
 // high-frequency position shake that read as mesh flicker even though
 // it's position not brightness. Slowed to 0.6 Hz breath, same amplitude.
@@ -120,11 +119,7 @@ const PROTOTYPE_VIBRATE_SPEED = 0.6;
 const HANGING_TOOL_SWING_AMPLITUDE = 0.06;
 const HANGING_TOOL_SWING_SPEED = 1.3;
 const SOLDER_TIP_PULSE_BASE = 1.6;
-const SOLDER_TIP_PULSE_AMPLITUDE = 0.08;
-const SOLDER_TIP_PULSE_SPEED = 0.6;
 const ACCENT_LIGHT_BASE = 0.75;
-const ACCENT_LIGHT_AMPLITUDE = 0.04;
-const ACCENT_LIGHT_SPEED = 0.6;
 
 interface BoardLine {
   c: string;
@@ -211,20 +206,16 @@ export function IdeaLab() {
   useFrame(({ clock }, delta) => {
     const t = clock.getElapsedTime();
 
-    // Floating idea bulb (vertical bob + pulse).
+    // Zero-brightness-motion: bulb position bob kept, emissive +
+    // light-intensity pulses removed.
     const bulb = bulbRef.current;
     const yOffset = Math.sin(t * BULB_FLOAT_SPEED) * BULB_FLOAT_AMPLITUDE;
     if (bulb) {
       bulb.position.y = 2.5 + yOffset;
-      const mat = bulb.material as THREE.MeshPhongMaterial;
-      mat.emissiveIntensity = BULB_PULSE_BASE + Math.sin(t * BULB_PULSE_SPEED) * BULB_PULSE_AMPLITUDE;
     }
     const bulbLight = bulbLightRef.current;
     if (bulbLight) {
       bulbLight.position.y = 2.5 + yOffset;
-      // Flicker-fix pass #3: ±25% was visible breathing bordering on
-      // flicker. ±5% keeps it alive without pumping the scene.
-      bulbLight.intensity = 0.6 + Math.sin(t * BULB_PULSE_SPEED) * 0.03;
     }
 
     // Gears — counter-rotating.
@@ -248,16 +239,8 @@ export function IdeaLab() {
       hang.rotation.z = Math.sin(t * HANGING_TOOL_SWING_SPEED) * HANGING_TOOL_SWING_AMPLITUDE;
     }
 
-    // Soldering iron tip glow pulse.
-    const tip = solderTipRef.current;
-    if (tip) {
-      const mat = tip.material as THREE.MeshPhongMaterial;
-      mat.emissiveIntensity = SOLDER_TIP_PULSE_BASE + Math.sin(t * SOLDER_TIP_PULSE_SPEED) * SOLDER_TIP_PULSE_AMPLITUDE;
-    }
-
-    // Gold/copper accent — phase 3π/2 offset (last quadrant of cycle).
-    const al = accentLightRef.current;
-    if (al) al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED + 4.71) * ACCENT_LIGHT_AMPLITUDE;
+    // Zero-brightness-motion: solder tip emissive pulse + gold accent
+    // light intensity pulse both removed.
 
     // Ambient sparks — pure Y drift with wraparound, zero-alloc.
     // Two sub-buffers rendered by two InstancedMesh components so each
@@ -320,6 +303,16 @@ export function IdeaLab() {
   const pegboardX = ox;
   const pegboardY = 1.45;
   const pegboardZ = oz + 2.0;
+
+  // Furniture colliders (player-only).
+  useEffect(() => {
+    const items = [
+      { id: 'il-bench', x: benchX, z: benchZ, hx: 1.3,  hz: 0.5 },
+      { id: 'il-stool', x: ox + 1.5, z: oz - 1.2, hx: 0.25, hz: 0.25 },
+    ] as const;
+    for (const it of items) registerCollider({ ...it, playerOnly: true });
+    return () => { for (const it of items) unregisterCollider(it.id); };
+  }, [ox, oz, benchX, benchZ]);
 
   return (
     <group>

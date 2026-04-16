@@ -1,4 +1,5 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { registerCollider, unregisterCollider } from '../colliders';
 import { Edges } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -34,24 +35,14 @@ const DESK_LEGS: ReadonlyArray<readonly [number, number]> = [
 ];
 
 // ---- Micro-anim constants (module-scope = zero per-frame alloc) ----
-// Flicker-fix pass #3: every emissive mutation in this room is now clamped
-// to the shared slow 0.6 Hz carrier with ≤5% amplitude. Previously the
-// power LED was a discrete binary blink at 4 rad/s (1.8..4.5 = +150%) and
-// the 6 rack LEDs phased ±1.5 at 3 rad/s — both dominated the visible
-// luminance. They now breathe instead of flicker.
+// Zero-brightness-motion pass: power LED + rack LED + accent light
+// pulse animations all removed. Only physical motion (fan rotation +
+// scanline position bob) remains.
 const FAN_SPEED = 6.0;
 const SCANLINE_BASE_Y = 1.88;
 const SCANLINE_AMPLITUDE = 0.22;
 const SCANLINE_SPEED = 2.3;
-const LED_PULSE_BASE = 2.5;
-const LED_PULSE_AMPLITUDE = 0.12;
-const LED_PULSE_SPEED = 0.6;
-const RACK_LED_BASE = 2.0;
-const RACK_LED_AMPLITUDE = 0.1;
-const RACK_LED_SPEED = 0.6;
 const ACCENT_LIGHT_BASE = 0.7;
-const ACCENT_LIGHT_AMPLITUDE = 0.035;
-const ACCENT_LIGHT_SPEED = 0.6;
 
 // Deterministic seed for band tints.
 const BAND_SEED = 0xc0de01;
@@ -159,37 +150,15 @@ export function ProductRoom() {
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-
-    // Power LED slow breath — no more binary blink.
-    const ledPulse = LED_PULSE_BASE + Math.sin(t * LED_PULSE_SPEED) * LED_PULSE_AMPLITUDE;
-    const d1 = dot1Ref.current;
-    if (d1) (d1.material as THREE.MeshPhongMaterial).emissiveIntensity = ledPulse;
-    const d2 = dot2Ref.current;
-    if (d2) (d2.material as THREE.MeshPhongMaterial).emissiveIntensity = ledPulse;
-
-    // Server rack LEDs — slow breath with tiny phase offsets so they're
-    // not all in perfect sync, but never more than ±5% from base.
-    const leds = rackLedRefs.current;
-    for (let i = 0; i < leds.length; i++) {
-      const m = leds[i];
-      if (!m) continue;
-      const mat = m.material as THREE.MeshPhongMaterial;
-      mat.emissiveIntensity = RACK_LED_BASE + Math.sin(t * RACK_LED_SPEED + i * 0.3) * RACK_LED_AMPLITUDE;
-    }
-
-    // Fan rotation (spins around Z).
+    // Zero-brightness-motion pass: power LED + rack LED + accent light
+    // intensity mutations all removed. Only physical motion remains
+    // (fan rotation + scanline position bob).
     const fan = fanRef.current;
     if (fan) fan.rotation.z = t * FAN_SPEED;
-
-    // Monitor scanline bars — vertical sweep.
     const b1 = bar1Ref.current;
     if (b1) b1.position.y = SCANLINE_BASE_Y + Math.sin(t * SCANLINE_SPEED) * SCANLINE_AMPLITUDE;
     const b2 = bar2Ref.current;
     if (b2) b2.position.y = SCANLINE_BASE_Y + Math.sin(t * SCANLINE_SPEED + 1.3) * SCANLINE_AMPLITUDE;
-
-    // Cyan accent — phase π/2 offset so it never peaks with MyRoom (0).
-    const al = accentLightRef.current;
-    if (al) al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED + 1.57) * ACCENT_LIGHT_AMPLITUDE;
   });
 
   const leftX = ox - 0.95;
@@ -207,6 +176,17 @@ export function ProductRoom() {
   // Crate stack location (right back).
   const crateX = ox + 1.55;
   const crateZ = oz - 1.55;
+
+  // Furniture colliders (player-only).
+  useEffect(() => {
+    const items = [
+      { id: 'pr-desk',  x: deskX,  z: deskZ,  hx: 0.85, hz: 0.45 },
+      { id: 'pr-rack',  x: rackX,  z: rackZ,  hx: 0.4,  hz: 0.4  },
+      { id: 'pr-crate', x: crateX, z: crateZ, hx: 0.45, hz: 0.45 },
+    ] as const;
+    for (const it of items) registerCollider({ ...it, playerOnly: true });
+    return () => { for (const it of items) unregisterCollider(it.id); };
+  }, [deskX, deskZ, rackX, rackZ, crateX, crateZ]);
 
   return (
     <group>

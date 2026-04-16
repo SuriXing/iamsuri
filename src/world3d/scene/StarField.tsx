@@ -49,6 +49,9 @@ const STAR_BUFFERS: StarBuffers = buildStarBuffers();
 export function StarField() {
   const matRef = useRef<THREE.PointsMaterial>(null);
   const colorAttrRef = useRef<THREE.BufferAttribute | null>(null);
+  // One-shot bake flag — color attribute is written once at first frame
+  // and never touched again. Per the zero-brightness-motion pass.
+  const starsBakedRef = useRef(false);
   const theme = useWorldStore((s) => s.theme);
 
   // Single shared geometry — owned per-component to play nice with r3f reconciliation.
@@ -71,7 +74,7 @@ export function StarField() {
   // Per-star twinkle: each star has an independent phase offset so the field
   // shimmers organically instead of pulsing in unison. Writes directly into
   // the color attribute's underlying Float32Array — zero allocations.
-  useFrame(({ clock }) => {
+  useFrame(() => {
     const m = matRef.current;
     if (!m) return;
     if (theme === 'light') {
@@ -83,22 +86,22 @@ export function StarField() {
     if (!attr) return;
     const arr = attr.array as Float32Array;
     const srcColors = STAR_BUFFERS.colors;
-    const phases = STAR_BUFFERS.phase;
     const baseOp = STAR_BUFFERS.baseOpacity;
-    const t = clock.getElapsedTime();
-    for (let i = 0; i < STAR_COUNT; i++) {
-      // Per-star shimmer — feel-pass tune: 0.70..1.0 range (±15%) with
-      // varied per-star speeds (0.5–0.9 rad/s) so 500 stars never peak
-      // in lockstep. Slow enough to read as twinkle, not flicker.
-      const speed = 0.5 + (i % 5) * 0.1;
-      const shimmer = 0.70 + 0.30 * (0.5 + 0.5 * Math.sin(t * speed + phases[i]));
-      const op = baseOp[i] * shimmer;
-      const i3 = i * 3;
-      arr[i3 + 0] = srcColors[i3 + 0] * op;
-      arr[i3 + 1] = srcColors[i3 + 1] * op;
-      arr[i3 + 2] = srcColors[i3 + 2] * op;
+    // Zero-brightness-motion pass: per-star shimmer disabled. 500 stars
+    // were the most-visible "flicker" source even at slow speeds. Stars
+    // now render at their static base opacity. The color attribute is
+    // initialized once on first frame and never updated again.
+    if (!starsBakedRef.current) {
+      for (let i = 0; i < STAR_COUNT; i++) {
+        const op = baseOp[i];
+        const i3 = i * 3;
+        arr[i3 + 0] = srcColors[i3 + 0] * op;
+        arr[i3 + 1] = srcColors[i3 + 1] * op;
+        arr[i3 + 2] = srcColors[i3 + 2] * op;
+      }
+      attr.needsUpdate = true;
+      starsBakedRef.current = true;
     }
-    attr.needsUpdate = true;
   });
 
   // Skip rendering entirely in light mode — avoids the draw call too.

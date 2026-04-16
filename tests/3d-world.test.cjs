@@ -141,19 +141,27 @@ test.describe('3D World Landing Page', () => {
     // Uses setCharPos to teleport to the My Room doorway (more reliable
     // than walking, but still goes through the real keyboard path).
 
-    // Clear door unlocks so we test the locked-door path
-    await page.evaluate(() => localStorage.removeItem('suri-3d-doors-unlocked-v2'));
+    // Clear door unlocks AND set the intro-skip flag BEFORE page load
+    // so the dialogue overlay never mounts at all. addInitScript runs
+    // in every page context (including reloads) before any page JS.
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.removeItem('suri-3d-doors-unlocked-v2');
+        window.sessionStorage.setItem('suri-intro-played', '1');
+      } catch (_) { /* private mode etc. */ }
+    });
     await page.reload();
     await page.waitForTimeout(3000);
 
-    // Skip the intro dialogue so keyboard input isn't swallowed by the
-    // "freeze player until intro finishes" gate.
+    // Belt-and-braces: also set introPhase to follow at runtime in case
+    // the addInitScript flag wasn't applied for some reason.
     await page.evaluate(() => window.__worldStore.getState().setIntroPhase('follow'));
-    await page.waitForTimeout(100);
-
-    // Focus the canvas so keys go to the game
-    await page.click('canvas', { position: { x: 640, y: 360 } });
     await page.waitForTimeout(200);
+
+    // No canvas click — page.keyboard.press() dispatches to the window
+    // event loop, not to a focused element. The previous canvas click
+    // was a flake source: any HUD div positioned near canvas center
+    // (speech bubble, etc.) intercepted the click.
 
     // Teleport character to the My Room door (top-left room center is
     // ~(-3.7, -3.7); doorway is around (-3.7, -1.8) on the +z side).

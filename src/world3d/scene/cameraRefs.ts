@@ -19,16 +19,24 @@ export interface MutableNumberRef {
   current: number;
 }
 
-// Default pitch ≈ 63° above horizontal. Iterated on user feedback:
-// 45° (π/4) read too close to horizon, 50° (0.87 rad) made the character
-// look squashed/foreshortened, 63° (1.1 rad) gives a clearer overhead
-// walking-sim read without being fully top-down. Camera sits ~5.34 above
-// and ~2.72 behind the character at FOLLOW.distance = 6.
+// Default pitch ≈ 63° above horizontal — overhead walking-sim read.
 const DEFAULT_PITCH = 1.1;
 
-export const followCamYawRef: MutableNumberRef = { current: 0 };
+// Default yaw = π (180°). CRITICAL FIX for the "rooms swap places" bug:
+// the intro camera sits at world (0, 20, +14) — on the +Z side of the
+// world, looking toward -Z. With yaw=0 the follow camera math
+// `charPos.z - cos(yaw)*dist` puts the camera at z = -dist (the -Z
+// side, OPPOSITE of intro). So when the intro tween finishes, the
+// camera literally orbits 180° around the character, mirror-flipping
+// every room's screen position. With yaw=π, `charPos.z - cos(π)*dist
+// = charPos.z + dist`, putting the camera on the +Z side — the SAME
+// side as the intro camera. World +X = screen-right consistently
+// from intro through follow, no flip.
+const DEFAULT_YAW = Math.PI;
+
+export const followCamYawRef: MutableNumberRef = { current: DEFAULT_YAW };
 export const followCamPitchRef: MutableNumberRef = { current: DEFAULT_PITCH };
-export const targetCamYawRef: MutableNumberRef = { current: 0 };
+export const targetCamYawRef: MutableNumberRef = { current: DEFAULT_YAW };
 export const targetCamPitchRef: MutableNumberRef = { current: DEFAULT_PITCH };
 
 export const FOLLOW_PITCH_MIN = 0.25;

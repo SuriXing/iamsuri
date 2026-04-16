@@ -114,44 +114,16 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
     return undefined;
   }, [unlocked, roomId, x, z, horizontal]);
 
-  useFrame(({ clock }, delta) => {
+  useFrame((_state, delta) => {
+    // Door hinge swing — position/rotation animation only. ALL emissive
+    // and scale pulses removed in the zero-brightness-motion pass:
+    // 4 doors × locks + lanterns all pulsing was contributing to user
+    // perception of "flicker" even at ±5% slow. Now the door is a static
+    // physical object that opens and closes — that's it.
     const target = unlocked ? DOOR.openAngle : 0;
-    // Framerate-independent lerp: factor = 1 - exp(-k * delta) where k = hingeLerp * 60.
     const factor = 1 - Math.exp(-DOOR.hingeLerp * 60 * delta);
     angleRef.current += (target - angleRef.current) * factor;
     if (hingeRef.current) hingeRef.current.rotation.y = angleRef.current;
-    const t = clock.getElapsedTime();
-    // Post-ship flicker fix: 4 doors × (lock + lantern) pulsing at 2.5–3 Hz
-    // with >5% emissive swings was dominating the visible luminance. All
-    // door pulses now share a single slow 0.6 Hz carrier and ≤3% scale /
-    // ≤2% emissive swing so their superposition on the scene is subtle.
-    const slowWave = Math.sin(t * 0.6);
-    if (!unlocked) {
-      const pulse = 2.5 + slowWave * 0.05;
-      const s = 1 + slowWave * 0.02;
-      if (lockGroupRef.current) {
-        lockGroupRef.current.scale.x = s;
-        lockGroupRef.current.scale.y = s;
-        lockGroupRef.current.scale.z = s;
-      }
-      if (lockRef.current) {
-        (lockRef.current.material as THREE.MeshPhongMaterial).emissiveIntensity = pulse;
-      }
-      if (lockShackleRef.current) {
-        (lockShackleRef.current.material as THREE.MeshPhongMaterial).emissiveIntensity = pulse;
-      }
-    }
-    if (lanternGroupRef.current) {
-      const s = 1 + slowWave * 0.02;
-      lanternGroupRef.current.scale.x = s;
-      lanternGroupRef.current.scale.y = s;
-      lanternGroupRef.current.scale.z = s;
-    }
-    if (lanternBodyRef.current) {
-      const base = unlocked ? 2.8 : 1.6;
-      (lanternBodyRef.current.material as THREE.MeshPhongMaterial).emissiveIntensity =
-        base + slowWave * 0.06;
-    }
   });
 
   const yMid = DOOR.frameHeight / 2;

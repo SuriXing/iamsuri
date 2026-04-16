@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { useWorldStore } from '../store/worldStore';
-import { usePointerLock } from '../hooks/usePointerLock';
 import { ROOMS } from '../data/rooms';
 import type { RoomId } from '../data/rooms';
 
@@ -16,6 +15,11 @@ const ROOM_NUMBER_KEYS: Record<string, RoomId> = {
 // hallway (walls block them from the room center). 1.6 is generous enough
 // to cover the corridor in front of each door without overlapping siblings.
 const PROXIMITY_THRESHOLD = 1.6;
+// Auto-enter: when the character walks INSIDE a room (past the doorway,
+// closer to the room center than to the doorway), automatically trigger
+// the room first-person view. The user wanted "walk into a room → camera
+// switches to first perspective" without having to press E.
+const AUTO_ENTER_DIST = 2.2;
 
 /**
  * Centralized keyboard handler + proximity detection for the overworld.
@@ -26,12 +30,12 @@ const PROXIMITY_THRESHOLD = 1.6;
  * - E in FP mode → open focused interactable
  * - Escape → close modal, otherwise exit room to overview
  *
- * Pointer lock for the canvas is wired here too — kept colocated so the
- * canvas element comes from the same `useThree` instance.
+ * Pointer lock used to be wired here — removed because we now use
+ * MouseOrbitController for click-and-drag FP look. Pointer lock + drag
+ * are two competing paradigms; drag-to-look is the right one for a
+ * portfolio site (cursor stays visible, modals/links remain clickable).
  */
 export function InteractionManager(): null {
-  const { gl } = useThree();
-  usePointerLock(gl.domElement);
 
   // ── Keyboard ────────────────────────────────────────────
   useEffect(() => {
@@ -70,9 +74,13 @@ export function InteractionManager(): null {
       }
 
       if (s.viewMode === 'overview' && !s.fpActive) {
-        // U: unlock the nearby door
-        if (key === 'u' && s.nearbyRoom && !s.unlockedDoors.has(s.nearbyRoom)) {
-          s.unlockDoor(s.nearbyRoom);
+        // U: toggle the nearby door — unlock if locked, close if unlocked.
+        if (key === 'u' && s.nearbyRoom) {
+          if (s.unlockedDoors.has(s.nearbyRoom)) {
+            s.lockDoor(s.nearbyRoom);
+          } else {
+            s.unlockDoor(s.nearbyRoom);
+          }
           return;
         }
         // E / Enter: enter nearby room (if unlocked)
@@ -94,26 +102,41 @@ export function InteractionManager(): null {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  // ── Modal: click-anywhere closes it ─────────────────────
+  // ── Modal: click-outside closes it ──────────────────────
+  // Closes the modal on any click that DIDN'T originate inside the
+  // modal itself or on the canvas. Canvas clicks are excluded because
+  // R3F's onClick on a trophy mesh still bubbles a native click event
+  // up to document — that was closing the modal in the same click that
+  // opened it. Canvas clicks now fall through silently; modal closes
+  // via the X button, ESC, or a click on chrome outside the modal.
   useEffect(() => {
     const onClick = (e: MouseEvent): void => {
       const s = useWorldStore.getState();
       if (!s.modalInteractable) return;
       const target = e.target as HTMLElement | null;
-      if (target && target.id === 'interact-link') return;
+      if (!target) return;
+      if (target.id === 'interact-link') return;
+      if (target.tagName === 'CANVAS') return;
+      // Don't close if the click was inside the modal (e.g. clicking
+      // the modal body to read).
+      if (target.closest('#interact-modal')) return;
       s.closeModal();
     };
     document.addEventListener('click', onClick);
     return () => document.removeEventListener('click', onClick);
   }, []);
 
-  // ── Proximity: nearest room (overview only) ─────────────
+  // ── Proximity: nearest door (for the open/close hint) AND
+  //     auto-enter detection (walk into the room interior). Both
+  //     run only in overview mode.
   useFrame(() => {
     const s = useWorldStore.getState();
     if (s.viewMode !== 'overview' || s.fpActive) {
       if (s.nearbyRoom !== null) s.setNearbyRoom(null);
       return;
     }
+
+    // Door proximity for the open/close hint.
     let nearest: RoomId | null = null;
     let nearestDist = PROXIMITY_THRESHOLD;
     for (const r of ROOMS) {
@@ -126,6 +149,20 @@ export function InteractionManager(): null {
       }
     }
     if (nearest !== s.nearbyRoom) s.setNearbyRoom(nearest);
+
+    // Auto-enter: if character is well INSIDE a room (closer to the
+    // room center than the doorway, AND past the auto-enter threshold),
+    // automatically trigger the room first-person view. Door must be
+    // unlocked first — locked doors block walking-in via collision.
+    for (const r of ROOMS) {
+      const dx = s.charPos.x - r.center.x;
+      const dz = s.charPos.z - r.center.z;
+      const d = Math.hypot(dx, dz);
+      if (d < AUTO_ENTER_DIST && s.unlockedDoors.has(r.id)) {
+        s.setViewMode(r.id);
+        return;
+      }
+    }
   });
 
   return null;

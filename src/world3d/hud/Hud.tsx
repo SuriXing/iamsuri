@@ -6,6 +6,7 @@ import { ExitHint } from './ExitHint';
 import { IntroHint } from './IntroHint';
 import { InteractModal } from './InteractModal';
 import { InteractTooltip } from './InteractTooltip';
+import { RoomEntryToast } from './RoomEntryToast';
 import { RoomOverlays } from './RoomOverlays';
 import { ThemeToggle } from './ThemeToggle';
 import { ViewSwitcher } from './ViewSwitcher';
@@ -33,6 +34,7 @@ export function Hud() {
       <Crosshair />
       <InteractTooltip />
       <InteractModal />
+      <RoomEntryToast />
       <IntroHint />
       <Dialogue />
       <ThemeToggle />

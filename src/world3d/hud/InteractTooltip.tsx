@@ -8,7 +8,7 @@ export function InteractTooltip() {
 
   return (
     <div id="interact-tooltip" className={'interact-tooltip' + (active ? ' active' : '')}>
-      Press <kbd>E</kbd> to interact
+      Click to read &middot; or press <kbd>E</kbd>
     </div>
   );
 }

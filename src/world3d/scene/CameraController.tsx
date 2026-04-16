@@ -10,18 +10,27 @@ import {
   targetCamYawRef,
   targetCamPitchRef,
 } from './cameraRefs';
-import { listColliders } from './colliders';
+import { listWallColliders } from './colliders';
 
 // Room-entry / room-exit tween duration.
 const ROOM_TWEEN_DURATION = 1.0;
 
-// Camera wall-clip pushback: minimum distance the camera must stand in
-// front of the character. If a wall would put the camera further than
-// this, pull the camera to max-out here instead.
-const CAMERA_MIN_DIST = 1.6;
-// Radius of the camera "puck" used to push it off wall surfaces so the
-// near plane doesn't slice into the wall geometry.
-const CAMERA_PUSHBACK = 0.35;
+// Minimum camera distance from character. Low enough that the wall-
+// clip can pull the camera into a 5×5 room footprint.
+const CAMERA_MIN_DIST = 3.0;
+// Wall pushback margin — must be SMALLER than the player collider
+// radius (0.28) so the player can never stand inside the camera's
+// expanded wall region (which would make the slab-method sweep skip
+// the wall as "origin already inside" and let the camera through).
+// 0.25 is just under the player radius so the slab math always sees
+// the character as outside any expanded wall.
+const CAMERA_PUSHBACK = 0.25;
+// Auto-yaw-drift: speed at which the camera target yaw lerps toward
+// the character's facing direction while walking. 0 disables. ~0.6
+// rad/s makes the camera "follow your direction" over ~2s without
+// fighting active mouse drag (drag updates targetCamYawRef directly,
+// overriding this drift).
+const AUTO_YAW_DRIFT = 0.6;
 
 // Shared scratch vectors — avoid per-frame allocation in useFrame.
 const scratchPos = new THREE.Vector3();
@@ -32,10 +41,10 @@ const scratchLook = new THREE.Vector3();
  * position. Returns a clamped distance (0..requestedDist) — whatever
  * part of the sweep is free of wall colliders. Zero per-frame alloc.
  *
- * Uses the same AABB collider registry that PlayerController sweeps
- * against, so camera + character share a single source of truth for
- * "wall" geometry. Character is at (cx, cz), camera's raw placement is
- * (tx, tz) at `dist` units out along the sweep direction.
+ * Perf pass: previous implementation marched 0.2m steps and rescanned
+ * every collider per step (O(steps × colliders) ≈ 65 × 12 = 780
+ * checks/frame). Now uses the slab-method line-vs-AABB test for each
+ * collider exactly once — O(colliders) ≈ 12 checks/frame, 65× faster.
  */
 function sweepCamera(
   cx: number,
@@ -50,24 +59,66 @@ function sweepCamera(
   if (len < 1e-4) return dist;
   const nx = dx / len;
   const nz = dz / len;
-  // March in small steps from character to target, stopping at the
-  // first collider hit. Step size ~0.2m is finer than any wall width.
-  const step = 0.2;
-  let traveled = 0;
-  while (traveled < dist) {
-    const px = cx + nx * traveled;
-    const pz = cz + nz * traveled;
-    for (const box of listColliders()) {
+  // For each AABB (expanded by CAMERA_PUSHBACK), find the parametric t
+  // along the ray (cx+nx*t, cz+nz*t) where it enters the box. Take the
+  // smallest valid t across all colliders.
+  let nearest = dist;
+  for (const box of listWallColliders()) {
+    const minX = box.x - box.hx - CAMERA_PUSHBACK;
+    const maxX = box.x + box.hx + CAMERA_PUSHBACK;
+    const minZ = box.z - box.hz - CAMERA_PUSHBACK;
+    const maxZ = box.z + box.hz + CAMERA_PUSHBACK;
+    // Slab method: compute t-values for entering and exiting each axis.
+    // If the ray is parallel to an axis (n* = 0), the origin must already
+    // be inside that slab; otherwise the line never crosses it.
+    let tEnter = 0;
+    let tExit = nearest;
+    if (Math.abs(nx) > 1e-6) {
+      const t1 = (minX - cx) / nx;
+      const t2 = (maxX - cx) / nx;
+      const tMin = t1 < t2 ? t1 : t2;
+      const tMax = t1 < t2 ? t2 : t1;
+      if (tMin > tEnter) tEnter = tMin;
+      if (tMax < tExit) tExit = tMax;
+    } else if (cx < minX || cx > maxX) {
+      continue; // ray parallel to X but origin outside slab → no hit
+    }
+    if (Math.abs(nz) > 1e-6) {
+      const t1 = (minZ - cz) / nz;
+      const t2 = (maxZ - cz) / nz;
+      const tMin = t1 < t2 ? t1 : t2;
+      const tMax = t1 < t2 ? t2 : t1;
+      if (tMin > tEnter) tEnter = tMin;
+      if (tMax < tExit) tExit = tMax;
+    } else if (cz < minZ || cz > maxZ) {
+      continue;
+    }
+    if (tEnter < tExit && tEnter > 0 && tEnter < nearest) {
+      nearest = tEnter;
+    }
+  }
+  // Belt-and-braces: walk back from the resolved distance toward the
+  // character if the candidate camera position is still INSIDE any
+  // expanded wall. Catches edge cases where slab math misses (e.g.
+  // character glancing past a wall corner). Step back in 0.5m chunks
+  // until the camera is in free space or we hit CAMERA_MIN_DIST.
+  let safe = nearest;
+  while (safe > CAMERA_MIN_DIST) {
+    const px = cx + nx * safe;
+    const pz = cz + nz * safe;
+    let inside = false;
+    for (const box of listWallColliders()) {
       const ddx = Math.abs(px - box.x) - (box.hx + CAMERA_PUSHBACK);
       const ddz = Math.abs(pz - box.z) - (box.hz + CAMERA_PUSHBACK);
       if (ddx < 0 && ddz < 0) {
-        // Hit — return the distance just before the collider.
-        return Math.max(CAMERA_MIN_DIST, traveled - step);
+        inside = true;
+        break;
       }
     }
-    traveled += step;
+    if (!inside) break;
+    safe -= 0.5;
   }
-  return dist;
+  return Math.max(CAMERA_MIN_DIST, safe);
 }
 
 interface TweenState {
@@ -196,6 +247,12 @@ export function CameraController(): null {
 
     // ── First-person inside a room ───────────────────────────
     if (s.fpActive) {
+      // Even wider FOV inside rooms — was 78°, still felt squashed.
+      // 95° opens the room view considerably (typical "wide" FPS FOV).
+      if (camera instanceof THREE.PerspectiveCamera && camera.fov !== 95) {
+        camera.fov = 95;
+        camera.updateProjectionMatrix();
+      }
       const { charPos, fpYaw, fpPitch } = s;
       camera.position.set(charPos.x, FP.eyeHeight, charPos.z);
       const cosP = Math.cos(fpPitch);
@@ -205,6 +262,11 @@ export function CameraController(): null {
       tw.currentLook.set(lookX, lookY, lookZ);
       camera.lookAt(lookX, lookY, lookZ);
       return;
+    }
+    // Restore default FOV outside FP mode (so overview stays at 50°).
+    if (camera instanceof THREE.PerspectiveCamera && camera.fov !== CAMERA.fov) {
+      camera.fov = CAMERA.fov;
+      camera.updateProjectionMatrix();
     }
 
     // ── Intro: static establishing shot ─────────────────────
@@ -292,8 +354,25 @@ export function CameraController(): null {
     // camera-relative WASD movement, so the controls always feel right
     // relative to the current view.
     {
-      const { charPos } = s;
-      // Smooth lerp toward the mouse-driven targets.
+      const { charPos, charFacing } = s;
+
+      // Auto-yaw-drift: gently nudge the target camera yaw to put the
+      // character's "back" facing the camera (camera looks the same way
+      // the character is walking). Slow drift — won't fight active mouse
+      // drag because the drift is applied to targetCamYawRef and a real
+      // drag would have just updated targetCamYawRef to a higher rate.
+      // Default DEFAULT_YAW=π puts the camera on the +Z side, so the
+      // ideal yaw is `charFacing + π` (camera behind character relative
+      // to its facing direction).
+      const desiredYaw = charFacing + Math.PI;
+      const driftFactor = 1 - Math.exp(-AUTO_YAW_DRIFT * delta);
+      targetCamYawRef.current = lerpAngle(
+        targetCamYawRef.current,
+        desiredYaw,
+        driftFactor,
+      );
+
+      // Smooth lerp toward the (now drifted + possibly drag-updated) targets.
       const factor = 1 - Math.exp(-FOLLOW.yawLerp * delta);
       followCamYawRef.current = lerpAngle(
         followCamYawRef.current,

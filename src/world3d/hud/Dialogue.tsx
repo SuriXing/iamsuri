@@ -17,11 +17,15 @@ export function Dialogue() {
 
   useEffect(() => {
     if (!visible) return undefined;
+    // Accept ANY key to advance — was Enter/Space only, which left
+    // arrow-key presses falling silently into the void during the intro
+    // dialogue. Users hit Left and the avatar didn't move for ~5 seconds
+    // because the dialogue was eating + ignoring the keypress.
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        advance();
-      }
+      // Skip pure modifier presses so Cmd-tabbing doesn't advance.
+      if (e.key === 'Meta' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Shift') return;
+      e.preventDefault();
+      advance();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

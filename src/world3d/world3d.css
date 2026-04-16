@@ -259,45 +259,76 @@
   background: rgba(20, 23, 34, 0.96);
   backdrop-filter: blur(12px);
   border: 2px solid rgba(255, 215, 0, 0.5);
-  border-radius: 10px;
-  padding: 32px 40px;
-  max-width: 420px;
+  border-radius: 12px;
+  padding: 48px 56px 64px;
+  width: min(720px, 92vw);
+  max-height: 80vh;
+  overflow-y: auto;
   color: #e5e7eb;
   font-family: 'Courier New', monospace;
-  box-shadow: 0 0 40px rgba(255, 215, 0, 0.2), 0 10px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 50px rgba(255, 215, 0, 0.25), 0 12px 50px rgba(0, 0, 0, 0.6);
 }
 .interact-modal.active { display: block; }
 .interact-modal h3 {
   color: #ffd700;
-  font-size: 1.3rem;
-  margin-bottom: 16px;
+  font-size: 1.7rem;
+  margin-bottom: 24px;
   letter-spacing: 2px;
   text-transform: uppercase;
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+  padding-right: 60px;
 }
 .interact-modal p {
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 1.05rem;
+  line-height: 1.7;
   margin-bottom: 16px;
-  color: #ccc;
+  color: #ddd;
+  white-space: pre-wrap;
 }
 .interact-modal a {
   display: inline-block;
   color: #ffd700;
   background: rgba(255, 215, 0, 0.1);
-  padding: 8px 16px;
+  padding: 10px 20px;
   border: 1px solid rgba(255, 215, 0, 0.4);
   border-radius: 4px;
   text-decoration: none;
-  margin-top: 8px;
+  margin-top: 12px;
+  font-size: 1rem;
 }
 .interact-modal a:hover {
   background: rgba(255, 215, 0, 0.25);
 }
+/* Close X button — top-right of the modal */
+.interact-modal .close-x {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  background: rgba(255, 215, 0, 0.08);
+  color: #ffd700;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.interact-modal .close-x:hover {
+  background: rgba(255, 215, 0, 0.2);
+}
+.interact-modal .close-x:focus-visible {
+  outline: 2px solid #ffd700;
+  outline-offset: 2px;
+}
 .interact-modal .close-hint {
-  font-size: 0.7rem;
-  color: #666;
-  margin-top: 20px;
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 24px;
   text-align: center;
   letter-spacing: 1.5px;
 }
@@ -513,4 +544,74 @@ body.world3d-light-theme .dialogue-next {
   color: #b8860b;
   border-color: rgba(184, 134, 11, 0.6);
   background: rgba(184, 134, 11, 0.1);
+}
+
+/* ── Room-entry one-shot toast ───────────────────────── */
+.room-entry-toast {
+  position: fixed;
+  /* Center of viewport, top half (above the ProjectsDock at bottom: 20px
+     and below the persistent ThemeToggle/ViewSwitcher at top: 28px). */
+  top: 30vh;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* Way above any other HUD chrome — nothing in the codebase uses
+     z-index > 200. */
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: min(640px, 90vw);
+  padding: 24px 32px;
+  background: rgba(20, 23, 34, 0.96);
+  backdrop-filter: blur(12px);
+  border: 2px solid rgba(255, 215, 0, 0.55);
+  border-radius: 12px;
+  color: #e5e7eb;
+  font-family: 'Courier New', monospace;
+  box-shadow: 0 0 50px rgba(255, 215, 0, 0.3), 0 12px 50px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  animation: toastFadeIn 320ms ease-out;
+}
+.room-entry-toast .toast-icon {
+  font-size: 2.4rem;
+  flex-shrink: 0;
+}
+.room-entry-toast .toast-body {
+  flex: 1;
+  min-width: 0;
+}
+.room-entry-toast .toast-title {
+  color: #ffd700;
+  font-size: 1.15rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+.room-entry-toast .toast-text {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #cdd0d8;
+}
+.room-entry-toast .toast-text kbd {
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: #ffd700;
+  font-family: inherit;
+}
+.room-entry-toast .toast-dismiss {
+  font-size: 0.7rem;
+  color: #888;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+@keyframes toastFadeIn {
+  0%   { opacity: 0; transform: translate(-50%, calc(-50% - 12px)); }
+  100% { opacity: 1; transform: translate(-50%, -50%);              }
+}
+@media (prefers-reduced-motion: reduce) {
+  .room-entry-toast { animation: none; }
 }

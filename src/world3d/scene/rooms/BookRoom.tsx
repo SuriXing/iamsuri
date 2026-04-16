@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Edges } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -8,6 +8,7 @@ import { useWorldStore } from '../../store/worldStore';
 import { makeRng } from '../../util/rand';
 import { BOOK_ROOM_CONTENT } from '../../../data/bookRoom';
 import type { InteractableData } from '../../store/worldStore';
+import { registerCollider, unregisterCollider } from '../colliders';
 
 const BLOG_INTERACTABLE: InteractableData = BOOK_ROOM_CONTENT.dialogues.blog;
 
@@ -40,35 +41,23 @@ const DUSTY_SPINES: ReadonlyArray<string> = [
 ];
 
 // --- Micro-anim constants (module scope = zero per-frame alloc) ---
-// Post-ship flicker fix #2: the two-wave candle flicker (7.3 + 11.7 rad/s
-// with ±23% amplitude) read as harsh flicker rather than warm candle.
-// Replaced with the same slow 0.6 Hz carrier the other rooms use at ≤5%
-// amplitude — now it breathes instead of flickers.
+// Lamp emissive base intensity. Pulse animation removed in the
+// zero-brightness-motion pass — was the worst flicker source through
+// multiple iterations.
 const LAMP_FLICKER_BASE = 1.5;
-const LAMP_FLICKER_AMPLITUDE = 0.06;
-const LAMP_FLICKER_SPEED = 0.6;
 const DUST_BASE_Y = 1.35;
 const DUST_AMPLITUDE = 0.12;
 const DUST_SPEED = 0.6;
 const PAGE_BASE_ROT = 0.02;
 const PAGE_AMPLITUDE = 0.04;
 const PAGE_SPEED = 1.5;
-// Post-ship fix: the 4 room accent lights were each pulsing at distinct
-// frequencies (0.6 / 1.3 / 1.9 / 2.0 Hz) with amplitudes 10–20%, and
-// their superposition on the shared scene looked like visible flicker
-// rather than ambient breathing. Clamped all to ≤5% per-light and to a
-// single slow 0.6 Hz so the wall luminance holds roughly steady.
+// Accent light static intensity. Pulse removed in the
+// zero-brightness-motion pass.
 const ACCENT_LIGHT_BASE = 0.8;
-const ACCENT_LIGHT_AMPLITUDE = 0.04;
-const ACCENT_LIGHT_SPEED = 0.6;
-// F3.15 — hero focal animations: slow globe spin + gold frame breathing.
-// Flicker-fix pass #3: FRAME_GLOW was ±23% at 1.3 rad/s — too much
-// amplitude too fast. Now ±8% at the shared 0.6 Hz carrier like every
-// other pulse in the 4 rooms.
+// Hero focal: globe slow-spin (rotation only). Frame emissive pulse
+// removed — frame is now a static gold mesh.
 const GLOBE_SPIN_SPEED = 0.35;
 const FRAME_GLOW_BASE = 0.35;
-const FRAME_GLOW_AMPLITUDE = 0.03;
-const FRAME_GLOW_SPEED = 0.6;
 
 // Dust mote scatter (deterministic).
 const DUST_SEED = 0xb00c2a;
@@ -107,21 +96,11 @@ export function BookRoom() {
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
+    // Zero-brightness-motion pass: lamp emissive pulse + accent light
+    // intensity pulse + frame glow pulse all removed. Only physical
+    // motion remains (page flutter, dust mote bob, globe spin).
 
-    // Lamp breathing (slow 0.6 Hz carrier, ≤5% — matches the other rooms).
-    const lamp = lampGlowRef.current;
-    if (lamp) {
-      const mat = lamp.material as THREE.MeshPhongMaterial;
-      mat.emissiveIntensity = LAMP_FLICKER_BASE + Math.sin(t * LAMP_FLICKER_SPEED) * LAMP_FLICKER_AMPLITUDE;
-    }
-
-    // Amber accent — phase π offset (out-of-phase with MyRoom 0).
-    const al = accentLightRef.current;
-    if (al) {
-      al.intensity = ACCENT_LIGHT_BASE + Math.sin(t * ACCENT_LIGHT_SPEED + 3.14) * ACCENT_LIGHT_AMPLITUDE;
-    }
-
-    // Open-book page flutter.
+    // Open-book page flutter (rotation only).
     const page = pageRef.current;
     if (page) {
       page.rotation.x = PAGE_BASE_ROT + Math.sin(t * PAGE_SPEED) * PAGE_AMPLITUDE;
@@ -136,14 +115,10 @@ export function BookRoom() {
       m.position.y = DUST_BASE_Y + Math.sin(t * DUST_SPEED + spec.phase) * DUST_AMPLITUDE;
     }
 
-    // F3.15 hero focal: globe slow-spin + framed picture gold breathing.
+    // Hero focal: globe slow-spin only. Frame breathing emissive removed
+    // in the zero-brightness-motion pass.
     const globe = globeRef.current;
     if (globe) globe.rotation.y = t * GLOBE_SPIN_SPEED;
-    const frame = frameRef.current;
-    if (frame) {
-      const fmat = frame.material as THREE.MeshPhongMaterial;
-      fmat.emissiveIntensity = FRAME_GLOW_BASE + Math.sin(t * FRAME_GLOW_SPEED) * FRAME_GLOW_AMPLITUDE;
-    }
   });
 
   // Layout anchors.
@@ -153,6 +128,35 @@ export function BookRoom() {
   const chairZ = oz + 0.9;
   const tableX = ox + 0.8;
   const tableZ = oz + 0.9;
+
+  // Furniture colliders — registered as playerOnly so the camera
+  // wall-clip sweep ignores them while the player still bounces off.
+  // Fixes the 穿模 (clipping through couch) bug — player can no longer
+  // walk through chairs/tables/shelves/ladder.
+  useEffect(() => {
+    const items: ReadonlyArray<{ id: string; x: number; z: number; hx: number; hz: number }> = [
+      // Reading chair (the "couch") — 0.95 wide × 0.85 deep
+      { id: 'br-chair',    x: chairX, z: chairZ, hx: 0.48, hz: 0.43 },
+      // Side table — small footprint
+      { id: 'br-table',    x: tableX, z: tableZ, hx: 0.28, hz: 0.28 },
+      // Left shelf wall (against -Z back wall)
+      { id: 'br-shelf-l',  x: shelfLX, z: oz - 1.5, hx: 0.85, hz: 0.20 },
+      // Right shelf wall
+      { id: 'br-shelf-r',  x: shelfRX, z: oz - 1.5, hx: 0.85, hz: 0.20 },
+      // Library ladder
+      { id: 'br-ladder',   x: shelfLX - 0.65, z: oz - 1.15, hx: 0.15, hz: 0.10 },
+      // Globe stand
+      { id: 'br-globe',    x: ox - 1.85, z: oz + 1.5, hx: 0.12, hz: 0.12 },
+      // Potted fern
+      { id: 'br-fern',     x: ox + 1.8, z: oz + 1.5, hx: 0.20, hz: 0.20 },
+    ];
+    for (const it of items) {
+      registerCollider({ ...it, playerOnly: true });
+    }
+    return () => {
+      for (const it of items) unregisterCollider(it.id);
+    };
+  }, [ox, oz, chairX, chairZ, tableX, tableZ, shelfLX, shelfRX]);
 
   return (
     <group>
@@ -168,26 +172,24 @@ export function BookRoom() {
           <meshPhongMaterial color={i % 2 === 0 ? WOOD_MID : WOOD_LIGHT} flatShading />
         </mesh>
       ))}
-      {/* F3.21 two-tone lighting fake — thin warm overlay band on the half
-          of the floor nearest the reading lamp + chair (positive Z, eastern
-          half). ~5% L lighter and warmer than WOOD_LIGHT. Sits 0.005 above
-          the planks; thin so it doesn't introduce z-fight at the seam. */}
-      <mesh position={[ox + 0.6, 0.131, oz + 0.9]} receiveShadow>
-        <boxGeometry args={[2.6, 0.005, 2.0]} />
-        <meshPhongMaterial color="#a8633a" flatShading />
-      </mesh>
-      {/* Central amber rug */}
-      <mesh position={[ox, 0.135, oz + 0.5]} receiveShadow>
+      {/* F3.21 overlay band — cosmetic warm tint on the eastern half of
+          the floor. Was at y=0.131, ~6mm above the planks at y=0.125 →
+          right inside the depth precision noise floor at the new
+          distance-16 camera, fighting with the rug at 0.135. Removed
+          entirely; the room reads fine without it. */}
+      {/* Central amber rug — bumped from 0.135 → 0.20 (~7cm above
+          planks, well outside any depth precision noise). */}
+      <mesh position={[ox, 0.20, oz + 0.5]} receiveShadow>
         <boxGeometry args={[2.8, 0.02, 2.0]} />
         <meshPhongMaterial color="#8c5a3a" emissive="#8c5a3a" emissiveIntensity={0.2} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      {/* Rug border stripes */}
-      <mesh position={[ox, 0.148, oz - 0.47]}>
+      {/* Rug border stripes — bumped 0.148 → 0.225 (5mm above rug). */}
+      <mesh position={[ox, 0.225, oz - 0.47]}>
         <boxGeometry args={[2.7, 0.005, 0.04]} />
         <meshPhongMaterial color={AMBER} emissive={AMBER} emissiveIntensity={0.5} flatShading />
       </mesh>
-      <mesh position={[ox, 0.148, oz + 1.47]}>
+      <mesh position={[ox, 0.225, oz + 1.47]}>
         <boxGeometry args={[2.7, 0.005, 0.04]} />
         <meshPhongMaterial color={AMBER} emissive={AMBER} emissiveIntensity={0.5} flatShading />
       </mesh>

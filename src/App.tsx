@@ -173,7 +173,6 @@ function ThreeDRoute() {
       }
     >
       <World3D onExitTo2D={handleExit} />
-      <ProjectsDock />
     </Suspense>
   );
 }

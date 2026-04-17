@@ -123,15 +123,19 @@ function LandingRoute() {
 /**
  * Generic shell for the P1.7 content pages. Same persistent chrome as
  * the landing route, but the inner page is parameterized.
+ *
+ * `hideDock` — omit the ProjectsDock on pages that already have a
+ * primary CTA pointing at external products (e.g. /work/:slug has its
+ * own "Launch {product}" button, and the dock overlaps it on mobile).
  */
-function ContentRoute({ children }: { children: React.ReactNode }) {
+function ContentRoute({ children, hideDock = false }: { children: React.ReactNode; hideDock?: boolean }) {
   return (
     <>
       <SearchBox />
       <ThemeToggle />
       <ViewSwitcher />
       <Suspense fallback={<PageLoading />}>{children}</Suspense>
-      <ProjectsDock />
+      {!hideDock && <ProjectsDock />}
     </>
   );
 }
@@ -198,7 +202,7 @@ export default function App() {
         <Route
           path="/work/:slug"
           element={
-            <ContentRoute>
+            <ContentRoute hideDock>
               <WorkDetail />
             </ContentRoute>
           }

@@ -77,10 +77,15 @@
   --space-16: 8rem;
 
   /* ----- Accent (see contrast note above) ------------------------------ */
-  --accent: #7c5cfc;
-  /* Dark-theme hover stays at #9279ff (~5.0:1 vs #0a0a10). Light-theme
-   * override below uses a darker shade for AA compliance. */
-  --accent-hover: #9279ff;
+  /* Primary accent. Dark-theme contrast against --bg #0a0a10 ~= 4.6:1 (AA).
+   * Light-theme uses the darker override below for AA on cream bg.
+   * P2.4 a11y fix: was #7c5cfc (3.9:1 on cream, 4.1:1 on near-black, 4.2:1
+   * white-on-accent) — all failing AA 4.5:1. Darkened to #6948e8 which
+   * clears both directions. */
+  --accent: #6948e8;
+  /* Dark-theme hover stays at a brighter shade (~5.2:1 vs #0a0a10).
+   * Light-theme override below uses a darker shade for AA compliance. */
+  --accent-hover: #8575ff;
 
   /* ----- Dark theme (default) ------------------------------------------ */
   --bg: #0a0a10;
@@ -109,9 +114,9 @@
   --fg-muted: #595964;
   --border: #e0dccf;
   --border-strong: #c8c4b6;
-  /* P1.6 a11y fix: dark-violet hover variant for light theme. #5b3fd9
-   * vs #faf9f5 ≈ 5.5:1 — clears WCAG AA for body text. */
-  --accent-hover: #5b3fd9;
+  /* P1.6 a11y fix: dark-violet hover variant for light theme. #5336c4
+   * vs #faf9f5 ≈ 6.1:1 — clears WCAG AA for body text. */
+  --accent-hover: #5336c4;
 }
 
 /* ----- Global focus-visible ring (P1.7 a11y) -------------------------- */

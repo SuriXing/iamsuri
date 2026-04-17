@@ -21,26 +21,26 @@ function Plant({ x, z, groupRef }: PlantProps) {
   return (
     <group position={[x, 0, z]}>
       {/* Pot (static, anchored) */}
-      <mesh position={[0, 0.25, 0]} castShadow receiveShadow>
+      <mesh position={[0, 0.25, 0]}>
         <cylinderGeometry args={[0.15, 0.12, 0.25, 8]} />
         <meshPhongMaterial color="#cc7744" flatShading />
       </mesh>
-      <mesh position={[0, 0.38, 0]} receiveShadow>
+      <mesh position={[0, 0.38, 0]}>
         <cylinderGeometry args={[0.14, 0.14, 0.03, 8]} />
         <meshPhongMaterial color="#4a3520" flatShading />
       </mesh>
       {/* Foliage group — F3.21: refs the sway pivot. Pivots at top of pot
           (y=0.4) so the foliage rocks like a real stem instead of orbiting. */}
       <group ref={groupRef} position={[0, 0.4, 0]}>
-        <mesh position={[0, 0.2, 0]} castShadow>
+        <mesh position={[0, 0.2, 0]}>
           <sphereGeometry args={[0.22, 6, 6]} />
           <meshPhongMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.15} flatShading />
         </mesh>
-        <mesh position={[0.08, 0.38, 0]} castShadow>
+        <mesh position={[0.08, 0.38, 0]}>
           <sphereGeometry args={[0.15, 6, 6]} />
           <meshPhongMaterial color="#16a34a" emissive="#22c55e" emissiveIntensity={0.1} flatShading />
         </mesh>
-        <mesh position={[-0.05, 0.45, 0.05]} castShadow>
+        <mesh position={[-0.05, 0.45, 0.05]}>
           <coneGeometry args={[0.12, 0.25, 6]} />
           <meshPhongMaterial color="#15803d" flatShading />
         </mesh>
@@ -68,6 +68,9 @@ export function Hallway() {
   const edgeColor = theme === 'dark' ? '#0a0a14' : '#5a4830';
 
   useFrame(({ clock }) => {
+    // Hallway is only visible in the overview; inside a room we don't
+    // render it, so skip the idle-loop work.
+    if (useWorldStore.getState().viewMode !== 'overview') return;
     const t = clock.getElapsedTime();
 
     // ----- Steam — position bob ONLY. Opacity drift removed in the
@@ -112,21 +115,21 @@ export function Hallway() {
   return (
     <group>
       {/* Hallway floor cross — F3.19: de-emissived to restore lantern visual authority */}
-      <mesh position={[0, FLOOR_Y - 0.02, 0]} receiveShadow>
+      <mesh position={[0, FLOOR_Y - 0.02, 0]}>
         <boxGeometry args={[HALL_WIDTH, 0.08, HALL_LEN]} />
         <meshPhongMaterial color={HALL_COLOR} flatShading />
       </mesh>
-      <mesh position={[0, FLOOR_Y - 0.02, 0]} receiveShadow>
+      <mesh position={[0, FLOOR_Y - 0.02, 0]}>
         <boxGeometry args={[HALL_LEN, 0.08, HALL_WIDTH]} />
         <meshPhongMaterial color={HALL_COLOR} flatShading />
       </mesh>
 
       {/* Coffee machine */}
-      <mesh position={[-1.5, 0.42, 0]} castShadow receiveShadow>
+      <mesh position={[-1.5, 0.42, 0]}>
         <boxGeometry args={[0.4, 0.6, 0.35]} />
         <meshPhongMaterial color="#222222" flatShading />
       </mesh>
-      <mesh position={[-1.5, 0.75, 0]} castShadow receiveShadow>
+      <mesh position={[-1.5, 0.75, 0]}>
         <boxGeometry args={[0.38, 0.1, 0.33]} />
         <meshPhongMaterial color="#333333" flatShading />
       </mesh>
@@ -157,7 +160,7 @@ export function Hallway() {
       <mesh
         ref={(el) => { runnerRefs.current[0] = el; }}
         position={[0, FLOOR_Y + 0.005, 2.2]}
-        receiveShadow
+       
       >
         <boxGeometry args={[0.55, 0.01, 3.0]} />
         <meshPhongMaterial color="#6b3216" flatShading />
@@ -166,7 +169,7 @@ export function Hallway() {
       <mesh
         ref={(el) => { runnerRefs.current[1] = el; }}
         position={[0, FLOOR_Y + 0.005, -2.2]}
-        receiveShadow
+       
       >
         <boxGeometry args={[0.55, 0.01, 3.0]} />
         <meshPhongMaterial color="#6b3216" flatShading />
@@ -193,11 +196,11 @@ export function Hallway() {
       </mesh>
 
       {/* Rug — F3.19/F3.21: both layers neutral to let lanterns own the warm glow band */}
-      <mesh position={[0, 0.12, 0]} receiveShadow>
+      <mesh position={[0, 0.12, 0]}>
         <boxGeometry args={[1.8, 0.02, 1.0]} />
         <meshPhongMaterial color="#8B4513" flatShading />
       </mesh>
-      <mesh position={[0, 0.14, 0]} receiveShadow>
+      <mesh position={[0, 0.14, 0]}>
         <boxGeometry args={[1.4, 0.01, 0.6]} />
         <meshPhongMaterial color="#a0522d" flatShading />
       </mesh>

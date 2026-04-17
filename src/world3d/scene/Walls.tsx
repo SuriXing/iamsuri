@@ -78,7 +78,7 @@ function WallStrip({ id, x, z, w, d, tint, edgeColor }: WallStripProps) {
   return (
     <group>
       {/* Main wall body */}
-      <mesh position={[x, 1.0, z]} castShadow receiveShadow>
+      <mesh position={[x, 1.0, z]}>
         <boxGeometry args={[w, WALL_H, d]} />
         <meshPhongMaterial
           color={tint}
@@ -89,7 +89,7 @@ function WallStrip({ id, x, z, w, d, tint, edgeColor }: WallStripProps) {
         <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
       {/* Baseboard — thicker, slightly wider, ~20% darker */}
-      <mesh position={[x, BASE_H / 2 + 0.01, z]} receiveShadow>
+      <mesh position={[x, BASE_H / 2 + 0.01, z]}>
         <boxGeometry args={[w + TRIM_PAD, BASE_H, d + TRIM_PAD]} />
         <meshPhongMaterial
           color={WALL_POLISH.baseboard}

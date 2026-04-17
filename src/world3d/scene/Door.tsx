@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
-import * as THREE from 'three';
+// Named imports — namespace import defeats tree-shaking of three.
+import { Color, Group, Mesh } from 'three';
 import { DOOR, DOOR_POLISH } from '../constants';
 import { useWorldStore } from '../store/worldStore';
 import type { RoomId } from '../data/rooms';
@@ -52,7 +53,7 @@ function hashRoomId(id: string): number {
 // Small hex tint helper — deterministic, used once inside useMemo (not per-frame).
 // dL shifts lightness; dH rotates hue (in rad units, wraps 0-1).
 function tintHex(hex: string, dL: number, dH = 0): string {
-  const c = new THREE.Color(hex);
+  const c = new Color(hex);
   const hsl = { h: 0, s: 0, l: 0 };
   c.getHSL(hsl);
   hsl.l = Math.max(0, Math.min(1, hsl.l + dL));
@@ -66,12 +67,12 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
   const unlocked = useWorldStore((s) => s.unlockedDoors.has(roomId));
   const theme = useWorldStore((s) => s.theme);
   const edgeColor = theme === 'dark' ? EDGE_DARK : EDGE_LIGHT;
-  const hingeRef = useRef<THREE.Group>(null);
-  const lockGroupRef = useRef<THREE.Group>(null);
-  const lockRef = useRef<THREE.Mesh>(null);
-  const lockShackleRef = useRef<THREE.Mesh>(null);
-  const lanternGroupRef = useRef<THREE.Group>(null);
-  const lanternBodyRef = useRef<THREE.Mesh>(null);
+  const hingeRef = useRef<Group>(null);
+  const lockGroupRef = useRef<Group>(null);
+  const lockRef = useRef<Mesh>(null);
+  const lockShackleRef = useRef<Mesh>(null);
+  const lanternGroupRef = useRef<Group>(null);
+  const lanternBodyRef = useRef<Mesh>(null);
   const angleRef = useRef<number>(unlocked ? DOOR.openAngle : 0);
 
   // Per-door deterministic wood tones for the 3-strip panel.
@@ -225,7 +226,7 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
 
   // Desaturated accent color for the per-door doormat (memoized, never per-frame).
   const matColor = useMemo(() => {
-    const c = new THREE.Color(accentColor);
+    const c = new Color(accentColor);
     const hsl = { h: 0, s: 0, l: 0 };
     c.getHSL(hsl);
     // Low saturation (~25%) + mid lightness for a "rug weave" read.
@@ -261,28 +262,28 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
       {/* F3.21 — chunky DARK jamb overlays. Three architectural pieces
           (left jamb, right jamb, top header) sit proud of the wall in a
           much darker wood tone so the doorway reads as cut-in framing. */}
-      <mesh position={postLeft} castShadow receiveShadow>
+      <mesh position={postLeft}>
         <boxGeometry args={jambArgs} />
         <meshPhongMaterial color={JAMB_DARK_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.18} flatShading />
         <Edges color={edgeColor} lineWidth={1.4} />
       </mesh>
-      <mesh position={postRight} castShadow receiveShadow>
+      <mesh position={postRight}>
         <boxGeometry args={jambArgs} />
         <meshPhongMaterial color={JAMB_DARK_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.18} flatShading />
         <Edges color={edgeColor} lineWidth={1.4} />
       </mesh>
-      <mesh position={headerPos} castShadow receiveShadow>
+      <mesh position={headerPos}>
         <boxGeometry args={headerArgs} />
         <meshPhongMaterial color={JAMB_DARK_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.18} flatShading />
         <Edges color={edgeColor} lineWidth={1.4} />
       </mesh>
       {/* Frame posts (lighter inner trim, tucked behind jambs) */}
-      <mesh position={postLeft} castShadow receiveShadow>
+      <mesh position={postLeft}>
         <boxGeometry args={postArgs} />
         <meshPhongMaterial color={FRAME_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.3} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
-      <mesh position={postRight} castShadow receiveShadow>
+      <mesh position={postRight}>
         <boxGeometry args={postArgs} />
         <meshPhongMaterial color={FRAME_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.3} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
@@ -309,18 +310,18 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
         <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
       {/* Baseboards at bottom of each post */}
-      <mesh position={baseboardLeftPos} receiveShadow>
+      <mesh position={baseboardLeftPos}>
         <boxGeometry args={baseboardArgs} />
         <meshPhongMaterial color={FRAME_TRIM_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.2} flatShading />
         <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
-      <mesh position={baseboardRightPos} receiveShadow>
+      <mesh position={baseboardRightPos}>
         <boxGeometry args={baseboardArgs} />
         <meshPhongMaterial color={FRAME_TRIM_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.2} flatShading />
         <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
       {/* Lintel */}
-      <mesh position={lintelPos} castShadow receiveShadow>
+      <mesh position={lintelPos}>
         <boxGeometry args={lintelArgs} />
         <meshPhongMaterial color={FRAME_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.3} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
@@ -338,7 +339,7 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
       </mesh>
 
       {/* Doormat — flat box at the doorway threshold, hallway side, accent-tinted */}
-      <mesh position={matPos} receiveShadow>
+      <mesh position={matPos}>
         <boxGeometry args={matArgs} />
         <meshPhongMaterial color={matColor} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -347,7 +348,7 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
       {/* Hinge group with door panel — 3 stacked strips */}
       <group ref={hingeRef} position={hingePos}>
         {/* Bottom rail */}
-        <mesh position={stripPos(bottomRailY)} rotation={[0, panelRotY, 0]} castShadow receiveShadow>
+        <mesh position={stripPos(bottomRailY)} rotation={[0, panelRotY, 0]}>
           <boxGeometry args={[DOOR.width, RAIL_H, PANEL_THICK]} />
           <meshPhongMaterial
             color={panelTints.bottom}
@@ -358,7 +359,7 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
           <Edges color={edgeColor} lineWidth={1.2} />
         </mesh>
         {/* Middle field */}
-        <mesh position={stripPos(middleY)} rotation={[0, panelRotY, 0]} castShadow receiveShadow>
+        <mesh position={stripPos(middleY)} rotation={[0, panelRotY, 0]}>
           <boxGeometry args={[DOOR.width, MID_H, PANEL_THICK]} />
           <meshPhongMaterial
             color={panelTints.middle}
@@ -369,7 +370,7 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
           <Edges color={edgeColor} lineWidth={1.2} />
         </mesh>
         {/* Top rail */}
-        <mesh position={stripPos(topRailY)} rotation={[0, panelRotY, 0]} castShadow receiveShadow>
+        <mesh position={stripPos(topRailY)} rotation={[0, panelRotY, 0]}>
           <boxGeometry args={[DOOR.width, RAIL_H, PANEL_THICK]} />
           <meshPhongMaterial
             color={panelTints.top}

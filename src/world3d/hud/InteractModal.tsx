@@ -3,8 +3,10 @@ import { useWorldStore } from '../store/worldStore';
 // Whitelist of acceptable link protocols. Anything else (javascript:,
 // data:, vbscript:, ...) is dropped before render so a malformed data
 // entry can't execute on click. Relative paths (starting with `/`) are
-// allowed for on-site destinations.
-const SAFE_LINK_RE = /^(https?:|mailto:|\/)/i;
+// allowed for on-site destinations, but protocol-relative `//evil.com`
+// is rejected — `\/(?!\/)` requires the leading slash to be followed
+// by a non-slash character.
+const SAFE_LINK_RE = /^(https?:\/\/|mailto:|\/(?!\/))/i;
 
 function safeLink(raw: string | undefined): string | null {
   if (!raw) return null;

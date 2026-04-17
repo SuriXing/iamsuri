@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { useWorldStore } from '../world3d/store/worldStore';
 
 type Theme = 'dark' | 'light';
 
@@ -10,36 +9,42 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+// Storage keys used by both halves of the app. The 3D world store reads
+// the same key on boot; ThemeSync (mounted inside lazy App3D) mirrors
+// changes in both directions. Keeping this file worldStore-free prevents
+// the 2D landing chunk from pulling the 3D bundle.
+const STORAGE_KEY = 'suri-theme';
+
+// Simple cross-listener bus so ThemeSync can observe context changes
+// without importing the context directly (would re-introduce the cycle).
+const THEME_EVENT = 'suri-theme-change';
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem('suri-theme');
+    const saved = localStorage.getItem(STORAGE_KEY);
     return saved === 'light' ? 'light' : 'dark';
   });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('suri-theme', theme);
-    // Keep the 3D world store in sync so `body.world3d-light-theme` and
-    // the 3D scene colors follow the 2D toggle without a reload. The
-    // two systems previously drifted within a single session even though
-    // they read the same localStorage key on cold boot.
-    if (useWorldStore.getState().theme !== theme) {
-      useWorldStore.getState().toggleTheme();
-    }
+    localStorage.setItem(STORAGE_KEY, theme);
+    window.dispatchEvent(new CustomEvent<Theme>(THEME_EVENT, { detail: theme }));
   }, [theme]);
 
-  // Reverse direction: when the 3D HUD ThemeToggle flips the world store,
-  // mirror the change back into the 2D context (and therefore <html>).
+  // Accept external (3D-side) theme changes. ThemeSync dispatches the
+  // same event when the world store flips so the two stay aligned.
   useEffect(() => {
-    const unsub = useWorldStore.subscribe((s, prev) => {
-      if (s.theme !== prev.theme && s.theme !== theme) {
-        setTheme(s.theme);
+    const onExternal = (e: Event) => {
+      const next = (e as CustomEvent<Theme>).detail;
+      if (next === 'dark' || next === 'light') {
+        setTheme((prev) => (prev === next ? prev : next));
       }
-    });
-    return unsub;
-  }, [theme]);
+    };
+    window.addEventListener(THEME_EVENT, onExternal);
+    return () => window.removeEventListener(THEME_EVENT, onExternal);
+  }, []);
 
-  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
@@ -54,3 +59,7 @@ export function useTheme() {
   if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
   return ctx;
 }
+
+// Exported so the 3D side (lazy-loaded) can hook into the same event bus
+// without importing the context itself.
+export const THEME_CHANGE_EVENT = THEME_EVENT;

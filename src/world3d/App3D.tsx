@@ -7,6 +7,7 @@ import { useWorldStore } from './store/worldStore';
 import { ROOM_BY_ID } from './data/rooms';
 import type { RoomId } from './data/rooms';
 import { ExitContext } from './exitContext';
+import { THEME_CHANGE_EVENT } from '../context/ThemeContext';
 import './world3d.css';
 
 interface Props {
@@ -18,6 +19,34 @@ interface Props {
 }
 
 export default function App3D({ onExitTo2D }: Props) {
+  // Bidirectional theme sync with the 2D ThemeContext. ThemeContext
+  // dispatches `THEME_CHANGE_EVENT` on every flip; we mirror into the
+  // world store. Inverse direction: subscribing to the store and
+  // re-dispatching the same event would loop, so we guard on equality.
+  useEffect(() => {
+    const onExternal = (e: Event) => {
+      const next = (e as CustomEvent<'dark' | 'light'>).detail;
+      const cur = useWorldStore.getState().theme;
+      if (next && next !== cur) useWorldStore.getState().toggleTheme();
+    };
+    window.addEventListener(THEME_CHANGE_EVENT, onExternal);
+    // On mount, align store → context if localStorage already flipped
+    // while the 3D chunk was unloaded.
+    const saved = (localStorage.getItem('suri-theme') === 'light' ? 'light' : 'dark') as 'dark' | 'light';
+    if (useWorldStore.getState().theme !== saved) {
+      useWorldStore.getState().toggleTheme();
+    }
+    const unsub = useWorldStore.subscribe((s, prev) => {
+      if (s.theme !== prev.theme) {
+        window.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: s.theme }));
+      }
+    });
+    return () => {
+      window.removeEventListener(THEME_CHANGE_EVENT, onExternal);
+      unsub();
+    };
+  }, []);
+
   // Legacy window bridges that Playwright drives directly. Installed on
   // mount so the 3D world is reachable from tests via `window.navigateTo*`.
   // Gated behind DEV so the bridges do not ship to production bundles.

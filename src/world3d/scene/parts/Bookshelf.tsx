@@ -119,7 +119,7 @@ export function Bookshelf({
   return (
     <group>
       {withFrameBox && frameBoxColor !== undefined && frameBoxHeight !== undefined && frameBoxY !== undefined && (
-        <mesh position={[x, frameBoxY, z]} castShadow receiveShadow>
+        <mesh position={[x, frameBoxY, z]}>
           <boxGeometry args={[width + 0.1, frameBoxHeight, depth + 0.05]} />
           <meshPhongMaterial color={frameBoxColor} flatShading />
         </mesh>
@@ -127,7 +127,7 @@ export function Bookshelf({
       {Array.from({ length: rows }, (_, row) => {
         const y = baseY + row * rowSpacing;
         return (
-          <mesh key={`plank-${row}`} position={[x, y, z]} castShadow receiveShadow>
+          <mesh key={`plank-${row}`} position={[x, y, z]}>
             <boxGeometry args={[width, 0.05, depth]} />
             <meshPhongMaterial color={plankColor} flatShading />
           </mesh>
@@ -139,7 +139,7 @@ export function Bookshelf({
         // Center the book so its bottom rests on the plank top.
         const by = y + 0.025 + cell.height / 2;
         return (
-          <mesh key={`book-${cell.row}-${cell.col}`} position={[bx, by, z]} castShadow>
+          <mesh key={`book-${cell.row}-${cell.col}`} position={[bx, by, z]}>
             <boxGeometry args={[bookWidth, cell.height, bookDepth]} />
             <meshPhongMaterial color={cell.color} flatShading />
             {cell.isHero && <Edges color={edgeColor} lineWidth={1.2} />}
@@ -147,7 +147,7 @@ export function Bookshelf({
         );
       })}
       {backPanelColor !== null && (
-        <mesh position={[x, baseY + (rows * rowSpacing) / 2, z - depth / 2 - 0.02]} receiveShadow>
+        <mesh position={[x, baseY + (rows * rowSpacing) / 2, z - depth / 2 - 0.02]}>
           <boxGeometry args={[width + 0.05, rows * rowSpacing + 0.1, 0.04]} />
           <meshPhongMaterial color={backPanelColor} flatShading />
         </mesh>

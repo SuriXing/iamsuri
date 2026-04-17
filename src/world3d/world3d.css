@@ -615,3 +615,36 @@ body.world3d-light-theme .dialogue-next {
 @media (prefers-reduced-motion: reduce) {
   .room-entry-toast { animation: none; }
 }
+
+/* ── Mobile HUD layout ──────────────────────────────────
+   Small viewports: stack title smaller, shrink top-right
+   buttons, and hide the title subtitle so the 2D/theme
+   toggles don't overlap "Suri's Lab". 375×667 was overlapping
+   pre-fix — runtime bug bash R2 #3. */
+@media (max-width: 640px) {
+  #overlay {
+    top: 12px;
+    left: 14px;
+  }
+  #overlay h1 {
+    font-size: 1.25rem;
+    letter-spacing: 1px;
+  }
+  #overlay p {
+    display: none;
+  }
+  #theme-toggle {
+    top: 12px;
+    right: 58px;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  #view-switcher {
+    top: 12px;
+    right: 96px;
+    height: 32px;
+    padding: 0 10px;
+    font-size: 0.7rem;
+  }
+}

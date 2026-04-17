@@ -3,7 +3,7 @@ import { Html } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import { EnterPrompt3D } from './EnterPrompt3D';
 import { ROOMS } from '../data/rooms';
-import { COLORS, LIGHTS, SHADOW_MAP_SIZE, FOG_DENSITY } from '../constants';
+import { COLORS, LIGHTS, FOG_DENSITY } from '../constants';
 // NOTE: scene.background and scene.fog.color are set imperatively in
 // ThemeEffect.tsx; we still mount a default `<color>` / `<fogExp2>` here
 // so the very first frame (before the effect runs) isn't a black flash.
@@ -84,15 +84,6 @@ export function World() {
         position={[...LIGHTS.directional.position]}
         intensity={LIGHTS.directional.intensity}
         color={LIGHTS.directional.color}
-        castShadow
-        shadow-mapSize={[SHADOW_MAP_SIZE, SHADOW_MAP_SIZE]}
-        shadow-camera-left={-20}
-        shadow-camera-right={20}
-        shadow-camera-top={20}
-        shadow-camera-bottom={-20}
-        shadow-camera-near={0.5}
-        shadow-camera-far={50}
-        shadow-bias={-0.001}
       />
       <hemisphereLight
         intensity={LIGHTS.hemisphere.intensity}

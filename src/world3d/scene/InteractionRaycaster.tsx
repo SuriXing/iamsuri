@@ -33,7 +33,12 @@ export function InteractionRaycaster(): null {
     raycaster.current.set(camera.position, dir.current);
     raycaster.current.far = RAY_LENGTH;
 
-    // Recursive intersect against the whole scene; cheap enough for our scale.
+    // TODO(perf): narrow to a dedicated `<group ref={interactables}>`
+    // populated by room meshes that set `userData.interactable`. Right
+    // now we traverse every Object3D in the scene (rooms + character +
+    // hallway + walls) ≈ hundreds of nodes per frame. A flat registered
+    // list would drop this to ~10s of objects and let us pass
+    // `recursive: false`. Not done here — requires a cross-room refactor.
     const hits = raycaster.current.intersectObjects(scene.children, true);
     for (const hit of hits) {
       let obj: THREE.Object3D | null = hit.object;

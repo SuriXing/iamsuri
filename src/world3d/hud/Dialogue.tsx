@@ -17,18 +17,14 @@ export function Dialogue() {
 
   useEffect(() => {
     if (!visible) return undefined;
-    // Accept ANY key to advance — was Enter/Space only, which left
-    // arrow-key presses falling silently into the void during the intro
-    // dialogue. Users hit Left and the avatar didn't move for ~5 seconds
-    // because the dialogue was eating + ignoring the keypress.
+    // Only intercept the specific "advance" keys. Everything else —
+    // Alt+Arrow (browser back/forward), F5/F11/F12, Tab, arrows,
+    // modifier combos, printable keys used for focus — passes through
+    // so the browser/OS keeps its own bindings during the intro.
+    const ADVANCE_KEYS = new Set(['Enter', ' ', 'Spacebar']);
     const onKey = (e: KeyboardEvent) => {
-      // Skip pure modifier presses so Cmd-tabbing doesn't advance.
-      if (e.key === 'Meta' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Shift') return;
-      // Let the browser keep its own navigation/close keys. Tab must stay
-      // focusable-traversable for a11y; Escape belongs to the global
-      // handler (modals / room exit); Cmd/Ctrl combos are OS shortcuts.
-      if (e.key === 'Tab' || e.key === 'Escape') return;
-      if (e.metaKey || e.ctrlKey) return;
+      if (!ADVANCE_KEYS.has(e.key)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       e.preventDefault();
       advance();
     };

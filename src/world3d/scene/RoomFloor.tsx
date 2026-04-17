@@ -33,7 +33,7 @@ export function RoomFloor({ room }: Props) {
   const weight = ROOM_FLOOR_WEIGHT[room.id] ?? 1;
   const { base, emissive } = useMemo(() => muteColor(room.color, weight), [room.color, weight]);
   return (
-    <mesh position={[room.center.x, FLOOR_Y, room.center.z]} receiveShadow>
+    <mesh position={[room.center.x, FLOOR_Y, room.center.z]}>
       <boxGeometry args={[ROOM, 0.12, ROOM]} />
       <meshPhongMaterial
         color={base}

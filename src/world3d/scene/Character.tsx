@@ -175,13 +175,13 @@ export function Character() {
             Depth kept at 0.46 to preserve existing mouth/blush clearance. */}
         <group ref={headRef}>
           {/* Head upper — bigger + outlined for silhouette pop */}
-          <mesh position={[0, 1.60, 0]} castShadow receiveShadow>
+          <mesh position={[0, 1.60, 0]}>
             <boxGeometry args={[0.54, 0.36, 0.46]} />
             <meshPhongMaterial color={tints.headTop} flatShading />
             <Edges color={edgeColor} lineWidth={1.5} />
           </mesh>
           {/* Jaw — widened to match new head ratio */}
-          <mesh position={[0, 1.34, 0]} castShadow receiveShadow>
+          <mesh position={[0, 1.34, 0]}>
             <boxGeometry args={[0.48, 0.16, 0.42]} />
             <meshPhongMaterial color={tints.jaw} flatShading />
             <Edges color={edgeColor} lineWidth={1.5} />
@@ -222,19 +222,19 @@ export function Character() {
               hair meshes for a cloth/felt read (craft review). */}
           <group ref={hairGroupRef}>
             {/* Main hair cap — widened to 0.58 to wrap the 0.54-wide head */}
-            <mesh position={[0, 1.86, 0]} castShadow>
+            <mesh position={[0, 1.86, 0]}>
               <boxGeometry args={[0.58, 0.16, 0.50]} />
               <meshPhongMaterial color={tints.hairCap} shininess={8} flatShading />
               <Edges color={edgeColor} lineWidth={1.5} />
             </mesh>
             {/* Top tuft — now tinted + outlined so it actually pops */}
-            <mesh position={[0.06, 1.99, 0]} castShadow>
+            <mesh position={[0.06, 1.99, 0]}>
               <boxGeometry args={[0.20, 0.09, 0.22]} />
               <meshPhongMaterial color={tints.hairTuft} shininess={8} flatShading />
               <Edges color={edgeColor} lineWidth={1.5} />
             </mesh>
             {/* Front fringe / bang — sits just above the forehead, widened */}
-            <mesh position={[-0.06, 1.72, 0.23]} castShadow>
+            <mesh position={[-0.06, 1.72, 0.23]}>
               <boxGeometry args={[0.38, 0.11, 0.05]} />
               <meshPhongMaterial color={tints.hairFringe} shininess={8} flatShading />
               <Edges color={edgeColor} lineWidth={1.5} />
@@ -244,17 +244,17 @@ export function Character() {
                 (wing + knot + wing) commit to ONE bold readable detail
                 visible at ~40px game distance, the designer review's #1
                 ask. Matches scarf pink so the accent hue is consistent. */}
-            <mesh position={[-0.27, 1.94, 0]} castShadow>
+            <mesh position={[-0.27, 1.94, 0]}>
               <boxGeometry args={[0.09, 0.14, 0.06]} />
               <meshPhongMaterial color={COLORS.pink} emissive={COLORS.pink} emissiveIntensity={0.4} flatShading />
               <Edges color={edgeColor} lineWidth={1.5} />
             </mesh>
-            <mesh position={[-0.34, 1.94, 0]} castShadow>
+            <mesh position={[-0.34, 1.94, 0]}>
               <boxGeometry args={[0.06, 0.09, 0.05]} />
               <meshPhongMaterial color={COLORS.pink} emissive={COLORS.pink} emissiveIntensity={0.4} flatShading />
               <Edges color={edgeColor} lineWidth={1.5} />
             </mesh>
-            <mesh position={[-0.27, 2.03, 0]} castShadow>
+            <mesh position={[-0.27, 2.03, 0]}>
               <boxGeometry args={[0.05, 0.05, 0.05]} />
               <meshPhongMaterial color={COLORS.pink} emissive={COLORS.pink} emissiveIntensity={0.4} flatShading />
               <Edges color={edgeColor} lineWidth={1.5} />
@@ -266,12 +266,12 @@ export function Character() {
             Upper box is slightly wider; lower box slightly narrower. Emissive
             is kept low on the top block only so flatShading still reads as
             flat-faced voxel-art rather than a self-lit slab. */}
-        <mesh position={[0, 1.22, 0]} castShadow receiveShadow>
+        <mesh position={[0, 1.22, 0]}>
           <boxGeometry args={[0.42, 0.22, 0.26]} />
           <meshPhongMaterial color={tints.bodyTop} flatShading />
           <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
-        <mesh position={[0, 0.96, 0]} castShadow receiveShadow>
+        <mesh position={[0, 0.96, 0]}>
           <boxGeometry args={[0.36, 0.32, 0.24]} />
           <meshPhongMaterial color={tints.bodyMid} flatShading />
           <Edges color={edgeColor} lineWidth={1.5} />
@@ -280,7 +280,7 @@ export function Character() {
         {/* HERO ELEMENT — lab coat. F3.21: wraps the FULL torso (front + back)
             so it reads from the default follow-cam (which sees the back). The
             box now spans the body depth (0.30) instead of a thin front panel. */}
-        <mesh position={[0, 1.06, 0]} castShadow receiveShadow>
+        <mesh position={[0, 1.06, 0]}>
           <boxGeometry args={[0.44, 0.40, 0.30]} />
           <meshPhongMaterial color={labCoatColor} flatShading />
           <Edges color={edgeColor} lineWidth={1.5} />
@@ -294,7 +294,7 @@ export function Character() {
 
         {/* Collar / scarf — thin pink band at the neckline. Slight emissive
             so the accent reads in the dim dark-theme ambient. Now outlined. */}
-        <mesh position={[0, 1.32, 0]} castShadow>
+        <mesh position={[0, 1.32, 0]}>
           <boxGeometry args={[0.44, 0.05, 0.28]} />
           <meshPhongMaterial color={COLORS.pink} emissive={COLORS.pink} emissiveIntensity={0.2} shininess={8} flatShading />
           <Edges color={edgeColor} lineWidth={1.5} />
@@ -305,12 +305,12 @@ export function Character() {
             (half-width 0.21) and the scarf (half-width 0.22) with a
             ~0.05 gap — prevents the "arms glued to torso" silhouette
             and kills any grazing z-fight risk flagged by motion review. */}
-        <mesh ref={armLRef} position={[-0.32, 1.05, 0]} castShadow>
+        <mesh ref={armLRef} position={[-0.32, 1.05, 0]}>
           <boxGeometry args={[0.1, 0.45, 0.1]} />
           <meshPhongMaterial color={tints.armL} flatShading />
           <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
-        <mesh ref={armRRef} position={[0.32, 1.05, 0]} castShadow>
+        <mesh ref={armRRef} position={[0.32, 1.05, 0]}>
           <boxGeometry args={[0.1, 0.45, 0.1]} />
           <meshPhongMaterial color={tints.armR} flatShading />
           <Edges color={edgeColor} lineWidth={1.5} />
@@ -321,23 +321,23 @@ export function Character() {
             a meaningful width difference (0.14 thigh → 0.12 shin) that
             actually reads. Shin is also slightly darker to reinforce. */}
         {/* Thighs */}
-        <mesh position={[-0.1, 0.71, 0]} castShadow>
+        <mesh position={[-0.1, 0.71, 0]}>
           <boxGeometry args={[0.14, 0.30, 0.14]} />
           <meshPhongMaterial color={tints.thighL} flatShading />
           <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
-        <mesh position={[0.1, 0.71, 0]} castShadow>
+        <mesh position={[0.1, 0.71, 0]}>
           <boxGeometry args={[0.14, 0.30, 0.14]} />
           <meshPhongMaterial color={tints.thighR} flatShading />
           <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
         {/* Shins — narrower, slightly darker */}
-        <mesh position={[-0.1, 0.47, 0]} castShadow>
+        <mesh position={[-0.1, 0.47, 0]}>
           <boxGeometry args={[0.12, 0.18, 0.12]} />
           <meshPhongMaterial color={tints.shinL} flatShading />
           <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
-        <mesh position={[0.1, 0.47, 0]} castShadow>
+        <mesh position={[0.1, 0.47, 0]}>
           <boxGeometry args={[0.12, 0.18, 0.12]} />
           <meshPhongMaterial color={tints.shinR} flatShading />
           <Edges color={edgeColor} lineWidth={1.5} />
@@ -345,22 +345,22 @@ export function Character() {
 
         {/* Shoes — main sole. Positioned at the new shin bottom Y (~0.38).
             Glossy shininess=60 for a leather sheen (craft review #2). */}
-        <mesh position={[-0.1, 0.35, 0.03]} castShadow>
+        <mesh position={[-0.1, 0.35, 0.03]}>
           <boxGeometry args={[0.15, 0.06, 0.2]} />
           <meshPhongMaterial color={tints.shoeL} shininess={60} flatShading />
           <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
-        <mesh position={[0.1, 0.35, 0.03]} castShadow>
+        <mesh position={[0.1, 0.35, 0.03]}>
           <boxGeometry args={[0.15, 0.06, 0.2]} />
           <meshPhongMaterial color={tints.shoeR} shininess={60} flatShading />
           <Edges color={edgeColor} lineWidth={1.5} />
         </mesh>
         {/* Toe-caps — darker front block to read as a shoe with a tip */}
-        <mesh position={[-0.1, 0.36, 0.14]} castShadow>
+        <mesh position={[-0.1, 0.36, 0.14]}>
           <boxGeometry args={[0.16, 0.07, 0.06]} />
           <meshPhongMaterial color={TOE_CAP} shininess={60} flatShading />
         </mesh>
-        <mesh position={[0.1, 0.36, 0.14]} castShadow>
+        <mesh position={[0.1, 0.36, 0.14]}>
           <boxGeometry args={[0.16, 0.07, 0.06]} />
           <meshPhongMaterial color={TOE_CAP} shininess={60} flatShading />
         </mesh>

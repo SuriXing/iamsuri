@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import { registerCollider, unregisterCollider } from '../colliders';
 import { Edges } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+// Named imports — namespace import defeats tree-shaking of three.
+import { Color, Mesh, PointLight } from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
 import { PRODUCT_ROOM_CONTENT } from '../../../data/productRoom';
 import { useWorldStore } from '../../store/worldStore';
@@ -61,8 +62,8 @@ interface ScreenStandProps {
   x: number;
   oz: number;
   interactable: InteractableData;
-  liveDotRef: React.RefObject<THREE.Mesh | null>;
-  barRef: React.RefObject<THREE.Mesh | null>;
+  liveDotRef: React.RefObject<Mesh | null>;
+  barRef: React.RefObject<Mesh | null>;
   edgeColor: string;
 }
 
@@ -70,19 +71,19 @@ function ScreenStand({ x, oz, interactable, liveDotRef, barRef, edgeColor }: Scr
   return (
     <group>
       {/* Stand post */}
-      <mesh position={[x, 1.0, oz - 0.42]} castShadow>
+      <mesh position={[x, 1.0, oz - 0.42]}>
         <boxGeometry args={[0.12, 0.6, 0.12]} />
         <meshPhongMaterial color={METAL} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       {/* Base plate */}
-      <mesh position={[x, 0.73, oz - 0.42]} castShadow>
+      <mesh position={[x, 0.73, oz - 0.42]}>
         <boxGeometry args={[0.38, 0.05, 0.26]} />
         <meshPhongMaterial color={METAL_LIGHT} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       {/* Monitor bezel */}
-      <mesh position={[x, 1.55, oz - 0.42]} castShadow>
+      <mesh position={[x, 1.55, oz - 0.42]}>
         <boxGeometry args={[1.1, 0.76, 0.08]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
@@ -128,7 +129,7 @@ export function ProductRoom() {
   // Deterministic floor-band tints (stable per-mount, no per-frame alloc).
   const bandTints = useMemo<ReadonlyArray<string>>(() => {
     const rng = makeRng(BAND_SEED);
-    const base = new THREE.Color(SLATE_DEEP);
+    const base = new Color(SLATE_DEEP);
     const out: string[] = [];
     for (let i = 0; i < 3; i++) {
       const c = base.clone();
@@ -140,17 +141,18 @@ export function ProductRoom() {
   }, []);
 
   // All refs — declared in stable order, top of component.
-  const dot1Ref = useRef<THREE.Mesh>(null);
-  const dot2Ref = useRef<THREE.Mesh>(null);
-  const bar1Ref = useRef<THREE.Mesh>(null);
-  const bar2Ref = useRef<THREE.Mesh>(null);
-  const fanRef = useRef<THREE.Mesh>(null);
-  const rackLedRefs = useRef<Array<THREE.Mesh | null>>([]);
-  const accentLightRef = useRef<THREE.PointLight>(null);
+  const dot1Ref = useRef<Mesh>(null);
+  const dot2Ref = useRef<Mesh>(null);
+  const bar1Ref = useRef<Mesh>(null);
+  const bar2Ref = useRef<Mesh>(null);
+  const fanRef = useRef<Mesh>(null);
+  const rackLedRefs = useRef<Array<Mesh | null>>([]);
+  const accentLightRef = useRef<PointLight>(null);
 
   useFrame(({ clock }) => {
+    const vm = useWorldStore.getState().viewMode;
+    if (vm !== 'overview' && vm !== 'product') return;
     const t = clock.getElapsedTime();
-    // Zero-brightness-motion pass: power LED + rack LED + accent light
     // intensity mutations all removed. Only physical motion remains
     // (fan rotation + scanline position bob).
     const fan = fanRef.current;
@@ -191,7 +193,7 @@ export function ProductRoom() {
   return (
     <group>
       {/* ----- FLOOR STAGE — base slab + two tint bands ----- */}
-      <mesh position={[ox, 0.15, oz - 0.3]} receiveShadow>
+      <mesh position={[ox, 0.15, oz - 0.3]}>
         <boxGeometry args={[3.8, 0.05, 2.6]} />
         <meshPhongMaterial color={bandTints[0]} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -212,29 +214,29 @@ export function ProductRoom() {
       {/* F3.21 two-tone lighting fake — cool floor band cooling toward the
           server rack (back-left). Thin overlay ~5% darker/cooler than the
           base slate, sized to cover the rack quadrant. */}
-      <mesh position={[ox - 1.0, 0.184, oz + 0.6]} receiveShadow>
+      <mesh position={[ox - 1.0, 0.184, oz + 0.6]}>
         <boxGeometry args={[1.6, 0.005, 1.3]} />
         <meshPhongMaterial color="#161e2f" flatShading />
       </mesh>
 
       {/* ----- DESK (top + trim + tapered legs) ----- */}
-      <mesh position={[deskX, deskY, deskZ]} castShadow receiveShadow>
+      <mesh position={[deskX, deskY, deskZ]}>
         <boxGeometry args={[2.2, 0.08, 0.95]} />
         <meshPhongMaterial color={SLATE_MID} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
-      <mesh position={[deskX, deskY - 0.06, deskZ]} castShadow>
+      <mesh position={[deskX, deskY - 0.06, deskZ]}>
         <boxGeometry args={[2.18, 0.03, 0.93]} />
         <meshPhongMaterial color={SLATE_LIGHT} flatShading />
       </mesh>
       {DESK_LEGS.map(([dx, dz], i) => (
-        <mesh key={`leg-top-${i}`} position={[deskX + dx, deskY - 0.25, deskZ + dz]} castShadow>
+        <mesh key={`leg-top-${i}`} position={[deskX + dx, deskY - 0.25, deskZ + dz]}>
           <boxGeometry args={[0.08, 0.42, 0.08]} />
           <meshPhongMaterial color={METAL} flatShading />
         </mesh>
       ))}
       {DESK_LEGS.map(([dx, dz], i) => (
-        <mesh key={`leg-bot-${i}`} position={[deskX + dx, deskY - 0.6, deskZ + dz]} castShadow>
+        <mesh key={`leg-bot-${i}`} position={[deskX + dx, deskY - 0.6, deskZ + dz]}>
           <boxGeometry args={[0.06, 0.28, 0.06]} />
           <meshPhongMaterial color={METAL_LIGHT} flatShading />
         </mesh>
@@ -264,7 +266,7 @@ export function ProductRoom() {
       />
 
       {/* ----- KEYBOARD + MOUSE + MOUSEPAD ON DESK ----- */}
-      <mesh position={[deskX, deskY + 0.055, deskZ + 0.15]} castShadow>
+      <mesh position={[deskX, deskY + 0.055, deskZ + 0.15]}>
         <boxGeometry args={[0.85, 0.03, 0.26]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -285,14 +287,14 @@ export function ProductRoom() {
         <boxGeometry args={[0.32, 0.01, 0.24]} />
         <meshPhongMaterial color={SLATE_LIGHT} flatShading />
       </mesh>
-      <mesh position={[deskX + 0.6, deskY + 0.07, deskZ + 0.2]} castShadow>
+      <mesh position={[deskX + 0.6, deskY + 0.07, deskZ + 0.2]}>
         <boxGeometry args={[0.08, 0.04, 0.12]} />
         <meshPhongMaterial color={WHITE_COOL} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
 
       {/* ----- LAPTOP (closed) ----- */}
-      <mesh position={[deskX - 0.75, deskY + 0.06, deskZ + 0.05]} rotation={[0, 0.1, 0]} castShadow>
+      <mesh position={[deskX - 0.75, deskY + 0.06, deskZ + 0.05]} rotation={[0, 0.1, 0]}>
         <boxGeometry args={[0.42, 0.03, 0.3]} />
         <meshPhongMaterial color="#0f172a" flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -303,7 +305,7 @@ export function ProductRoom() {
       </mesh>
 
       {/* ----- COFFEE MUG ----- */}
-      <mesh position={[deskX + 0.9, deskY + 0.125, deskZ - 0.15]} castShadow>
+      <mesh position={[deskX + 0.9, deskY + 0.125, deskZ - 0.15]}>
         <cylinderGeometry args={[0.07, 0.065, 0.17, 10]} />
         <meshPhongMaterial color={WHITE_COOL} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -314,15 +316,15 @@ export function ProductRoom() {
       </mesh>
 
       {/* ----- HEADPHONES (boxy) ----- */}
-      <mesh position={[deskX - 0.9, deskY + 0.135, deskZ - 0.2]} castShadow>
+      <mesh position={[deskX - 0.9, deskY + 0.135, deskZ - 0.2]}>
         <boxGeometry args={[0.04, 0.16, 0.18]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
-      <mesh position={[deskX - 0.78, deskY + 0.2, deskZ - 0.2]} castShadow>
+      <mesh position={[deskX - 0.78, deskY + 0.2, deskZ - 0.2]}>
         <boxGeometry args={[0.22, 0.02, 0.04]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
-      <mesh position={[deskX - 0.66, deskY + 0.135, deskZ - 0.2]} castShadow>
+      <mesh position={[deskX - 0.66, deskY + 0.135, deskZ - 0.2]}>
         <boxGeometry args={[0.04, 0.16, 0.18]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
@@ -342,22 +344,22 @@ export function ProductRoom() {
       </mesh>
 
       {/* ----- USB DRIVES ----- */}
-      <mesh position={[deskX + 0.35, deskY + 0.07, deskZ - 0.32]} castShadow>
+      <mesh position={[deskX + 0.35, deskY + 0.07, deskZ - 0.32]}>
         <boxGeometry args={[0.04, 0.04, 0.1]} />
         <meshPhongMaterial color={METAL_LIGHT} flatShading />
       </mesh>
-      <mesh position={[deskX + 0.43, deskY + 0.07, deskZ - 0.32]} castShadow>
+      <mesh position={[deskX + 0.43, deskY + 0.07, deskZ - 0.32]}>
         <boxGeometry args={[0.04, 0.04, 0.1]} />
         <meshPhongMaterial color={CYAN} emissive={CYAN} emissiveIntensity={0.5} flatShading />
       </mesh>
 
       {/* ----- RUBBER DUCK (debug buddy) ----- */}
-      <mesh position={[deskX + 0.15, deskY + 0.09, deskZ - 0.32]} castShadow>
+      <mesh position={[deskX + 0.15, deskY + 0.09, deskZ - 0.32]}>
         <boxGeometry args={[0.09, 0.08, 0.12]} />
         <meshPhongMaterial color="#facc15" emissive="#facc15" emissiveIntensity={0.3} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh position={[deskX + 0.15, deskY + 0.15, deskZ - 0.34]} castShadow>
+      <mesh position={[deskX + 0.15, deskY + 0.15, deskZ - 0.34]}>
         <boxGeometry args={[0.07, 0.06, 0.08]} />
         <meshPhongMaterial color="#facc15" emissive="#facc15" emissiveIntensity={0.3} flatShading />
       </mesh>
@@ -367,17 +369,17 @@ export function ProductRoom() {
       </mesh>
 
       {/* ----- SERVER RACK (hero) ----- */}
-      <mesh position={[rackX, 0.8, rackZ]} castShadow receiveShadow>
+      <mesh position={[rackX, 0.8, rackZ]}>
         <boxGeometry args={[0.8, 1.5, 0.6]} />
         <meshPhongMaterial color={RACK_BLACK} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
-      <mesh position={[rackX, 0.8, rackZ + 0.305]} castShadow>
+      <mesh position={[rackX, 0.8, rackZ + 0.305]}>
         <boxGeometry args={[0.7, 1.4, 0.02]} />
         <meshPhongMaterial color="#1a1f28" flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh position={[rackX, 1.56, rackZ]} castShadow>
+      <mesh position={[rackX, 1.56, rackZ]}>
         <boxGeometry args={[0.78, 0.04, 0.58]} />
         <meshPhongMaterial color={METAL} flatShading />
       </mesh>
@@ -422,7 +424,7 @@ export function ProductRoom() {
       </mesh>
 
       {/* ----- SHIPPING CRATES (stacked) ----- */}
-      <mesh position={[crateX, 0.33, crateZ]} castShadow receiveShadow>
+      <mesh position={[crateX, 0.33, crateZ]}>
         <boxGeometry args={[0.72, 0.48, 0.6]} />
         <meshPhongMaterial color="#6b5a42" flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
@@ -431,7 +433,7 @@ export function ProductRoom() {
         <boxGeometry args={[0.73, 0.04, 0.61]} />
         <meshPhongMaterial color="#8a7354" flatShading />
       </mesh>
-      <mesh position={[crateX - 0.1, 0.92, crateZ - 0.05]} rotation={[0, 0.15, 0]} castShadow receiveShadow>
+      <mesh position={[crateX - 0.1, 0.92, crateZ - 0.05]} rotation={[0, 0.15, 0]}>
         <boxGeometry args={[0.56, 0.4, 0.5]} />
         <meshPhongMaterial color="#7a6746" flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
@@ -448,7 +450,7 @@ export function ProductRoom() {
           key={c}
           position={[deskX - 0.5 + i * 0.5, deskY + 0.13, deskZ - 0.05]}
           rotation={[0, (Math.PI / 6) * i, 0]}
-          castShadow
+         
         >
           <boxGeometry args={[0.18, 0.18, 0.18]} />
           <meshPhongMaterial color={c} emissive={c} emissiveIntensity={0.5} flatShading />

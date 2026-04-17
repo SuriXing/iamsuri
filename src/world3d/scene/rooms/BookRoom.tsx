@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Edges } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+// Named imports — namespace import defeats tree-shaking of three.
+import { Group, Mesh, PointLight } from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
 import { Bookshelf } from '../parts/Bookshelf';
 import { useWorldStore } from '../../store/worldStore';
@@ -86,15 +87,17 @@ export function BookRoom() {
   }, []);
 
   // Refs for micro-animations.
-  const lampGlowRef = useRef<THREE.Mesh>(null);
-  const accentLightRef = useRef<THREE.PointLight>(null);
-  const pageRef = useRef<THREE.Mesh>(null);
-  const dustRefs = useRef<Array<THREE.Mesh | null>>([]);
+  const lampGlowRef = useRef<Mesh>(null);
+  const accentLightRef = useRef<PointLight>(null);
+  const pageRef = useRef<Mesh>(null);
+  const dustRefs = useRef<Array<Mesh | null>>([]);
   // F3.15 hero refs — globe group rotates; gold frame emissive pulses.
-  const globeRef = useRef<THREE.Group>(null);
-  const frameRef = useRef<THREE.Mesh>(null);
+  const globeRef = useRef<Group>(null);
+  const frameRef = useRef<Mesh>(null);
 
   useFrame(({ clock }) => {
+    const vm = useWorldStore.getState().viewMode;
+    if (vm !== 'overview' && vm !== 'book') return;
     const t = clock.getElapsedTime();
     // Zero-brightness-motion pass: lamp emissive pulse + accent light
     // intensity pulse + frame glow pulse all removed. Only physical
@@ -161,13 +164,13 @@ export function BookRoom() {
   return (
     <group>
       {/* ----- FLOOR — two-tone wood planks + center rug ----- */}
-      <mesh position={[ox, 0.11, oz]} receiveShadow>
+      <mesh position={[ox, 0.11, oz]}>
         <boxGeometry args={[4.4, 0.02, 4.4]} />
         <meshPhongMaterial color={WOOD_DEEP} flatShading />
       </mesh>
       {/* Plank stripes */}
       {[-1.6, -0.8, 0.0, 0.8, 1.6].map((dx, i) => (
-        <mesh key={`plank-${i}`} position={[ox + dx, 0.125, oz]} receiveShadow>
+        <mesh key={`plank-${i}`} position={[ox + dx, 0.125, oz]}>
           <boxGeometry args={[0.72, 0.01, 4.3]} />
           <meshPhongMaterial color={i % 2 === 0 ? WOOD_MID : WOOD_LIGHT} flatShading />
         </mesh>
@@ -179,7 +182,7 @@ export function BookRoom() {
           entirely; the room reads fine without it. */}
       {/* Central amber rug — bumped from 0.135 → 0.20 (~7cm above
           planks, well outside any depth precision noise). */}
-      <mesh position={[ox, 0.20, oz + 0.5]} receiveShadow>
+      <mesh position={[ox, 0.20, oz + 0.5]}>
         <boxGeometry args={[2.8, 0.02, 2.0]} />
         <meshPhongMaterial color="#8c5a3a" emissive="#8c5a3a" emissiveIntensity={0.2} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -247,12 +250,12 @@ export function BookRoom() {
       />
 
       {/* ----- LIBRARY LADDER (leaning against left shelf) ----- */}
-      <mesh position={[shelfLX - 0.75, 1.1, oz - 1.15]} rotation={[0, 0, -0.18]} castShadow>
+      <mesh position={[shelfLX - 0.75, 1.1, oz - 1.15]} rotation={[0, 0, -0.18]}>
         <boxGeometry args={[0.04, 2.0, 0.04]} />
         <meshPhongMaterial color={WOOD_LIGHT} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh position={[shelfLX - 0.55, 1.1, oz - 1.15]} rotation={[0, 0, -0.18]} castShadow>
+      <mesh position={[shelfLX - 0.55, 1.1, oz - 1.15]} rotation={[0, 0, -0.18]}>
         <boxGeometry args={[0.04, 2.0, 0.04]} />
         <meshPhongMaterial color={WOOD_LIGHT} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -263,7 +266,7 @@ export function BookRoom() {
           key={`rung-${i}`}
           position={[shelfLX - 0.65 + (y - 1.1) * 0.18, y, oz - 1.15]}
           rotation={[0, 0, -0.18]}
-          castShadow
+         
         >
           <boxGeometry args={[0.22, 0.03, 0.04]} />
           <meshPhongMaterial color={WOOD_LIGHT} flatShading />
@@ -272,19 +275,19 @@ export function BookRoom() {
 
       {/* ----- READING CHAIR (hero — base + seat cushion + back + arms) ----- */}
       {/* Base block */}
-      <mesh position={[chairX, 0.28, chairZ]} castShadow receiveShadow>
+      <mesh position={[chairX, 0.28, chairZ]}>
         <boxGeometry args={[0.95, 0.32, 0.85]} />
         <meshPhongMaterial color={CHAIR_GREEN_DK} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
       {/* Seat cushion */}
-      <mesh position={[chairX, 0.49, chairZ + 0.02]} castShadow>
+      <mesh position={[chairX, 0.49, chairZ + 0.02]}>
         <boxGeometry args={[0.82, 0.12, 0.72]} />
         <meshPhongMaterial color={CHAIR_GREEN} emissive={CHAIR_GREEN} emissiveIntensity={0.08} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       {/* Back rest */}
-      <mesh position={[chairX, 0.82, chairZ + 0.42]} castShadow receiveShadow>
+      <mesh position={[chairX, 0.82, chairZ + 0.42]}>
         <boxGeometry args={[0.95, 0.9, 0.14]} />
         <meshPhongMaterial color={CHAIR_GREEN_DK} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
@@ -296,39 +299,39 @@ export function BookRoom() {
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       {/* Left arm */}
-      <mesh position={[chairX - 0.48, 0.58, chairZ]} castShadow>
+      <mesh position={[chairX - 0.48, 0.58, chairZ]}>
         <boxGeometry args={[0.12, 0.3, 0.78]} />
         <meshPhongMaterial color={CHAIR_GREEN_DK} flatShading />
       </mesh>
       {/* Right arm */}
-      <mesh position={[chairX + 0.48, 0.58, chairZ]} castShadow>
+      <mesh position={[chairX + 0.48, 0.58, chairZ]}>
         <boxGeometry args={[0.12, 0.3, 0.78]} />
         <meshPhongMaterial color={CHAIR_GREEN_DK} flatShading />
       </mesh>
       {/* Throw blanket draped over arm */}
-      <mesh position={[chairX - 0.48, 0.73, chairZ - 0.1]} rotation={[0, 0, 0.2]} castShadow>
+      <mesh position={[chairX - 0.48, 0.73, chairZ - 0.1]} rotation={[0, 0, 0.2]}>
         <boxGeometry args={[0.2, 0.04, 0.5]} />
         <meshPhongMaterial color="#c47a5e" emissive="#c47a5e" emissiveIntensity={0.12} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       {/* Cushion on seat */}
-      <mesh position={[chairX + 0.15, 0.6, chairZ + 0.15]} rotation={[0, 0.3, 0]} castShadow>
+      <mesh position={[chairX + 0.15, 0.6, chairZ + 0.15]} rotation={[0, 0.3, 0]}>
         <boxGeometry args={[0.35, 0.12, 0.32]} />
         <meshPhongMaterial color="#dda0a0" emissive="#dda0a0" emissiveIntensity={0.15} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
 
       {/* ----- SIDE TABLE (top + pedestal + base) ----- */}
-      <mesh position={[tableX, 0.58, tableZ]} castShadow receiveShadow>
+      <mesh position={[tableX, 0.58, tableZ]}>
         <boxGeometry args={[0.55, 0.05, 0.55]} />
         <meshPhongMaterial color={WOOD_LIGHT} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh position={[tableX, 0.3, tableZ]} castShadow>
+      <mesh position={[tableX, 0.3, tableZ]}>
         <boxGeometry args={[0.08, 0.5, 0.08]} />
         <meshPhongMaterial color={WOOD_MID} flatShading />
       </mesh>
-      <mesh position={[tableX, 0.08, tableZ]} castShadow>
+      <mesh position={[tableX, 0.08, tableZ]}>
         <boxGeometry args={[0.28, 0.04, 0.28]} />
         <meshPhongMaterial color={WOOD_DEEP} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -344,7 +347,7 @@ export function BookRoom() {
         <meshPhongMaterial color={BRASS} flatShading />
       </mesh>
       {/* Lamp shade */}
-      <mesh position={[tableX - 0.15, 1.18, tableZ - 0.15]} castShadow>
+      <mesh position={[tableX - 0.15, 1.18, tableZ - 0.15]}>
         <cylinderGeometry args={[0.11, 0.18, 0.18, 10]} />
         <meshPhongMaterial color={CREAM} emissive={AMBER_WARM} emissiveIntensity={0.3} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -357,12 +360,12 @@ export function BookRoom() {
 
       {/* ----- OPEN BOOK ON TABLE (two halves forming a V) ----- */}
       <group ref={pageRef} position={[tableX + 0.08, 0.61, tableZ]}>
-        <mesh rotation={[0, 0, 0.08]} castShadow>
+        <mesh rotation={[0, 0, 0.08]}>
           <boxGeometry args={[0.2, 0.02, 0.26]} />
           <meshPhongMaterial color={CREAM} flatShading />
           <Edges color={edgeColor} lineWidth={1} />
         </mesh>
-        <mesh position={[0.18, 0, 0]} rotation={[0, 0, -0.08]} castShadow>
+        <mesh position={[0.18, 0, 0]} rotation={[0, 0, -0.08]}>
           <boxGeometry args={[0.2, 0.02, 0.26]} />
           <meshPhongMaterial color={CREAM_DARK} flatShading />
           <Edges color={edgeColor} lineWidth={1} />
@@ -374,7 +377,7 @@ export function BookRoom() {
         <cylinderGeometry args={[0.07, 0.07, 0.008, 10]} />
         <meshPhongMaterial color={CREAM} flatShading />
       </mesh>
-      <mesh position={[tableX + 0.12, 0.66, tableZ + 0.2]} castShadow>
+      <mesh position={[tableX + 0.12, 0.66, tableZ + 0.2]}>
         <cylinderGeometry args={[0.05, 0.045, 0.08, 10]} />
         <meshPhongMaterial color={CREAM} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -399,17 +402,17 @@ export function BookRoom() {
       </mesh>
 
       {/* ----- STACKED BOOKS ON FLOOR (3 books, varied rotation) ----- */}
-      <mesh position={[chairX - 0.85, 0.18, chairZ - 0.25]} rotation={[0, 0.15, 0]} castShadow>
+      <mesh position={[chairX - 0.85, 0.18, chairZ - 0.25]} rotation={[0, 0.15, 0]}>
         <boxGeometry args={[0.4, 0.08, 0.28]} />
         <meshPhongMaterial color="#9bb58c" flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh position={[chairX - 0.85, 0.26, chairZ - 0.25]} rotation={[0, -0.1, 0]} castShadow>
+      <mesh position={[chairX - 0.85, 0.26, chairZ - 0.25]} rotation={[0, -0.1, 0]}>
         <boxGeometry args={[0.38, 0.07, 0.26]} />
         <meshPhongMaterial color="#8ba7b8" flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh position={[chairX - 0.85, 0.335, chairZ - 0.25]} rotation={[0, 0.2, 0]} castShadow>
+      <mesh position={[chairX - 0.85, 0.335, chairZ - 0.25]} rotation={[0, 0.2, 0]}>
         <boxGeometry args={[0.35, 0.06, 0.24]} />
         <meshPhongMaterial color="#d4b48c" flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -421,26 +424,26 @@ export function BookRoom() {
       </mesh>
 
       {/* ----- POTTED FERN (cozy corner greenery) ----- */}
-      <mesh position={[ox + 1.8, 0.22, oz + 1.5]} castShadow>
+      <mesh position={[ox + 1.8, 0.22, oz + 1.5]}>
         <boxGeometry args={[0.28, 0.34, 0.28]} />
         <meshPhongMaterial color={WOOD_MID} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh position={[ox + 1.8, 0.52, oz + 1.5]} castShadow>
+      <mesh position={[ox + 1.8, 0.52, oz + 1.5]}>
         <boxGeometry args={[0.36, 0.16, 0.36]} />
         <meshPhongMaterial color={FOREST} emissive={FOREST} emissiveIntensity={0.15} flatShading />
       </mesh>
-      <mesh position={[ox + 1.72, 0.64, oz + 1.48]} castShadow>
+      <mesh position={[ox + 1.72, 0.64, oz + 1.48]}>
         <boxGeometry args={[0.18, 0.2, 0.18]} />
         <meshPhongMaterial color={FOREST_LIGHT} emissive={FOREST_LIGHT} emissiveIntensity={0.15} flatShading />
       </mesh>
-      <mesh position={[ox + 1.88, 0.7, oz + 1.52]} castShadow>
+      <mesh position={[ox + 1.88, 0.7, oz + 1.52]}>
         <boxGeometry args={[0.16, 0.26, 0.16]} />
         <meshPhongMaterial color={FOREST_LIGHT} emissive={FOREST_LIGHT} emissiveIntensity={0.15} flatShading />
       </mesh>
 
       {/* ----- GLOBE ON LEFT CORNER (F3.15 hero: slow spin) ----- */}
-      <mesh position={[ox - 1.85, 0.3, oz + 1.5]} castShadow>
+      <mesh position={[ox - 1.85, 0.3, oz + 1.5]}>
         <boxGeometry args={[0.2, 0.06, 0.2]} />
         <meshPhongMaterial color={WOOD_DEEP} flatShading />
       </mesh>
@@ -450,7 +453,7 @@ export function BookRoom() {
       </mesh>
       {/* Spinning sphere + ring group — hero focal animation */}
       <group ref={globeRef} position={[ox - 1.85, 0.56, oz + 1.5]}>
-        <mesh castShadow>
+        <mesh>
           <sphereGeometry args={[0.16, 8, 8]} />
           <meshPhongMaterial color="#8ba7b8" emissive="#8ba7b8" emissiveIntensity={0.15} flatShading />
           <Edges color={edgeColor} lineWidth={1} />
@@ -487,7 +490,7 @@ export function BookRoom() {
       <pointLight position={[ox, 2.0, oz + 0.5]} color="#e8a860" intensity={0.4} distance={9} />
 
       {/* ----- FRAMED PICTURE ABOVE CHAIR (gold frame — F3.15 breathes) ----- */}
-      <mesh ref={frameRef} position={[chairX, 1.85, chairZ + 0.55]} castShadow>
+      <mesh ref={frameRef} position={[chairX, 1.85, chairZ + 0.55]}>
         <boxGeometry args={[0.6, 0.45, 0.04]} />
         <meshPhongMaterial
           color={GOLD}

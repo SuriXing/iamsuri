@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Edges } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+// Named imports — namespace import pulls the full three.js surface
+// (BatchedMesh, loaders, AnimationMixer, etc.) into the chunk.
+import { Group, InstancedMesh, Mesh, Object3D, PointLight } from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
 import { registerCollider, unregisterCollider } from '../colliders';
 import { FLOOR_Y } from '../../constants';
@@ -98,7 +100,7 @@ const SPARK_ORANGE_COUNT = SPARK_ORANGE.bx.length;
 const SPARK_WARM_COUNT = SPARK_WARM.bx.length;
 
 // Zero-alloc scratch for the spark useFrame loop.
-const SPARK_DUMMY = new THREE.Object3D();
+const SPARK_DUMMY = new Object3D();
 
 // --- Micro-anim constants (module scope) ---
 const GEAR_SPEED_A = 1.4;
@@ -191,19 +193,24 @@ export function IdeaLab() {
   }, []);
 
   // Refs for micro-animations.
-  const bulbRef = useRef<THREE.Mesh>(null);
-  const bulbLightRef = useRef<THREE.PointLight>(null);
-  const gearARef = useRef<THREE.Mesh>(null);
-  const gearBRef = useRef<THREE.Mesh>(null);
-  const gearCRef = useRef<THREE.Mesh>(null);
-  const prototypeRef = useRef<THREE.Mesh>(null);
-  const hangingToolRef = useRef<THREE.Group>(null);
-  const solderTipRef = useRef<THREE.Mesh>(null);
-  const accentLightRef = useRef<THREE.PointLight>(null);
-  const sparksOrangeRef = useRef<THREE.InstancedMesh>(null);
-  const sparksWarmRef = useRef<THREE.InstancedMesh>(null);
+  const bulbRef = useRef<Mesh>(null);
+  const bulbLightRef = useRef<PointLight>(null);
+  const gearARef = useRef<Mesh>(null);
+  const gearBRef = useRef<Mesh>(null);
+  const gearCRef = useRef<Mesh>(null);
+  const prototypeRef = useRef<Mesh>(null);
+  const hangingToolRef = useRef<Group>(null);
+  const solderTipRef = useRef<Mesh>(null);
+  const accentLightRef = useRef<PointLight>(null);
+  const sparksOrangeRef = useRef<InstancedMesh>(null);
+  const sparksWarmRef = useRef<InstancedMesh>(null);
 
   useFrame(({ clock }, delta) => {
+    // Skip animation entirely while the user is inside a different room
+    // — those rooms are not rendered in the portal view, so wasting
+    // frame budget on their sparks/gears is pure burn.
+    const vm = useWorldStore.getState().viewMode;
+    if (vm !== 'overview' && vm !== 'idealab') return;
     const t = clock.getElapsedTime();
 
     // Zero-brightness-motion: bulb position bob kept, emissive +
@@ -317,12 +324,12 @@ export function IdeaLab() {
   return (
     <group>
       {/* ----- WOOD PLANK FLOOR (two-tone bands) ----- */}
-      <mesh position={[ox, FLOOR_Y + 0.09, oz]} receiveShadow>
+      <mesh position={[ox, FLOOR_Y + 0.09, oz]}>
         <boxGeometry args={[4.6, 0.03, 4.6]} />
         <meshPhongMaterial color={WOOD_DEEP} flatShading />
       </mesh>
       {PLANK_STRIPES.map((dx, i) => (
-        <mesh key={`plank-${i}`} position={[ox + dx, FLOOR_Y + 0.105, oz]} receiveShadow>
+        <mesh key={`plank-${i}`} position={[ox + dx, FLOOR_Y + 0.105, oz]}>
           <boxGeometry args={[0.74, 0.01, 4.5]} />
           <meshPhongMaterial color={i % 2 === 0 ? WOOD_MID : WOOD_PLANK} flatShading />
         </mesh>
@@ -356,7 +363,7 @@ export function IdeaLab() {
       ))}
 
       {/* ----- IDEA BOARD / WHITEBOARD (interactable preserved) ----- */}
-      <mesh position={[ox, 1.25, oz - 2.08]} castShadow receiveShadow>
+      <mesh position={[ox, 1.25, oz - 2.08]}>
         <boxGeometry args={[2.6, 1.7, 0.08]} />
         <meshPhongMaterial color={WOOD_MID} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
@@ -403,19 +410,19 @@ export function IdeaLab() {
       </mesh>
 
       {/* ----- WORKBENCH (hero — thick top + trim + 4 legs) ----- */}
-      <mesh position={[benchX, benchTopY, benchZ]} castShadow receiveShadow>
+      <mesh position={[benchX, benchTopY, benchZ]}>
         <boxGeometry args={[2.6, 0.14, 0.95]} />
         <meshPhongMaterial color={WOOD_LIGHT} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
       {/* Bench trim (darker band beneath top) */}
-      <mesh position={[benchX, benchTopY - 0.1, benchZ]} castShadow>
+      <mesh position={[benchX, benchTopY - 0.1, benchZ]}>
         <boxGeometry args={[2.58, 0.06, 0.93]} />
         <meshPhongMaterial color={WOOD_MID} flatShading />
       </mesh>
       {/* Legs — chunky 4-post */}
       {BENCH_LEGS.map(([dx, dz], i) => (
-        <mesh key={`bleg-${i}`} position={[benchX + dx, benchTopY - 0.42, benchZ + dz]} castShadow>
+        <mesh key={`bleg-${i}`} position={[benchX + dx, benchTopY - 0.42, benchZ + dz]}>
           <boxGeometry args={[0.12, 0.6, 0.12]} />
           <meshPhongMaterial color={WOOD_DEEP} flatShading />
           <Edges color={edgeColor} lineWidth={1} />
@@ -427,7 +434,7 @@ export function IdeaLab() {
         <meshPhongMaterial color={WOOD_MID} flatShading />
       </mesh>
       {/* Bench vise (front edge) */}
-      <mesh position={[benchX - 1.0, benchTopY + 0.08, benchZ - 0.42]} castShadow>
+      <mesh position={[benchX - 1.0, benchTopY + 0.08, benchZ - 0.42]}>
         <boxGeometry args={[0.28, 0.16, 0.18]} />
         <meshPhongMaterial color={METAL_DARK} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -445,7 +452,7 @@ export function IdeaLab() {
           m.userData.baseX = benchX;
           m.userData.baseZ = benchZ;
         }}
-        castShadow
+       
       >
         <boxGeometry args={[0.3, 0.18, 0.22]} />
         <meshPhongMaterial color={METAL_MID} flatShading />
@@ -463,23 +470,23 @@ export function IdeaLab() {
       </mesh>
 
       {/* ----- GEARS (3, counter-rotating) — mounted on bench ----- */}
-      <mesh ref={gearARef} position={[benchX + 0.9, benchTopY + 0.15, benchZ - 0.2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+      <mesh ref={gearARef} position={[benchX + 0.9, benchTopY + 0.15, benchZ - 0.2]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.15, 0.15, 0.04, 8]} />
         <meshPhongMaterial color={METAL_LIGHT} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh ref={gearBRef} position={[benchX + 1.15, benchTopY + 0.15, benchZ - 0.05]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+      <mesh ref={gearBRef} position={[benchX + 1.15, benchTopY + 0.15, benchZ - 0.05]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.1, 0.1, 0.04, 6]} />
         <meshPhongMaterial color={METAL_MID} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh ref={gearCRef} position={[benchX + 0.75, benchTopY + 0.15, benchZ + 0.05]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+      <mesh ref={gearCRef} position={[benchX + 0.75, benchTopY + 0.15, benchZ + 0.05]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.08, 0.08, 0.04, 6]} />
         <meshPhongMaterial color={METAL_DARK} flatShading />
       </mesh>
 
       {/* ----- SOLDERING IRON (pulsing tip) ----- */}
-      <mesh position={[benchX - 0.5, benchTopY + 0.05, benchZ + 0.3]} rotation={[0, 0, Math.PI / 2]} castShadow>
+      <mesh position={[benchX - 0.5, benchTopY + 0.05, benchZ + 0.3]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.025, 0.025, 0.3, 6]} />
         <meshPhongMaterial color={ORANGE_SPARK} flatShading />
       </mesh>
@@ -493,22 +500,22 @@ export function IdeaLab() {
       </mesh>
 
       {/* ----- WRENCH + HAMMER ON BENCH (scatter tools) ----- */}
-      <mesh position={[benchX - 0.2, benchTopY + 0.04, benchZ + 0.32]} rotation={[0, 0.6, 0]} castShadow>
+      <mesh position={[benchX - 0.2, benchTopY + 0.04, benchZ + 0.32]} rotation={[0, 0.6, 0]}>
         <boxGeometry args={[0.24, 0.03, 0.05]} />
         <meshPhongMaterial color={METAL_LIGHT} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh position={[benchX + 0.1, benchTopY + 0.05, benchZ + 0.3]} rotation={[0, -0.3, 0]} castShadow>
+      <mesh position={[benchX + 0.1, benchTopY + 0.05, benchZ + 0.3]} rotation={[0, -0.3, 0]}>
         <boxGeometry args={[0.18, 0.03, 0.04]} />
         <meshPhongMaterial color={WOOD_LIGHT} flatShading />
       </mesh>
-      <mesh position={[benchX + 0.2, benchTopY + 0.06, benchZ + 0.3]} rotation={[0, -0.3, 0]} castShadow>
+      <mesh position={[benchX + 0.2, benchTopY + 0.06, benchZ + 0.3]} rotation={[0, -0.3, 0]}>
         <boxGeometry args={[0.08, 0.06, 0.04]} />
         <meshPhongMaterial color={METAL_MID} flatShading />
       </mesh>
 
       {/* ----- JAR OF PARTS (screws) ----- */}
-      <mesh position={[benchX + 0.4, benchTopY + 0.13, benchZ + 0.3]} castShadow>
+      <mesh position={[benchX + 0.4, benchTopY + 0.13, benchZ + 0.3]}>
         <cylinderGeometry args={[0.07, 0.07, 0.22, 10]} />
         <meshPhongMaterial color="#a8bdd0" transparent opacity={0.5} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -523,14 +530,14 @@ export function IdeaLab() {
       </mesh>
 
       {/* ----- TAPE ROLL ----- */}
-      <mesh position={[benchX - 0.75, benchTopY + 0.08, benchZ + 0.05]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+      <mesh position={[benchX - 0.75, benchTopY + 0.08, benchZ + 0.05]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.08, 0.08, 0.04, 10]} />
         <meshPhongMaterial color={AMBER_BULB} emissive={AMBER_BULB} emissiveIntensity={0.1} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
 
       {/* ----- PENCIL CUP ----- */}
-      <mesh position={[benchX + 0.7, benchTopY + 0.1, benchZ - 0.32]} castShadow>
+      <mesh position={[benchX + 0.7, benchTopY + 0.1, benchZ - 0.32]}>
         <cylinderGeometry args={[0.07, 0.06, 0.2, 8]} />
         <meshPhongMaterial color={METAL_MID} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -549,18 +556,18 @@ export function IdeaLab() {
       </mesh>
 
       {/* ----- ROLLS OF PAPER (blueprints, under bench) ----- */}
-      <mesh position={[benchX - 1.05, 0.2, benchZ + 0.35]} rotation={[0, 0, Math.PI / 2]} castShadow>
+      <mesh position={[benchX - 1.05, 0.2, benchZ + 0.35]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.05, 0.05, 0.5, 8]} />
         <meshPhongMaterial color={WHITE_PAPER} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh position={[benchX - 1.05, 0.31, benchZ + 0.35]} rotation={[0, 0, Math.PI / 2]} castShadow>
+      <mesh position={[benchX - 1.05, 0.31, benchZ + 0.35]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.05, 0.05, 0.45, 8]} />
         <meshPhongMaterial color={CORK} flatShading />
       </mesh>
 
       {/* ----- PEGBOARD (on back wall) ----- */}
-      <mesh position={[pegboardX, pegboardY, pegboardZ]} castShadow receiveShadow>
+      <mesh position={[pegboardX, pegboardY, pegboardZ]}>
         <boxGeometry args={[1.8, 1.0, 0.04]} />
         <meshPhongMaterial color={PEG_BROWN} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
@@ -576,7 +583,7 @@ export function IdeaLab() {
       )}
       {/* Tools hanging on pegboard */}
       {PEG_TOOLS.map(([dx, dy, w, h, c], i) => (
-        <mesh key={`ptool-${i}`} position={[pegboardX + dx, pegboardY + dy, pegboardZ + 0.05]} castShadow>
+        <mesh key={`ptool-${i}`} position={[pegboardX + dx, pegboardY + dy, pegboardZ + 0.05]}>
           <boxGeometry args={[w, h, 0.04]} />
           <meshPhongMaterial color={c} flatShading />
           <Edges color={edgeColor} lineWidth={1} />
@@ -589,7 +596,7 @@ export function IdeaLab() {
           <boxGeometry args={[0.008, 0.4, 0.008]} />
           <meshPhongMaterial color={CORK} flatShading />
         </mesh>
-        <mesh position={[0, -0.45, 0]} castShadow>
+        <mesh position={[0, -0.45, 0]}>
           <boxGeometry args={[0.06, 0.18, 0.04]} />
           <meshPhongMaterial color={METAL_LIGHT} flatShading />
           <Edges color={edgeColor} lineWidth={1} />
@@ -597,7 +604,7 @@ export function IdeaLab() {
       </group>
 
       {/* ----- CORK BOARD (small, side wall) ----- */}
-      <mesh position={[ox + 2.05, 1.2, oz - 0.5]} rotation={[0, -Math.PI / 2, 0]} castShadow>
+      <mesh position={[ox + 2.05, 1.2, oz - 0.5]} rotation={[0, -Math.PI / 2, 0]}>
         <boxGeometry args={[1.0, 0.7, 0.04]} />
         <meshPhongMaterial color={CORK} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
@@ -617,7 +624,7 @@ export function IdeaLab() {
       </mesh>
 
       {/* ----- STOOL (simple seat beside bench) ----- */}
-      <mesh position={[benchX + 1.4, 0.45, benchZ + 0.8]} castShadow>
+      <mesh position={[benchX + 1.4, 0.45, benchZ + 0.8]}>
         <boxGeometry args={[0.35, 0.06, 0.35]} />
         <meshPhongMaterial color={WOOD_LIGHT} flatShading />
         <Edges color={edgeColor} lineWidth={1} />

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import { registerCollider, unregisterCollider } from '../colliders';
 import { Edges } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+// Named imports — namespace import defeats tree-shaking of three.
+import { Mesh, PointLight } from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
 import { Bookshelf } from '../parts/Bookshelf';
 import { DeskLamp } from '../parts/DeskLamp';
@@ -111,11 +112,13 @@ export function MyRoom() {
   }, []);
 
   // Micro-animation refs (mirrors DeskLamp zero-alloc pattern).
-  const scanlineRef = useRef<THREE.Mesh>(null);
-  const plantLeavesRef = useRef<THREE.Mesh>(null);
-  const accentLightRef = useRef<THREE.PointLight>(null);
+  const scanlineRef = useRef<Mesh>(null);
+  const plantLeavesRef = useRef<Mesh>(null);
+  const accentLightRef = useRef<PointLight>(null);
 
   useFrame(({ clock }) => {
+    const vm = useWorldStore.getState().viewMode;
+    if (vm !== 'overview' && vm !== 'myroom') return;
     const t = clock.getElapsedTime();
     // Monitor scanline sweep — vertical oscillation across screen.
     const scan = scanlineRef.current;
@@ -140,30 +143,30 @@ export function MyRoom() {
     <group>
       {/* ----- BED ----- */}
       {/* Base — thinner slab */}
-      <mesh position={[bedX, 0.15, bedZ]} castShadow receiveShadow>
+      <mesh position={[bedX, 0.15, bedZ]}>
         <boxGeometry args={[1.5, 0.18, 2.1]} />
         <meshPhongMaterial color={WOOD} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1} />
       </mesh>
       {/* Mattress — thicker slab */}
-      <mesh position={[bedX, 0.38, bedZ]} castShadow receiveShadow>
+      <mesh position={[bedX, 0.38, bedZ]}>
         <boxGeometry args={[1.4, 0.28, 2.0]} />
         <meshPhongMaterial color={PINK} emissive={PINK} emissiveIntensity={0.12} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1} />
       </mesh>
       {/* Sheet fold — visible light/shadow edge */}
-      <mesh position={[bedX, 0.545, bedZ + 0.25]} castShadow>
+      <mesh position={[bedX, 0.545, bedZ + 0.25]}>
         <boxGeometry args={[1.42, 0.06, 1.4]} />
         <meshPhongMaterial color={PINK_DARK} emissive={PINK_DARK} emissiveIntensity={0.08} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1.2} />
       </mesh>
       {/* Pillow indent — two boxes with slightly different tints */}
-      <mesh position={[bedX - 0.3, 0.59, bedZ - 0.75]} rotation={[0, 0.05, 0]} castShadow>
+      <mesh position={[bedX - 0.3, 0.59, bedZ - 0.75]} rotation={[0, 0.05, 0]}>
         <boxGeometry args={[0.55, 0.14, 0.35]} />
         <meshPhongMaterial color={pillowTints[0]} emissive={pillowTints[0]} emissiveIntensity={0.1} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1} />
       </mesh>
-      <mesh position={[bedX + 0.3, 0.59, bedZ - 0.75]} rotation={[0, -0.05, 0]} castShadow>
+      <mesh position={[bedX + 0.3, 0.59, bedZ - 0.75]} rotation={[0, -0.05, 0]}>
         <boxGeometry args={[0.55, 0.14, 0.35]} />
         <meshPhongMaterial color={pillowTints[1]} emissive={pillowTints[1]} emissiveIntensity={0.1} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1} />
@@ -171,8 +174,8 @@ export function MyRoom() {
       {/* Headboard (bed interactable) */}
       <mesh
         position={[bedX, 0.65, bedZ - 1.05]}
-        castShadow
-        receiveShadow
+       
+       
         onUpdate={(m) => {
           m.userData.interactable = HEADBOARD_INTERACTABLE;
         }}
@@ -183,7 +186,7 @@ export function MyRoom() {
       </mesh>
       {/* Bed legs */}
       {BED_LEGS.map(([dx, dz], i) => (
-        <mesh key={i} position={[bedX + dx, 0.05, bedZ + dz]} castShadow>
+        <mesh key={i} position={[bedX + dx, 0.05, bedZ + dz]}>
           <boxGeometry args={[0.08, 0.1, 0.08]} />
           <meshPhongMaterial color={WOOD_DARK} flatShading />
         </mesh>
@@ -194,7 +197,7 @@ export function MyRoom() {
           key={`clothes-${i}`}
           position={[bedX + 0.35, 0.56 + c.dy, bedZ + 0.75]}
           rotation={[0, 0.12, 0]}
-          castShadow
+         
         >
           <boxGeometry args={[c.w, c.h, c.d]} />
           <meshPhongMaterial color={c.color} emissive={c.color} emissiveIntensity={0.08} flatShading />
@@ -203,32 +206,32 @@ export function MyRoom() {
 
       {/* ----- DESK ----- (depth shortened 1.6 → 1.0) */}
       {/* Desk top */}
-      <mesh position={[deskX, 0.78, deskZ]} castShadow receiveShadow>
+      <mesh position={[deskX, 0.78, deskZ]}>
         <boxGeometry args={[1.4, 0.08, 1.0]} />
         <meshPhongMaterial color={WHITE} emissive={WHITE} emissiveIntensity={0.05} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1.2} />
       </mesh>
       {/* Trim board under desk top edge */}
-      <mesh position={[deskX, 0.72, deskZ]} castShadow>
+      <mesh position={[deskX, 0.72, deskZ]}>
         <boxGeometry args={[1.38, 0.02, 0.98]} />
         <meshPhongMaterial color={WHITE_OFF} flatShading />
       </mesh>
       {/* Tapered desk legs — top chunk */}
       {DESK_LEGS.map(([dx, dz], i) => (
-        <mesh key={`leg-top-${i}`} position={[deskX + dx, 0.55, deskZ + dz]} castShadow>
+        <mesh key={`leg-top-${i}`} position={[deskX + dx, 0.55, deskZ + dz]}>
           <boxGeometry args={[0.09, 0.36, 0.09]} />
           <meshPhongMaterial color={WHITE_OFF} flatShading />
         </mesh>
       ))}
       {/* Tapered desk legs — bottom chunk (slimmer) */}
       {DESK_LEGS.map(([dx, dz], i) => (
-        <mesh key={`leg-bot-${i}`} position={[deskX + dx, 0.19, deskZ + dz]} castShadow>
+        <mesh key={`leg-bot-${i}`} position={[deskX + dx, 0.19, deskZ + dz]}>
           <boxGeometry args={[0.06, 0.36, 0.06]} />
           <meshPhongMaterial color={WHITE_OFF} flatShading />
         </mesh>
       ))}
       {/* Drawer face — moved forward to match the shorter desk depth */}
-      <mesh position={[deskX, 0.6, deskZ + 0.3]} castShadow>
+      <mesh position={[deskX, 0.6, deskZ + 0.3]}>
         <boxGeometry args={[1.3, 0.22, 0.3]} />
         <meshPhongMaterial color={WHITE_OFF} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1.2} />
@@ -240,7 +243,7 @@ export function MyRoom() {
       </mesh>
 
       {/* Monitor frame — bumped 1.0x0.65 -> 1.2x0.72 for proper proportion */}
-      <mesh position={[deskX, 1.25, deskZ - 0.5]} castShadow>
+      <mesh position={[deskX, 1.25, deskZ - 0.5]}>
         <boxGeometry args={[1.2, 0.72, 0.06]} />
         <meshPhongMaterial color="#eeeeee" flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1.2} />
@@ -273,21 +276,21 @@ export function MyRoom() {
       </mesh>
 
       {/* Notebook + pen */}
-      <mesh position={[deskX - 0.4, 0.82, deskZ + 0.1]} rotation={[0, 0.15, 0]} castShadow>
+      <mesh position={[deskX - 0.4, 0.82, deskZ + 0.1]} rotation={[0, 0.15, 0]}>
         <boxGeometry args={[0.4, 0.04, 0.3]} />
         <meshPhongMaterial color={PINK_SOFT} emissive={PINK_SOFT} emissiveIntensity={0.1} flatShading />
       </mesh>
-      <mesh position={[deskX - 0.1, 0.82, deskZ + 0.05]} rotation={[0, 0.3, Math.PI / 2]} castShadow>
+      <mesh position={[deskX - 0.1, 0.82, deskZ + 0.05]} rotation={[0, 0.3, Math.PI / 2]}>
         <cylinderGeometry args={[0.015, 0.015, 0.3, 6]} />
         <meshPhongMaterial color={GOLD} flatShading />
       </mesh>
 
       {/* Tiny potted plant on desk */}
-      <mesh position={[deskX - 0.5, 0.87, deskZ - 0.3]} castShadow>
+      <mesh position={[deskX - 0.5, 0.87, deskZ - 0.3]}>
         <cylinderGeometry args={[0.07, 0.06, 0.1, 8]} />
         <meshPhongMaterial color="#c06850" flatShading />
       </mesh>
-      <mesh ref={plantLeavesRef} position={[deskX - 0.5, 0.99, deskZ - 0.3]} castShadow>
+      <mesh ref={plantLeavesRef} position={[deskX - 0.5, 0.99, deskZ - 0.3]}>
         <sphereGeometry args={[0.1, 6, 6]} />
         <meshPhongMaterial color="#4ade80" emissive="#22c55e" emissiveIntensity={0.18} flatShading />
       </mesh>
@@ -328,7 +331,7 @@ export function MyRoom() {
           (Champion). Top cap plank above the books, then trophies on
           top of the cap with hover-visible labels. */}
       {/* Top cap plank */}
-      <mesh position={[shelfX, 1.85, shelfZ]} receiveShadow>
+      <mesh position={[shelfX, 1.85, shelfZ]}>
         <boxGeometry args={[1.25, 0.04, 0.32]} />
         <meshPhongMaterial color={WOOD} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1} />
@@ -392,7 +395,7 @@ export function MyRoom() {
           e.stopPropagation();
           document.body.style.cursor = '';
         };
-        const attachInteractable = (m: THREE.Mesh | null) => {
+        const attachInteractable = (m: Mesh | null) => {
           if (m) m.userData.interactable = interactable;
         };
         return (
@@ -400,7 +403,7 @@ export function MyRoom() {
             {/* Dark wood base — clickable */}
             <mesh
               position={[0, 1.92, 0]}
-              castShadow
+             
               onClick={handleClick}
               onPointerOver={handlePointerOver}
               onPointerOut={handlePointerOut}
@@ -413,7 +416,7 @@ export function MyRoom() {
             {/* Stem — clickable */}
             <mesh
               position={[0, 1.965, 0]}
-              castShadow
+             
               onClick={handleClick}
               onPointerOver={handlePointerOver}
               onPointerOut={handlePointerOut}
@@ -425,7 +428,7 @@ export function MyRoom() {
             {/* Cup — primary click target */}
             <mesh
               position={[0, 2.025, 0]}
-              castShadow
+             
               onClick={handleClick}
               onPointerOver={handlePointerOver}
               onPointerOut={handlePointerOut}
@@ -467,7 +470,7 @@ export function MyRoom() {
       })}
 
       {/* ----- RUG + INNER BORDER ----- */}
-      <mesh position={[bedX, 0.075, bedZ + 0.7]} receiveShadow>
+      <mesh position={[bedX, 0.075, bedZ + 0.7]}>
         <boxGeometry args={[1.8, 0.03, 1.2]} />
         <meshPhongMaterial color={PINK_DUSTY} emissive={PINK_DUSTY} emissiveIntensity={0.12} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1} />
@@ -492,7 +495,7 @@ export function MyRoom() {
 
       {/* ----- FRAMED PICTURE ON WALL ----- */}
       {/* Frame — raised to decrowd shelf top */}
-      <mesh position={[ox + 0.9, 1.85, oz - 1.92]} castShadow>
+      <mesh position={[ox + 0.9, 1.85, oz - 1.92]}>
         <boxGeometry args={[0.5, 0.4, 0.04]} />
         <meshPhongMaterial color={FRAME_DARK} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1} />
@@ -510,13 +513,13 @@ export function MyRoom() {
         <meshPhongMaterial color={GOLD} flatShading />
       </mesh>
       {/* Left curtain panel — z shifted 0.05 forward from back wall */}
-      <mesh position={[bedX - 0.45, 1.5, oz - 1.88]} castShadow>
+      <mesh position={[bedX - 0.45, 1.5, oz - 1.88]}>
         <boxGeometry args={[0.3, 1.1, 0.04]} />
         <meshPhongMaterial color={PINK_SOFT} emissive={PINK_SOFT} emissiveIntensity={0.12} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1} />
       </mesh>
       {/* Right curtain panel — slightly darker */}
-      <mesh position={[bedX + 0.45, 1.5, oz - 1.88]} castShadow>
+      <mesh position={[bedX + 0.45, 1.5, oz - 1.88]}>
         <boxGeometry args={[0.3, 1.1, 0.04]} />
         <meshPhongMaterial color={PINK_DUSTY} emissive={PINK_DUSTY} emissiveIntensity={0.12} flatShading />
         <Edges color={EDGE_COLOR} lineWidth={1} />

@@ -5,7 +5,7 @@ import { FP, STORAGE_KEYS } from '../constants';
 
 export type ViewMode = 'overview' | RoomId;
 
-export type ViewTransition = 'idle' | 'entering' | 'exiting';
+type ViewTransition = 'idle' | 'entering' | 'exiting';
 
 /**
  * Top-level camera flow for the 3D world. The intro sequence runs once:
@@ -24,7 +24,7 @@ export type ViewTransition = 'idle' | 'entering' | 'exiting';
  * Entering a room flips fpActive=true; the camera uses the FP logic
  * instead. Exiting a room returns to `follow`.
  */
-export type IntroPhase = 'intro-static' | 'intro-zoom' | 'dialogue' | 'follow';
+type IntroPhase = 'intro-static' | 'intro-zoom' | 'dialogue' | 'follow';
 
 export interface InteractableData {
   title: string;
@@ -32,7 +32,7 @@ export interface InteractableData {
   link?: string;
 }
 
-export interface WorldState {
+interface WorldState {
   // View
   viewMode: ViewMode;
   viewTransition: ViewTransition;

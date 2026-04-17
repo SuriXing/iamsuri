@@ -5,13 +5,13 @@
 
 import type { RoomDialogue } from './myRoom';
 
-export interface BlogPost {
+interface BlogPost {
   id: string;
   title: string;
   date: string;
 }
 
-export interface BookRoomContent {
+interface BookRoomContent {
   blogPosts: readonly BlogPost[];
   blogStatus: string;
   dialogues: {

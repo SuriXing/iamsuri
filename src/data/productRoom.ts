@@ -10,7 +10,7 @@
 
 import type { RoomDialogue } from './myRoom';
 
-export interface ProductRoomContent {
+interface ProductRoomContent {
   dialogues: {
     problemSolver: RoomDialogue;
     mentorTable: RoomDialogue;

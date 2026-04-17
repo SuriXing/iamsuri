@@ -10,12 +10,12 @@
 
 import type { RoomDialogue } from './myRoom';
 
-export interface WhiteboardIdea {
+interface WhiteboardIdea {
   id: string;
   title: string;
 }
 
-export interface IdeaLabContent {
+interface IdeaLabContent {
   whiteboardIdeas: readonly WhiteboardIdea[];
   whiteboardTagline: string;
   dialogues: {

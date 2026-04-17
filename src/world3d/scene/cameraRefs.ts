@@ -15,7 +15,7 @@
  * (the smoothed value) to compute camera-relative WASD movement, so the
  * controls always feel right relative to whatever the user is looking at.
  */
-export interface MutableNumberRef {
+interface MutableNumberRef {
   current: number;
 }
 

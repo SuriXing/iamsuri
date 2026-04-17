@@ -1,7 +1,7 @@
 // External project links shown in the <ProjectsDock /> on the landing page.
 // Edit these when URLs change.
 
-export interface ProjectLink {
+interface ProjectLink {
   id: string;
   label: string;
   description: string;

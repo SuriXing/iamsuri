@@ -9,7 +9,7 @@ export interface RoomDialogue {
   link?: string;
 }
 
-export interface MyRoomContent {
+interface MyRoomContent {
   dialogues: {
     bed: RoomDialogue;
     monitor: RoomDialogue;

@@ -55,7 +55,7 @@ export interface SearchHit {
   score: number;
 }
 
-export interface SearchOptions {
+interface SearchOptions {
   limit?: number;
 }
 
@@ -190,10 +190,3 @@ export function search(
   return hits;
 }
 
-/**
- * Test-only / devtool hook — exposes the number of documents in the
- * index so callers can assert the index was built.
- */
-export function indexSize(): number {
-  return docs.length;
-}

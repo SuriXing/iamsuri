@@ -5,7 +5,7 @@
 // every frame. Threading this through props/context would be needless
 // ceremony for what is fundamentally global game state.
 
-export interface Aabb {
+interface Aabb {
   id: string;
   // Center XZ position
   x: number;
@@ -29,10 +29,6 @@ export function registerCollider(box: Aabb): void {
 
 export function unregisterCollider(id: string): void {
   store.delete(id);
-}
-
-export function listColliders(): Iterable<Aabb> {
-  return store.values();
 }
 
 /**

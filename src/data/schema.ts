@@ -44,10 +44,6 @@ export interface Product {
   metrics?: ProductMetric[];
 }
 
-export type PostKind = 'inline' | 'external' | 'coming-soon';
-
-export type PostStatus = 'published' | 'draft' | 'coming-soon';
-
 /**
  * Shared fields every post variant carries. Individual variants narrow
  * the `kind`/`body`/`href`/`status` fields so the compiler forces the

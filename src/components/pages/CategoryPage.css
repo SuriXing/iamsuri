@@ -290,6 +290,24 @@
   transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
 }
 
+/* Launch CTA — the primary call-to-action on every /work/:slug page.
+ * Larger and non-lowercase so it reads as a real product entry point,
+ * not a subtle inline link. */
+.cat-detail__cta--launch {
+  font-size: var(--text-base);
+  font-weight: 600;
+  min-height: 48px;
+  padding: 12px 24px;
+  text-transform: none;
+  letter-spacing: normal;
+  box-shadow: 0 4px 16px -8px var(--accent);
+}
+
+.cat-detail__cta--launch:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px -8px var(--accent);
+}
+
 .cat-detail__cta:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);

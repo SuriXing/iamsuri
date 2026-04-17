@@ -65,11 +65,12 @@ export default function WorkDetail() {
         <div className="cat-detail__actions">
           <a
             href={product.href}
-            className="cat-detail__cta"
+            className="cat-detail__cta cat-detail__cta--launch"
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={`Launch ${product.title} in a new tab`}
           >
-            live <span aria-hidden>↗</span>
+            Launch {product.title} <span aria-hidden>↗</span>
           </a>
           {product.repo && (
             <a
@@ -77,8 +78,9 @@ export default function WorkDetail() {
               className="cat-detail__cta cat-detail__cta--secondary"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label={`View ${product.title} source on GitHub`}
             >
-              repo <span aria-hidden>↗</span>
+              source <span aria-hidden>↗</span>
             </a>
           )}
         </div>

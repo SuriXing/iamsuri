@@ -15,16 +15,18 @@ export const PROJECT_LINKS: readonly ProjectLink[] = [
     id: 'blog',
     label: 'Blog',
     description: 'Things I am writing',
-    // TODO: replace with the real blog URL when ready.
-    href: 'https://blog.iamsuri.ai',
+    // Routes to an on-site "coming soon" page until the external blog
+    // (blog.iamsuri.ai) is live. Kept as an internal path so the dock CTA
+    // never 404s.
+    href: '/blog',
     hue: '#4ade80',
   },
   {
     id: 'anoncafe',
     label: 'AnonCafe',
     description: 'Anonymous conversations',
-    // TODO: replace with the real AnonCafe URL when ready.
-    href: 'https://anoncafe.iamsuri.ai',
+    // Same as /blog above — internal "coming soon" until anoncafe.iamsuri.ai ships.
+    href: '/anoncafe',
     hue: '#f4a8b8',
   },
   {

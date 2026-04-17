@@ -24,6 +24,11 @@ export function Dialogue() {
     const onKey = (e: KeyboardEvent) => {
       // Skip pure modifier presses so Cmd-tabbing doesn't advance.
       if (e.key === 'Meta' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Shift') return;
+      // Let the browser keep its own navigation/close keys. Tab must stay
+      // focusable-traversable for a11y; Escape belongs to the global
+      // handler (modals / room exit); Cmd/Ctrl combos are OS shortcuts.
+      if (e.key === 'Tab' || e.key === 'Escape') return;
+      if (e.metaKey || e.ctrlKey) return;
       e.preventDefault();
       advance();
     };
@@ -42,7 +47,9 @@ export function Dialogue() {
     >
       <div className="dialogue-box">
         <div className="dialogue-speaker">Suri</div>
-        <p className="dialogue-text">text box</p>
+        <p className="dialogue-text">
+          Welcome to Suri&apos;s Lab! Walk around with WASD, step into a door to enter a room.
+        </p>
         <div className="dialogue-actions">
           <button
             type="button"

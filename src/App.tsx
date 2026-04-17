@@ -13,6 +13,7 @@ import SkipLink from './components/shared/SkipLink';
 import RouteAnnouncer from './components/shared/RouteAnnouncer';
 import SearchBox from './components/shared/SearchBox';
 import { NotFound } from './components/pages/NotFound';
+import { ComingSoon } from './components/pages/ComingSoon';
 
 // 3D world is lazy-loaded so the 2D landing stays lightweight. three.js
 // + R3F + drei ship in a separate chunk and only download when the user
@@ -248,6 +249,22 @@ export default function App() {
           }
         />
         <Route path="/3d" element={<ThreeDRoute />} />
+        <Route
+          path="/blog"
+          element={
+            <ContentRoute>
+              <ComingSoon />
+            </ContentRoute>
+          }
+        />
+        <Route
+          path="/anoncafe"
+          element={
+            <ContentRoute>
+              <ComingSoon />
+            </ContentRoute>
+          }
+        />
         <Route
           path="/404"
           element={

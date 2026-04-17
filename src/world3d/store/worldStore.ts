@@ -223,7 +223,9 @@ export const useWorldStore = create<WorldState>((set) => ({
     }),
 }));
 
-// Test/dev seam: expose store on window (typed via global.d.ts)
-if (typeof window !== 'undefined') {
+// Test/dev seam: expose store on window (typed via global.d.ts). Gated
+// behind DEV so the store isn't reachable from third-party scripts /
+// extensions / console spelunkers in production.
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
   window.__worldStore = useWorldStore;
 }

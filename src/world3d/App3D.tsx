@@ -4,6 +4,8 @@ import { World } from './scene/World';
 import { Hud } from './hud/Hud';
 import { CAMERA } from './constants';
 import { useWorldStore } from './store/worldStore';
+import { ROOM_BY_ID } from './data/rooms';
+import type { RoomId } from './data/rooms';
 import { ExitContext } from './exitContext';
 import './world3d.css';
 
@@ -18,16 +20,25 @@ interface Props {
 export default function App3D({ onExitTo2D }: Props) {
   // Legacy window bridges that Playwright drives directly. Installed on
   // mount so the 3D world is reachable from tests via `window.navigateTo*`.
+  // Gated behind DEV so the bridges do not ship to production bundles.
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
     type Bridge = {
       navigateToRoom?: (id: string) => void;
       navigateToOverview?: () => void;
     };
     const w = window as unknown as Bridge;
     w.navigateToRoom = (id: string) => {
+      // Validate against the canonical room registry before dispatch —
+      // an unknown id would crash CameraController when it dereferences
+      // ROOM_BY_ID[id].center.
+      if (!(id in ROOM_BY_ID)) {
+        console.warn(`[navigateToRoom] unknown room id: ${id}`);
+        return;
+      }
       const s = useWorldStore.getState();
-      s.unlockDoor(id as Parameters<typeof s.unlockDoor>[0]);
-      s.setViewMode(id as Parameters<typeof s.setViewMode>[0]);
+      s.unlockDoor(id as RoomId);
+      s.setViewMode(id as RoomId);
     };
     w.navigateToOverview = () => {
       useWorldStore.getState().setViewMode('overview');

@@ -69,6 +69,14 @@ export function StarField() {
   // mutated during render per react-hooks/refs.
   useEffect(() => {
     colorAttrRef.current = geometry.getAttribute('color') as THREE.BufferAttribute;
+    // R3F auto-disposes geometry supplied as a JSX child of <points>, but
+    // this one is attached via the `geometry={...}` prop which opts OUT of
+    // auto-dispose. Theme toggle remounts StarField (return null in light
+    // mode) — without explicit dispose, each toggle leaks ~30 KB of GPU
+    // buffers and a WebGL buffer handle. Clean up on unmount.
+    return () => {
+      geometry.dispose();
+    };
   }, [geometry]);
 
   // Per-star twinkle: each star has an independent phase offset so the field

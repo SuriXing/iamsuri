@@ -154,6 +154,15 @@ export function InteractionManager(): null {
     // room center than the doorway, AND past the auto-enter threshold),
     // automatically trigger the room first-person view. Door must be
     // unlocked first — locked doors block walking-in via collision.
+    // TODO: wire beginRoomTransition/beginExitTransition — see .bugbash/sw-eng.md
+    // (the state machine is off-by-one-frame because we flip viewMode
+    // directly instead of going through the transition action).
+    //
+    // Short-circuit: don't auto-enter while the intro cinematic is still
+    // running. The player position isn't yet under user control, so any
+    // auto-enter during 'intro-static' / 'intro-zoom' / 'dialogue' would
+    // race the intro tween and teleport the camera mid-cinematic.
+    if (s.introPhase !== 'follow') return;
     for (const r of ROOMS) {
       const dx = s.charPos.x - r.center.x;
       const dz = s.charPos.z - r.center.z;

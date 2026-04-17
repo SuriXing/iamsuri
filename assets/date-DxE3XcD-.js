@@ -1,0 +1,1 @@
+var e=[`Jan`,`Feb`,`Mar`,`Apr`,`May`,`Jun`,`Jul`,`Aug`,`Sep`,`Oct`,`Nov`,`Dec`];function t(t){let n=t.split(`-`);if(n.length<2)return t;let r=n[0],i=Number(n[1])-1;return Number.isNaN(i)||i<0||i>11?t:`${e[i]} ${r}`}export{t};

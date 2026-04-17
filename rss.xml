@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Suri&apos;s Writing</title>
+    <link>https://iamsuri.ai/writing</link>
+    <atom:link href="https://iamsuri.ai/rss.xml" rel="self" type="application/rss+xml" />
+    <description>Short essays on building, thinking, and learning by shipping — by Suri Xing.</description>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 17 Apr 2026 12:24:20 GMT</lastBuildDate>
+    <item>
+      <title>Why I Build Things</title>
+      <link>https://iamsuri.ai/writing/why-i-build-things</link>
+      <guid isPermaLink="true">https://iamsuri.ai/writing/why-i-build-things</guid>
+      <pubDate>Wed, 01 Apr 2026 00:00:00 GMT</pubDate>
+      <description>Building is how I think. A short note on why I ship small, rough, real things instead of polished essays about them.</description>
+      <content:encoded><![CDATA[<p>I don&apos;t build things because I want to launch a company. I build them because I don&apos;t understand an idea until I&apos;ve tried to make it real.</p>
+<p>Writing an essay about an idea lets you skip the hard parts. Code won&apos;t. The compiler catches every hand-wave, and the user catches every one the compiler missed.</p>
+<p>So: ship small, ship rough, ship real. The polish comes after the idea survives contact with reality.</p>]]></content:encoded>
+    </item>
+    <item>
+      <title>Learning by Shipping</title>
+      <link>https://iamsuri.ai/writing/learning-by-shipping</link>
+      <guid isPermaLink="true">https://iamsuri.ai/writing/learning-by-shipping</guid>
+      <pubDate>Sun, 01 Mar 2026 00:00:00 GMT</pubDate>
+      <description>School teaches you to optimize for grades. Shipping teaches you to optimize for whether the thing actually works.</description>
+      <content:encoded><![CDATA[<p>In school, the feedback loop is a grade at the end of a semester. By the time you get it, you&apos;ve already forgotten what you did wrong.</p>
+<p>Shipping has a different loop. You put something in front of a real user and within minutes you know where it breaks. The failure mode is specific, the fix is specific, and the next version is better because of it.</p>
+<p>Every project I&apos;ve shipped has taught me something no class ever did. Not because classes are bad — because the feedback is too slow to be memorable.</p>]]></content:encoded>
+    </item>
+  </channel>
+</rss>

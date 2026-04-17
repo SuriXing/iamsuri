@@ -1,0 +1,1 @@
+.reading-progress{z-index:150;pointer-events:none;background:0 0;height:3px;position:fixed;top:0;left:0;right:0}.reading-progress__bar{background:var(--accent);transform-origin:0;will-change:transform;width:100%;height:100%;transform:scaleX(0)}

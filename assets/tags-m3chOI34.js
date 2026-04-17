@@ -1,0 +1,1 @@
+function e(e){return e.toLowerCase().trim().replace(/\s+/g,`-`)}function t(t){let n=new Set,r=[];for(let i of t){let t=e(i);n.has(t)||(n.add(t),r.push(t))}return r}export{t as n,e as t};

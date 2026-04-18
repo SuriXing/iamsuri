@@ -114,7 +114,7 @@ export function World() {
           key={`under-${i}`}
           position={[l.pos[0], 1.7, l.pos[2]]}
           color={l.color}
-          intensity={0.25}
+          intensity={0.05}
           distance={6}
         />
       ))}

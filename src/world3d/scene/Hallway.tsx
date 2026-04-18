@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Edges } from '@react-three/drei';
 import { ROOM, GAP, FLOOR_Y, DOOR } from '../constants';
+import { ROOM_BY_ID, type RoomId } from '../data/rooms';
 import { useWorldStore } from '../store/worldStore';
 
 const HALL_COLOR = '#1e2233';
@@ -10,22 +11,25 @@ const HALL_LEN = ROOM * 2 + GAP * 2 + 1;
 const HALL_WIDTH = GAP * 2;
 
 // R3.3 (OUT-3): doorway threshold patches.
-// Geometry: room floors are ROOM×ROOM centered at (±HALF, ±HALF) so their
-// edge sits at z=±(HALF-ROOM/2)=±GAP=±1.20. Horizontal walls sit at
-// z=±(GAP+0.05)=±1.25 with thickness 0.1 → wall footprint z∈[±1.20, ±1.30].
-// The hallway X-arm floor only spans z∈[-GAP, GAP]=[-1.20, 1.20], so under
-// each door opening (a DOOR.width gap in the wall) there is a ~0.10-wide
-// strip with no floor mesh — looking down reveals Ground at y=-0.5 (dark void).
-// Fix: add 4 thin slab patches, one per door, sitting just above both adjoining
-// floor tops (room floor top y=0.12, hall floor top y=0.08 → patch at y=0.13).
-// Patch depth 0.30 overlaps both edges generously; width = DOOR.width fits
-// inside the door opening so no wall conflict.
+// (geometry comment unchanged)
+// R3.7 F6: each patch tinted to its adjacent room's floor color so the
+// seam disappears from the room side. Previously all patches used
+// HALL_COLOR (slate) which read as a dark strip across warm room floors.
 const DOOR_HALF = ROOM / 2 + GAP; // = HALF (3.7) in rooms.ts
-const THRESHOLD_PATCHES: ReadonlyArray<readonly [number, number]> = [
-  [-DOOR_HALF, -(GAP + 0.05)],
-  [ DOOR_HALF, -(GAP + 0.05)],
-  [-DOOR_HALF,  (GAP + 0.05)],
-  [ DOOR_HALF,  (GAP + 0.05)],
+interface ThresholdPatch {
+  x: number;
+  z: number;
+  roomId: RoomId;
+}
+const THRESHOLD_PATCHES: ReadonlyArray<ThresholdPatch> = [
+  // x=-DOOR_HALF, z=-(GAP+0.05) → MyRoom side (x<0, z<0)
+  { x: -DOOR_HALF, z: -(GAP + 0.05), roomId: 'myroom' },
+  // x= DOOR_HALF, z=-(GAP+0.05) → ProductRoom side (x>0, z<0)
+  { x:  DOOR_HALF, z: -(GAP + 0.05), roomId: 'product' },
+  // x=-DOOR_HALF, z= (GAP+0.05) → BookRoom side (x<0, z>0)
+  { x: -DOOR_HALF, z:  (GAP + 0.05), roomId: 'book' },
+  // x= DOOR_HALF, z= (GAP+0.05) → IdeaLab side (x>0, z>0)
+  { x:  DOOR_HALF, z:  (GAP + 0.05), roomId: 'idealab' },
 ];
 
 // Ceiling beams + tint pool deleted with the wood-blocks-in-corridor pass.
@@ -149,10 +153,10 @@ export function Hallway() {
           Sits at y=0.14 (bottom 0.13), comfortably above both adjacent floor tops
           (room top 0.12, hall top 0.08) to avoid z-fight, and width=DOOR.width
           stays inside the wall opening (no wall conflict). */}
-      {THRESHOLD_PATCHES.map(([px, pz], i) => (
-        <mesh key={`thresh-${i}`} position={[px, 0.14, pz]} receiveShadow>
+      {THRESHOLD_PATCHES.map((p, i) => (
+        <mesh key={`thresh-${i}`} position={[p.x, 0.14, p.z]} receiveShadow>
           <boxGeometry args={[DOOR.width, 0.02, 0.30]} />
-          <meshPhongMaterial color={HALL_COLOR} flatShading />
+          <meshPhongMaterial color={ROOM_BY_ID[p.roomId].color} flatShading />
         </mesh>
       ))}
 

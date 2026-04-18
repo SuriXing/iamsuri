@@ -116,9 +116,15 @@ export function Particles() {
         x = (RESET_RNG() - 0.5) * PARTICLES.spread;
         z = (RESET_RNG() - 0.5) * PARTICLES.spread;
       }
-      // R3.3: clamp under R3.1 ceiling (bottom face at y≈1.95).
-      // Particles inside the rooms/hallway must not breach it visually.
-      if (y > 1.95) y = 1.95;
+      // R3.7 F5: respawn (not clamp) when particle reaches ceiling underside
+      // (bottom face at y≈1.95). The previous clamp permanently froze every
+      // particle at y=1.95 within ~30s. Mirror buildBuffers() spawn distribution:
+      // floor at PARTICLES.floorReset, x/z spread over PARTICLES.spread.
+      if (y > 1.95) {
+        y = PARTICLES.floorReset;
+        x = (RESET_RNG() - 0.5) * PARTICLES.spread;
+        z = (RESET_RNG() - 0.5) * PARTICLES.spread;
+      }
       BUF.px[i] = x;
       BUF.py[i] = y;
       BUF.pz[i] = z;

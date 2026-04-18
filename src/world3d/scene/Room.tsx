@@ -255,27 +255,32 @@ export function Room({ room }: Props) {
   const cx = room.center.x;
   const cz = room.center.z;
 
-  // Doorway side (toward origin in z): top rooms (cz<0) doorway on +z, bottom on -z.
-  const doorwayZSign: 1 | -1 = cz < 0 ? 1 : -1;
-  // The wall that contains the doorway sits at z = ±(GAP + 0.05) to
-  // match the existing door positions exactly. This is 0.05 inside the
-  // room footprint relative to the symmetric room-edge at cz ± ROOM/2.
+  // The doorway-bearing wall faces the hallway (toward origin). For a room
+  // at cz=-3.7 (top half) the door sits at z=-1.25 = sign(cz)*(GAP+0.05).
+  // R4.1-fix: sign was inverted (cz<0 ? 1 : -1) which placed the doorway
+  // wall on the BACK side and left the actual room face transparent. The
+  // opposite/outer walls then doubled up on the back side because the
+  // double negative cancelled. Correct sign = sign(cz).
+  const doorwayZSign: 1 | -1 = cz < 0 ? -1 : 1;
   const doorWallZ = doorwayZSign * (GAP + 0.05);
-  const oppositeWallZ = cz - doorwayZSign * (ROOM / 2 + 0.05);
-  // Vertical (perpendicular) walls — one on the corridor side (toward x=0),
-  // one on the outer side. The corridor-side wall sits at x = ±(GAP+0.05),
-  // matching the old VERTICAL_WALL_ROOMS placement.
-  const innerWallXSign: 1 | -1 = cx < 0 ? 1 : -1;
+  // Opposite wall sits on the SAME signed side as doorwayZSign, one room
+  // half-extent further out (at the back of the room).
+  const oppositeWallZ = cz + doorwayZSign * (ROOM / 2 + 0.05);
+  // Corridor-side wall sits at x = sign(cx)*(GAP+0.05); outer wall sits
+  // beyond the room footprint on the same side.
+  const innerWallXSign: 1 | -1 = cx < 0 ? -1 : 1;
   const innerWallX = innerWallXSign * (GAP + 0.05);
-  const outerWallX = cx - innerWallXSign * (ROOM / 2 + 0.05);
+  const outerWallX = cx + innerWallXSign * (ROOM / 2 + 0.05);
 
-  // Floor — extend ROOM_SIDE by 0.20 on the doorway side so the room floor
-  // tile-meets the hallway X-arm with a small overlap (kills the seam the
-  // R3.3 threshold patches were band-aiding). Floor color uses the same
-  // muting scheme as the deleted RoomFloor.tsx.
+  // Floor — extend ROOM_SIDE by 0.20 toward the hallway/doorway side so
+  // the room floor tile-meets the hallway X-arm with a small overlap
+  // (kills the seam the R3.3 threshold patches were band-aiding). The
+  // doorway sits at z = doorwayZSign * (GAP + 0.05); the room center is
+  // at cz on the OTHER side of that, so we extend toward origin = subtract
+  // doorwayZSign * floorExtra / 2 from cz.
   const floorExtra = 0.2;
   const floorDepth = ROOM + floorExtra;
-  const floorZ = cz + (doorwayZSign * floorExtra) / 2;
+  const floorZ = cz - (doorwayZSign * floorExtra) / 2;
   const weight = ROOM_FLOOR_WEIGHT[room.id] ?? 1;
   const floorColor = useMemo(() => muteHex(room.color, weight), [room.color, weight]);
 

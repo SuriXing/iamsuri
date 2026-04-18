@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useWorldStore } from '../store/worldStore';
-import { ROOMS } from '../data/rooms';
+import { ROOMS, ROOM_BY_ID } from '../data/rooms';
 import type { RoomId } from '../data/rooms';
 
 const ROOM_NUMBER_KEYS: Record<string, RoomId> = {
@@ -20,6 +20,16 @@ const PROXIMITY_THRESHOLD = 1.6;
 // the room first-person view. The user wanted "walk into a room → camera
 // switches to first perspective" without having to press E.
 const AUTO_ENTER_DIST = 2.2;
+// Auto-unlock distance — when the character walks within this radius of
+// a door we silently unlock it so they can keep walking through. Removes
+// the "press U to unlock then E to enter" friction; doors still render
+// their lock state and can be re-locked, but proximity is enough to open.
+const AUTO_UNLOCK_DIST = 1.4;
+// Auto-exit (FP mode): when the character walks past the doorway INTO
+// the hallway from inside a room, drop them back to overview/follow mode.
+// Measured against the room's door position. Larger than AUTO_ENTER_DIST
+// so there's no ping-pong on the doorway threshold.
+const AUTO_EXIT_DIST = 0.9;
 
 /**
  * Centralized keyboard handler + proximity detection for the overworld.
@@ -131,6 +141,27 @@ export function InteractionManager(): null {
   //     run only in overview mode.
   useFrame(() => {
     const s = useWorldStore.getState();
+
+    // ── FP-mode auto-exit ──────────────────────────────────
+    // When the player walks back through the doorway (past the door
+    // position toward the hallway side), drop them back to overview.
+    // This pairs with auto-enter so the player never needs ESC.
+    if (s.fpActive && s.viewMode !== 'overview' && s.introPhase === 'follow' && !s.modalInteractable) {
+      const room = ROOM_BY_ID[s.viewMode];
+      const dx = s.charPos.x - room.door.x;
+      const dz = s.charPos.z - room.door.z;
+      // Hallway side of the door = OUTSIDE the room center along the
+      // door's room-normal axis. For a horizontal door (z-axis door),
+      // "hallway side" means dz has the opposite sign from (door.z - room.center.z).
+      const inwardZ = room.center.z - room.door.z; // points from door into room
+      const playerZRelDoor = s.charPos.z - room.door.z;
+      const onHallwaySide = inwardZ * playerZRelDoor < 0;
+      if (onHallwaySide && Math.hypot(dx, dz) > AUTO_EXIT_DIST) {
+        s.setViewMode('overview');
+      }
+      return;
+    }
+
     if (s.viewMode !== 'overview' || s.fpActive) {
       if (s.nearbyRoom !== null) s.setNearbyRoom(null);
       return;
@@ -149,6 +180,12 @@ export function InteractionManager(): null {
       }
     }
     if (nearest !== s.nearbyRoom) s.setNearbyRoom(nearest);
+
+    // Auto-unlock: any door the character walks up to silently unlocks.
+    // Removes the U-key friction; doors still visibly animate open.
+    if (s.introPhase === 'follow' && nearest && nearestDist < AUTO_UNLOCK_DIST && !s.unlockedDoors.has(nearest)) {
+      s.unlockDoor(nearest);
+    }
 
     // Auto-enter: if character is well INSIDE a room (closer to the
     // room center than the doorway, AND past the auto-enter threshold),

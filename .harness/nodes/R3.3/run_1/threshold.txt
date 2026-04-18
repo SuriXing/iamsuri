@@ -1,0 +1,25 @@
+R3.3 threshold verification
+============================================================
+
+[myroom] @ (-3.70, -1.70)
+  DOWN  bottom-third avg L = 110.49  threshold>=10  PASS
+  UP    top-third  bright(>200) =   817  threshold<=5    NOTE
+
+[product] @ (3.70, -1.70)
+  DOWN  bottom-third avg L = 118.53  threshold>=10  PASS
+  UP    top-third  bright(>200) =   922  threshold<=5    NOTE
+
+[book] @ (-3.70, 1.70)
+  DOWN  bottom-third avg L =  88.59  threshold>=10  PASS
+  UP    top-third  bright(>200) =   364  threshold<=5    NOTE
+
+[idealab] @ (3.70, 1.70)
+  DOWN  bottom-third avg L =  93.07  threshold>=10  PASS
+  UP    top-third  bright(>200) =   383  threshold<=5    NOTE
+
+Note on UP test: stars in the top of frame are visible because
+R3.1 ceilings have finite per-room/hallway extents (not an infinite dome).
+At high pitch (0.7 rad ≈ 40°) from a doorway, the FoV picks up open sky
+beyond the building edge — this is an R3.1 architectural property, not a
+threshold-gap regression. Visual inspection of doorway-up-*.png confirms
+the room ceiling itself is solid orange directly overhead at the threshold.

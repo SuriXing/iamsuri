@@ -116,6 +116,9 @@ export function Particles() {
         x = (RESET_RNG() - 0.5) * PARTICLES.spread;
         z = (RESET_RNG() - 0.5) * PARTICLES.spread;
       }
+      // R3.3: clamp under R3.1 ceiling (bottom face at y≈1.95).
+      // Particles inside the rooms/hallway must not breach it visually.
+      if (y > 1.95) y = 1.95;
       BUF.px[i] = x;
       BUF.py[i] = y;
       BUF.pz[i] = z;

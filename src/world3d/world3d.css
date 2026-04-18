@@ -388,6 +388,18 @@
   transform: translate(-50%, -50%) scale(1.6);
 }
 
+/* R3.7 Y5: respect prefers-reduced-motion. Keep the 1.6× size cue (a
+   non-color signal preserved for color-blind users) but kill the
+   transition animation. */
+@media (prefers-reduced-motion: reduce) {
+  .crosshair {
+    transition: none;
+  }
+  .crosshair.focused {
+    transform: translate(-50%, -50%) scale(1.6);
+  }
+}
+
 /* ── FP intro hint ────────────────────────────────────── */
 .fp-intro-hint {
   display: none;

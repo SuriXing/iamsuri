@@ -23,6 +23,12 @@ export function InteractTooltip() {
   const focused = useWorldStore((s) => s.focusedInteractable);
   const modal = useWorldStore((s) => s.modalInteractable);
   const fpActive = useWorldStore((s) => s.fpActive);
+  // R3.7 F7: gate the one-shot tooltip on intro completion. The intro
+  // dialogue modal ("CLICK ANYTHING TO READ") was burning the sessionStorage
+  // flag before the user had a chance to see the hint. Only `introPhase ===
+  // 'follow'` means the intro UI is no longer blocking the canvas.
+  const introPhase = useWorldStore((s) => s.introPhase);
+  const introDone = introPhase === 'follow';
 
   // Lazy init from sessionStorage; this state never causes re-renders after
   // the first set because subsequent focuses short-circuit on `shown`.
@@ -30,7 +36,8 @@ export function InteractTooltip() {
   const [hintVisible, setHintVisible] = useState(false);
 
   // Derive first-focus trigger during render (no effect, no ref).
-  const shouldShow = fpActive && !!focused && !modal && !shown;
+  // Don't burn the flag while intro modal or interact modal blocks the user.
+  const shouldShow = fpActive && introDone && !!focused && !modal && !shown;
   if (shouldShow && !hintVisible) {
     writeShown();
     setShown(true);
@@ -57,7 +64,12 @@ export function InteractTooltip() {
   const active = fpActive && hintVisible && focused !== null && modal === null;
 
   return (
-    <div id="interact-tooltip" className={'interact-tooltip' + (active ? ' active' : '')}>
+    <div
+      id="interact-tooltip"
+      className={'interact-tooltip' + (active ? ' active' : '')}
+      role="status"
+      aria-live="polite"
+    >
       Press <kbd>E</kbd> to interact
     </div>
   );

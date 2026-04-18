@@ -13,17 +13,13 @@ export function BottomHint() {
     );
   }
 
-  // Inside a room (FP mode) — different hint, including the "click on
-  // anything to read more" discoverability cue. This needs to live OUTSIDE
-  // any trophy modal so the user knows to click BEFORE they've clicked.
-  if (fpActive) {
-    return (
-      <div id="hint">
-        💡 Click on trophies and other objects to read more &middot; drag to
-        look around &middot; <b>ESC</b> to leave
-      </div>
-    );
-  }
+  // Inside a room (FP mode): suppress this bottom-hint entirely. The
+  // `.exit-hint` banner ("Press ESC or click × EXIT ROOM to leave") and
+  // the always-on EXIT ROOM button already cover the discoverability
+  // case — duplicating "ESC to leave" here just crowded the bottom edge,
+  // and on mobile the two banners stacked into a 4-line wrap that the
+  // user reported as "no hints telling me what to do".
+  if (fpActive) return null;
 
   return null;
 }

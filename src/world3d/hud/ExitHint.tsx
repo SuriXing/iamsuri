@@ -5,7 +5,9 @@ export function ExitHint() {
   const active = viewMode !== 'overview';
   return (
     <div id="exit-hint" className={'exit-hint' + (active ? ' active' : '')}>
-      Press <kbd>ESC</kbd> or click <kbd>&times; EXIT ROOM</kbd> to leave
+      <span className="exit-hint-line">
+        Press <kbd>ESC</kbd> or tap <kbd>&times; EXIT ROOM</kbd> to leave
+      </span>
     </div>
   );
 }

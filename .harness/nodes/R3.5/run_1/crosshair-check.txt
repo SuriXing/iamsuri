@@ -1,0 +1,22 @@
+PASS1 state: {
+  "crosshairExists": true,
+  "crosshairFocused": true,
+  "crosshairActive": true,
+  "crosshairBg": "rgb(34, 211, 238)",
+  "crosshairClassList": "crosshair active focused",
+  "crosshairTransform": "matrix(1.6, 0, 0, 1.6, -3, -3)",
+  "tooltipExists": true,
+  "tooltipActive": true,
+  "tooltipDisplay": "block",
+  "sessionFlag": "1",
+  "fpActive": true
+}
+crosshair bg = rgb(34, 211, 238)
+PASS1 ✅ crosshair focused, cyan, scaled, tooltip active, sessionStorage set
+PASS2 state: {
+  "crosshairFocused": true,
+  "tooltipActive": false,
+  "tooltipDisplay": "none",
+  "sessionFlag": "1"
+}
+PASS2 ✅ tooltip suppressed on second focus (sessionStorage gate works)

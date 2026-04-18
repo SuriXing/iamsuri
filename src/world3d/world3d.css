@@ -138,6 +138,10 @@
   letter-spacing: 1.5px;
   pointer-events: none;
   backdrop-filter: blur(6px);
+  /* Force single-line on any viewport wide enough — wrap rather than
+     truncate so the kbd chips never split mid-word. */
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
 }
 .exit-hint.active { display: block; }
 .exit-hint kbd {
@@ -148,6 +152,7 @@
   color: #ffd700;
   margin: 0 4px;
   font-family: inherit;
+  white-space: nowrap;
 }
 
 /* ── Enter prompt (anchored in 3D via drei Html) ──────── */
@@ -374,8 +379,14 @@
   box-shadow: 0 0 4px rgba(255, 215, 0, 0.6);
   z-index: 45;
   pointer-events: none;
+  transition: background-color 120ms ease-out, box-shadow 120ms ease-out, transform 120ms ease-out;
 }
 .crosshair.active { display: block; }
+.crosshair.focused {
+  background: #22d3ee;
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.85);
+  transform: translate(-50%, -50%) scale(1.6);
+}
 
 /* ── FP intro hint ────────────────────────────────────── */
 .fp-intro-hint {
@@ -646,5 +657,32 @@ body.world3d-light-theme .dialogue-next {
     height: 32px;
     padding: 0 10px;
     font-size: 0.7rem;
+  }
+  /* EXIT ROOM button: shrink so it stops dominating the canvas — but
+     keep it instantly readable. Reposition to top-left with smaller
+     padding/font so the user still notices it without losing 30% of
+     the room view to a giant button. */
+  .back-btn {
+    top: 12px;
+    left: 14px;
+    padding: 8px 14px;
+    font-size: 0.78rem;
+    letter-spacing: 1.2px;
+    border-width: 1px;
+  }
+  /* Exit-hint banner: shorten the content + tighten the box so it sits
+     on a single short line at the bottom. The pre-fix wrap (4 lines on
+     iPhone 13) was the "no hints telling me what to do" symptom. */
+  .exit-hint {
+    bottom: 16px;
+    padding: 7px 14px;
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    /* white-space:nowrap from base rule keeps it single-line; the
+       max-width clamp ensures it never spills past the viewport. */
+  }
+  .exit-hint kbd {
+    padding: 1px 5px;
+    margin: 0 2px;
   }
 }

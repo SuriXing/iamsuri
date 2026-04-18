@@ -1,0 +1,77 @@
+{
+  "out1_dark": {
+    "myroom": 72.794875,
+    "product": 69.5008,
+    "book": 76.279275,
+    "idealab": 78.753975
+  },
+  "out1_light": {
+    "myroom": 185.4485,
+    "product": 182.98,
+    "book": 187.580225,
+    "idealab": 189.14025
+  },
+  "out2": {
+    "brightness": 112.975025,
+    "diff_pct": 76.00097367191152
+  },
+  "out3_down": {
+    "myroom": 112.43930828651685,
+    "product": 121.80717755149813,
+    "book": 54.498545763108616,
+    "idealab": 100.14724660580525
+  },
+  "out3_up": {
+    "myroom": 0,
+    "product": 0,
+    "book": 0,
+    "idealab": 0
+  },
+  "out4": {
+    "soak_look_up_bright_count": 0
+  },
+  "out5": {
+    "focused": true,
+    "introPhase": "follow",
+    "fpActive": true,
+    "crosshair_classes": "crosshair active focused",
+    "crosshair_focused": true,
+    "crosshair_bg": "rgb(34, 211, 238)",
+    "tooltip_classes": "interact-tooltip active",
+    "tooltip_active": true,
+    "tooltip_aria": "polite",
+    "tooltip_role": "status",
+    "storage": "1"
+  },
+  "out6": {
+    "rects": {
+      ".back-btn": {
+        "x": 14,
+        "y": 12,
+        "w": 125.59375,
+        "h": 32,
+        "display": "block"
+      },
+      ".exit-hint": {
+        "x": 17.59375,
+        "y": 794.15625,
+        "w": 354.8125,
+        "h": 33.84375,
+        "display": "block"
+      },
+      ".interact-tooltip": {
+        "x": 97.5,
+        "y": 462,
+        "w": 195,
+        "h": 61.125,
+        "display": "block"
+      }
+    },
+    "overlaps": {
+      ".back-btn|.exit-hint": false,
+      ".back-btn|.interact-tooltip": false,
+      ".exit-hint|.interact-tooltip": false
+    }
+  },
+  "errors": []
+}

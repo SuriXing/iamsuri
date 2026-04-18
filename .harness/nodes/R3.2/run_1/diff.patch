@@ -1,0 +1,125 @@
+diff --git a/src/world3d/scene/Ceiling.tsx b/src/world3d/scene/Ceiling.tsx
+new file mode 100644
+index 0000000..9268261
+--- /dev/null
++++ b/src/world3d/scene/Ceiling.tsx
+@@ -0,0 +1,77 @@
++import { ROOMS } from '../data/rooms';
++import { ROOM, GAP } from '../constants';
++import { useWorldStore } from '../store/worldStore';
++
++/**
++ * Ceiling — real architecture, not a workaround.
++ *
++ * Why box + standard material (not plane + basic):
++ *  - boxGeometry has thickness so it depth-writes on every face from any
++ *    pitch (looking up *or* down at the room edge). A planeGeometry only
++ *    writes from one side, so glancing angles let transparent point
++ *    materials (StarField) bleed through.
++ *  - meshStandardMaterial responds to the under-ceiling point lights, so
++ *    the surface reads as lit wood rather than a flat black void.
++ *  - renderOrder = -1 forces the ceiling to draw before the StarField's
++ *    transparent additive points; combined with depthWrite the stars
++ *    fail the depth test below the ceiling and disappear naturally.
++ */
++
++const CEILING_Y = 2.0;
++const CEILING_T = 0.1;        // box thickness (depth)
++const ROOM_SIDE = ROOM + 0.2; // matches RoomFloor / wall span
++const HALL_LEN = ROOM * 2 + GAP * 2 + 1;
++const HALL_WIDTH = GAP * 2;
++
++const CEILING_DARK = '#8b5e2e';
++const CEILING_LIGHT = '#e8dcb8';
++const CEILING_EMISSIVE_DARK = '#6b4218';
++const CEILING_EMISSIVE_LIGHT = '#a08868';
++
++export function Ceiling() {
++  const theme = useWorldStore((s) => s.theme);
++  const color = theme === 'light' ? CEILING_LIGHT : CEILING_DARK;
++  const emissive = theme === 'light' ? CEILING_EMISSIVE_LIGHT : CEILING_EMISSIVE_DARK;
++  return (
++    <group>
++      {/* Per-room ceilings */}
++      {ROOMS.map((r) => (
++        <mesh
++          key={r.id}
++          position={[r.center.x, CEILING_Y, r.center.z]}
++          renderOrder={-1}
++        >
++          <boxGeometry args={[ROOM_SIDE, CEILING_T, ROOM_SIDE]} />
++          <meshStandardMaterial
++            color={color}
++            roughness={0.85}
++            metalness={0.0}
++            emissive={emissive}
++            emissiveIntensity={0.5}
++          />
++        </mesh>
++      ))}
++      {/* Hallway ceiling cross — same treatment */}
++      <mesh position={[0, CEILING_Y, 0]} renderOrder={-1}>
++        <boxGeometry args={[HALL_WIDTH, CEILING_T, HALL_LEN]} />
++        <meshStandardMaterial
++          color={color}
++          roughness={0.85}
++          metalness={0.0}
++          emissive={emissive}
++          emissiveIntensity={0.5}
++        />
++      </mesh>
++      <mesh position={[0, CEILING_Y, 0]} renderOrder={-1}>
++        <boxGeometry args={[HALL_LEN, CEILING_T, HALL_WIDTH]} />
++        <meshStandardMaterial
++          color={color}
++          roughness={0.85}
++          metalness={0.0}
++          emissive={emissive}
++          emissiveIntensity={0.5}
++        />
++      </mesh>
++    </group>
++  );
++}
+diff --git a/src/world3d/scene/World.tsx b/src/world3d/scene/World.tsx
+index 6c37108..d6565f8 100644
+--- a/src/world3d/scene/World.tsx
++++ b/src/world3d/scene/World.tsx
+@@ -10,6 +10,7 @@ import { COLORS, LIGHTS, FOG_DENSITY } from '../constants';
+ import { Ground } from './Ground';
+ import { RoomFloor } from './RoomFloor';
+ import { Walls } from './Walls';
++import { Ceiling } from './Ceiling';
+ import { StarField } from './StarField';
+ import { Particles } from './Particles';
+ import { Hallway } from './Hallway';
+@@ -102,6 +103,21 @@ export function World() {
+           distance={10}
+         />
+       ))}
++      {/* Under-ceiling fill lights — at y=1.7, just below the ceiling at y=2.
++          Same color per room. The y=4 lights stay (they handle the overview
++          camera shot from above). These lights both illuminate the ceiling
++          underside (now meshStandardMaterial) and brighten the room interior
++          when the camera is inside the room. Intensity tuned so the floor
++          brightness stays close to pre-ceiling baseline (just lifts a touch). */}
++      {ROOM_LIGHTS.map((l, i) => (
++        <pointLight
++          key={`under-${i}`}
++          position={[l.pos[0], 1.7, l.pos[2]]}
++          color={l.color}
++          intensity={0.25}
++          distance={6}
++        />
++      ))}
+ 
+       {/* Background */}
+       <StarField />
+@@ -115,6 +131,7 @@ export function World() {
+ 
+       {/* Structure */}
+       <Walls />
++      <Ceiling />
+ 
+       {/* Hallway */}
+       <Hallway />

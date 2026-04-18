@@ -1,0 +1,72 @@
+diff --git a/src/world3d/scene/Hallway.tsx b/src/world3d/scene/Hallway.tsx
+index 57cda8f..4e892c6 100644
+--- a/src/world3d/scene/Hallway.tsx
++++ b/src/world3d/scene/Hallway.tsx
+@@ -2,13 +2,32 @@ import { useRef } from 'react';
+ import { useFrame } from '@react-three/fiber';
+ import * as THREE from 'three';
+ import { Edges } from '@react-three/drei';
+-import { ROOM, GAP, FLOOR_Y } from '../constants';
++import { ROOM, GAP, FLOOR_Y, DOOR } from '../constants';
+ import { useWorldStore } from '../store/worldStore';
+ 
+ const HALL_COLOR = '#1e2233';
+ const HALL_LEN = ROOM * 2 + GAP * 2 + 1;
+ const HALL_WIDTH = GAP * 2;
+ 
++// R3.3 (OUT-3): doorway threshold patches.
++// Geometry: room floors are ROOM×ROOM centered at (±HALF, ±HALF) so their
++// edge sits at z=±(HALF-ROOM/2)=±GAP=±1.20. Horizontal walls sit at
++// z=±(GAP+0.05)=±1.25 with thickness 0.1 → wall footprint z∈[±1.20, ±1.30].
++// The hallway X-arm floor only spans z∈[-GAP, GAP]=[-1.20, 1.20], so under
++// each door opening (a DOOR.width gap in the wall) there is a ~0.10-wide
++// strip with no floor mesh — looking down reveals Ground at y=-0.5 (dark void).
++// Fix: add 4 thin slab patches, one per door, sitting just above both adjoining
++// floor tops (room floor top y=0.12, hall floor top y=0.08 → patch at y=0.13).
++// Patch depth 0.30 overlaps both edges generously; width = DOOR.width fits
++// inside the door opening so no wall conflict.
++const DOOR_HALF = ROOM / 2 + GAP; // = HALF (3.7) in rooms.ts
++const THRESHOLD_PATCHES: ReadonlyArray<readonly [number, number]> = [
++  [-DOOR_HALF, -(GAP + 0.05)],
++  [ DOOR_HALF, -(GAP + 0.05)],
++  [-DOOR_HALF,  (GAP + 0.05)],
++  [ DOOR_HALF,  (GAP + 0.05)],
++];
++
+ // Ceiling beams + tint pool deleted with the wood-blocks-in-corridor pass.
+ 
+ interface PlantProps {
+@@ -124,6 +143,19 @@ export function Hallway() {
+         <meshPhongMaterial color={HALL_COLOR} flatShading />
+       </mesh>
+ 
++      {/* R3.3 (OUT-3): doorway threshold patches — bridge the ~0.10-wide gap
++          between the room floor (z edge ±1.20) and the hallway X-arm floor
++          (z edge ±1.20) under each wall footprint where the door opening sits.
++          Sits at y=0.14 (bottom 0.13), comfortably above both adjacent floor tops
++          (room top 0.12, hall top 0.08) to avoid z-fight, and width=DOOR.width
++          stays inside the wall opening (no wall conflict). */}
++      {THRESHOLD_PATCHES.map(([px, pz], i) => (
++        <mesh key={`thresh-${i}`} position={[px, 0.14, pz]} receiveShadow>
++          <boxGeometry args={[DOOR.width, 0.02, 0.30]} />
++          <meshPhongMaterial color={HALL_COLOR} flatShading />
++        </mesh>
++      ))}
++
+       {/* Coffee machine */}
+       <mesh position={[-1.5, 0.42, 0]}>
+         <boxGeometry args={[0.4, 0.6, 0.35]} />
+diff --git a/src/world3d/scene/Particles.tsx b/src/world3d/scene/Particles.tsx
+index fe684fc..7eada85 100644
+--- a/src/world3d/scene/Particles.tsx
++++ b/src/world3d/scene/Particles.tsx
+@@ -116,6 +116,9 @@ export function Particles() {
+         x = (RESET_RNG() - 0.5) * PARTICLES.spread;
+         z = (RESET_RNG() - 0.5) * PARTICLES.spread;
+       }
++      // R3.3: clamp under R3.1 ceiling (bottom face at y≈1.95).
++      // Particles inside the rooms/hallway must not breach it visually.
++      if (y > 1.95) y = 1.95;
+       BUF.px[i] = x;
+       BUF.py[i] = y;
+       BUF.pz[i] = z;

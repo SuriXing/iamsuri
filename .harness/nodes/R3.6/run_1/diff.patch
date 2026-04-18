@@ -1,0 +1,155 @@
+diff --git a/src/world3d/hud/Crosshair.tsx b/src/world3d/hud/Crosshair.tsx
+index d1a52d2..4a37141 100644
+--- a/src/world3d/hud/Crosshair.tsx
++++ b/src/world3d/hud/Crosshair.tsx
+@@ -2,5 +2,8 @@ import { useWorldStore } from '../store/worldStore';
+ 
+ export function Crosshair() {
+   const fpActive = useWorldStore((s) => s.fpActive);
+-  return <div id="crosshair" className={'crosshair' + (fpActive ? ' active' : '')} />;
++  const focused = useWorldStore((s) => s.focusedInteractable);
++  const cls =
++    'crosshair' + (fpActive ? ' active' : '') + (focused ? ' focused' : '');
++  return <div id="crosshair" className={cls} />;
+ }
+diff --git a/src/world3d/hud/InteractTooltip.tsx b/src/world3d/hud/InteractTooltip.tsx
+index 10a9d0a..faddea7 100644
+--- a/src/world3d/hud/InteractTooltip.tsx
++++ b/src/world3d/hud/InteractTooltip.tsx
+@@ -1,14 +1,64 @@
++import { useEffect, useState } from 'react';
+ import { useWorldStore } from '../store/worldStore';
+ 
++const STORAGE_KEY = 'suri-interact-hint-shown';
++
++function readShown(): boolean {
++  try {
++    return sessionStorage.getItem(STORAGE_KEY) === '1';
++  } catch {
++    return false;
++  }
++}
++
++function writeShown() {
++  try {
++    sessionStorage.setItem(STORAGE_KEY, '1');
++  } catch {
++    /* ignore */
++  }
++}
++
+ export function InteractTooltip() {
+   const focused = useWorldStore((s) => s.focusedInteractable);
+   const modal = useWorldStore((s) => s.modalInteractable);
+   const fpActive = useWorldStore((s) => s.fpActive);
+-  const active = fpActive && focused !== null && modal === null;
++
++  // Lazy init from sessionStorage; this state never causes re-renders after
++  // the first set because subsequent focuses short-circuit on `shown`.
++  const [shown, setShown] = useState<boolean>(readShown);
++  const [hintVisible, setHintVisible] = useState(false);
++
++  // Derive first-focus trigger during render (no effect, no ref).
++  const shouldShow = fpActive && !!focused && !modal && !shown;
++  if (shouldShow && !hintVisible) {
++    writeShown();
++    setShown(true);
++    setHintVisible(true);
++  }
++
++  // Auto-dismiss after 2.5s once visible.
++  useEffect(() => {
++    if (!hintVisible) return;
++    const t = window.setTimeout(() => setHintVisible(false), 2500);
++    return () => window.clearTimeout(t);
++  }, [hintVisible]);
++
++  // Dismiss on first E press while visible.
++  useEffect(() => {
++    if (!hintVisible) return;
++    const onKey = (e: KeyboardEvent) => {
++      if (e.key.toLowerCase() === 'e') setHintVisible(false);
++    };
++    window.addEventListener('keydown', onKey);
++    return () => window.removeEventListener('keydown', onKey);
++  }, [hintVisible]);
++
++  const active = fpActive && hintVisible && focused !== null && modal === null;
+ 
+   return (
+     <div id="interact-tooltip" className={'interact-tooltip' + (active ? ' active' : '')}>
+-      Click to read &middot; or press <kbd>E</kbd>
++      Press <kbd>E</kbd> to interact
+     </div>
+   );
+ }
+diff --git a/src/world3d/world3d.css b/src/world3d/world3d.css
+index eb3a2aa..5c20cca 100644
+--- a/src/world3d/world3d.css
++++ b/src/world3d/world3d.css
+@@ -138,6 +138,10 @@
+   letter-spacing: 1.5px;
+   pointer-events: none;
+   backdrop-filter: blur(6px);
++  /* Force single-line on any viewport wide enough — wrap rather than
++     truncate so the kbd chips never split mid-word. */
++  white-space: nowrap;
++  max-width: calc(100vw - 32px);
+ }
+ .exit-hint.active { display: block; }
+ .exit-hint kbd {
+@@ -148,6 +152,7 @@
+   color: #ffd700;
+   margin: 0 4px;
+   font-family: inherit;
++  white-space: nowrap;
+ }
+ 
+ /* ── Enter prompt (anchored in 3D via drei Html) ──────── */
+@@ -374,8 +379,14 @@
+   box-shadow: 0 0 4px rgba(255, 215, 0, 0.6);
+   z-index: 45;
+   pointer-events: none;
++  transition: background-color 120ms ease-out, box-shadow 120ms ease-out, transform 120ms ease-out;
+ }
+ .crosshair.active { display: block; }
++.crosshair.focused {
++  background: #22d3ee;
++  box-shadow: 0 0 8px rgba(34, 211, 238, 0.85);
++  transform: translate(-50%, -50%) scale(1.6);
++}
+ 
+ /* ── FP intro hint ────────────────────────────────────── */
+ .fp-intro-hint {
+@@ -647,4 +658,31 @@ body.world3d-light-theme .dialogue-next {
+     padding: 0 10px;
+     font-size: 0.7rem;
+   }
++  /* EXIT ROOM button: shrink so it stops dominating the canvas — but
++     keep it instantly readable. Reposition to top-left with smaller
++     padding/font so the user still notices it without losing 30% of
++     the room view to a giant button. */
++  .back-btn {
++    top: 12px;
++    left: 14px;
++    padding: 8px 14px;
++    font-size: 0.78rem;
++    letter-spacing: 1.2px;
++    border-width: 1px;
++  }
++  /* Exit-hint banner: shorten the content + tighten the box so it sits
++     on a single short line at the bottom. The pre-fix wrap (4 lines on
++     iPhone 13) was the "no hints telling me what to do" symptom. */
++  .exit-hint {
++    bottom: 16px;
++    padding: 7px 14px;
++    font-size: 0.72rem;
++    letter-spacing: 1px;
++    /* white-space:nowrap from base rule keeps it single-line; the
++       max-width clamp ensures it never spills past the viewport. */
++  }
++  .exit-hint kbd {
++    padding: 1px 5px;
++    margin: 0 2px;
++  }
+ }

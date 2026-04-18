@@ -1,124 +1,61 @@
-# 2D Rich Portfolio — Phase 2: Polish + Ship
+# Plan — SuriWorld 3D R3 Polish (Loop)
 
-Phase 1 (P1.1–P1.8) shipped: routing, canonical data model, editorial
-single-scroll landing, 4 detail page templates, a11y chrome, dark/light
-theme, mobile responsive. Phase 2 takes the structural foundation to
-production polish — search, craft pass, hero art — and ships the final
-tag.
+7 units. Implement and review separated. One commit per unit.
 
-**Hard scope: 2D ONLY.** `src/world3d/**` is FROZEN. The 3D view stays
-as it shipped (commits f4b7595 and earlier). All Phase 2 work touches
-`src/components/`, `src/data/`, `src/lib/`, `src/styles/`, `src/App.tsx`.
+## Project Context
 
-**Principle:** Phase 1 made it work. Phase 2 makes it feel hand-crafted.
-Every additive feature must clear the same gates as Phase 1 (4 gates,
-12/12 playwright) without breaking 3D access or bundle split.
+- Repo: `/Users/surixing/Code/SuriWorld/SuriWorld` (branch `main`, 1 commit ahead of origin already, do not push without user request)
+- Stack: Vite + React + TypeScript + react-three-fiber + drei + zustand
+- Dev server: `npm run dev` on port 5173, route is `/3d`
+- Build: `npm run build` (tsc -b && vite build)
+- Lint: `npm run lint` (eslint)
+- DEV-only seam: `window.__worldStore` exposes the zustand store for test teleports
+- Project rule (CLAUDE.md): UI changes MUST be visually verified via webapp-testing skill (Playwright headless) before declaring done
 
-## Phase 2 units (7 total)
+## Validators Detected
 
-- P2.1: implement-search-keyboard — Add client-side search across all
-  content (Product / Post / Idea / About). Use `minisearch` or
-  `flexsearch` (~25-35 KB gzip). Build search index from canonical
-  schema at module load, not request time. Add a global keyboard
-  shortcut: `/` focuses the search input from any route, `Escape`
-  clears + blurs, `j` / `k` move between result items, `Enter`
-  navigates to the highlighted result. Add a small SearchBox component
-  (input + dropdown of grouped results: Work / Writing / Ideas /
-  About). Mount in the app shell so it's available on every route.
-  Mobile: full-screen overlay variant. Result rendering reuses the
-  existing card components / typography tokens so it doesn't drift.
-  - verify: all 4 gates; screenshots of empty input, focused input,
-    typed query with results, mobile overlay
-  - eval: search returns relevant results across all 4 content types,
-    keyboard nav works, no a11y regressions, bundle stays under
-    150 KB gzip first paint
+- pre-commit hooks: none in repo (no `.husky/`, no `.git/hooks/pre-commit`)
+- test script: none for FP scenes (`tests/3d-world.test.cjs` is older static-html-only)
+- lint script: yes (`npm run lint`, ran cleanly in R2)
+- typecheck: implicit via `npm run build` (`tsc -b`)
 
-- P2.2: review-search-keyboard — 2 fresh subagents (frontend
-  architect + a11y reviewer). Verify: search index is built once not
-  per-keystroke, debouncing handled, focus management correct, ARIA
-  roles on results listbox, no `any`, no per-route subscribe leaks.
-  - verify: 2 eval files
-  - eval: search is production-quality, ≥85 score, no 🔴
+## Units
 
-- P2.3: implement-craft-pass — Polish + a11y backlog. Touch:
-  * Hover states on all clickable cards (lift + accent border, tokens
-    only, no hardcoded colors)
-  * Anchor-scroll smooth transitions on landing → section navigation
-  * Card click micro-interaction (subtle scale + accent ring)
-  * Reading progress bar on long writing detail pages
-  * Related-content strip at end of each detail page (tags-overlap
-    based, max 3 items, falls back to recency)
-  * RSS feed at `/rss.xml` for writing posts (build-time generation
-    via Vite plugin or static file at deploy time)
-  * 404 polish (real layout matching landing, not the placeholder)
-  * 18px back-link tap-target a11y issue (P1.2 designer flag): all
-    text links inside cards / placeholders ≥ 44px tap area on mobile
-  * `prefers-reduced-motion` respected on every transition
-  * Mobile micro-refinements: tag-filter wrapping, card padding,
-    bottom-of-fold spacing, fix any horizontal overflow
-  - verify: all 4 gates; screenshots of hover states (desktop), card
-    detail page with reading progress, 404 polished, mobile filter row
-  - eval: every backlog item from P1.2 / P1.6 a11y reviews resolved,
-    no `prefers-reduced-motion` violations, no horizontal scroll on
-    320px
+- R3.1: implement-ceiling — Replace plane ceiling with thin `boxGeometry`. Switch to `meshStandardMaterial` with a warm wood tone (or a deliberately chosen non-black `meshBasicMaterial` color matching the floor warmth) so it reads as architecture, not void. Add per-room under-ceiling fill light at y≈1.7 OR move existing y=4 room point lights to y=1.7. Set explicit `renderOrder` on ceiling so depth occludes stars. Revert the `viewMode === 'overview' && <StarField />` gate in `World.tsx`. Touches: `src/world3d/scene/Ceiling.tsx`, `src/world3d/scene/World.tsx`, `src/world3d/scene/StarField.tsx`.
+  - verify: `npm run build` succeeds; `npm run lint` succeeds; Playwright screenshot `look-up-myroom-dark.png` shows ceiling brightness ≥ 30/255 in 200×200 center crop; `myroom-baseline-dark.png` brightness within 10% of `/tmp/sw-fp-down.png`; entering room mid-tween (t=500ms) shows stars above ceiling line, none below.
+  - eval: OUT-1, OUT-2, OUT-4 (stars portion). Files reviewed: Ceiling.tsx, World.tsx, StarField.tsx. Watch for: render-order side effects on existing materials, light intensity ballooning, `meshStandardMaterial` causing FPS drop on mobile.
 
-- P2.4: review-craft-pass — 2 fresh subagents (designer + a11y).
-  Designer rubric: hover/transition craft, micro-interaction polish,
-  mobile feel, 404 quality. a11y: tap targets, reduced-motion,
-  keyboard, screen-reader announcements.
-  - verify: 2 eval files
-  - eval: ≥85 average, zero 🔴
+- R3.2: review-ceiling — Independent multi-role review of R3.1. Roles: frontend (R3F idiom + perf), designer (visual coherence + lighting). Reviewers see only the diff + acceptance-criteria.md, not the implementer's reasoning.
+  - verify: ≥ 2 eval-{role}.md files in `.harness/nodes/R3.2/run_1/`; `opc-harness synthesize` produces a verdict.
+  - eval: Roles must NOT have been the R3.1 implementer. Verdict feeds R3.7 fix-and-accept.
 
-- P2.5: implement-hero-monogram — Replace the 👩‍💻 emoji avatar in the
-  About section + landing hero. Implement an inline SVG monogram as a
-  React component (`src/components/shared/Monogram.tsx`) using the
-  display serif (Fraunces) — a stylized "S" or "SX" mark in
-  `currentColor` so it inherits theme. Ship a tasteful default;
-  surface 3-5 design alternatives (different glyph weights, with /
-  without serif flourishes, framed / unframed) as inline SVG snippets
-  in the eval doc so the user can pick one in P2.6 review or after
-  ship. Also add a small hero visual to the landing (SVG-only, < 3 KB,
-  no images / no fonts beyond the type system).
-  - verify: all 4 gates; screenshots of monogram in landing hero +
-    about page (dark + light themes)
-  - eval: monogram renders correctly in both themes, scales from 24px
-    to 200px, inherits `currentColor`, no raster image dependency
+- R3.3: implement-particles-and-thresholds — Clamp `Particles` `py[i]` < 1.95 each frame so dust never breaches the ceiling. Patch the doorway threshold gap so the hallway floor + Ground are not visible looking down at a doorway. Touches: `src/world3d/scene/Particles.tsx`, possibly `src/world3d/scene/Hallway.tsx` or `src/world3d/scene/RoomFloor.tsx`.
+  - verify: `npm run build` succeeds; `npm run lint` succeeds; Playwright `doorway-down-myroom.png` and `doorway-up-myroom.png` for all 4 rooms; bottom-third brightness ≥ 10/255 (no dark void); top-third bright-pixel count ≤ 5 (no stars through ceiling).
+  - eval: OUT-3, OUT-4 (particles portion). Files reviewed: Particles.tsx + any threshold floor file. Watch for: Z-fighting between RoomFloor/Hallway/threshold patch, particles snapping at the ceiling.
 
-- P2.6: review-final — Phase 2 gate. 3 fresh reviewers (PM + designer
-  + frontend architect). Full weighted rubric:
-    * Routing quality (10), Data model rigor (10)
-    * Search craft (10), Keyboard nav (10)
-    * Visual hierarchy (10), Typography (10), Spacing (5),
-      Information density (5), Hover/transition craft (10),
-      Mobile experience (10), a11y (5), Performance (5)
-  Gate to ship: averaged ≥88, zero 🔴.
-  - verify: 3 eval files
-  - eval: averaged ≥88, zero 🔴
+- R3.4: review-particles-and-thresholds — Independent review of R3.3. Roles: frontend (geometry/depth correctness), tester (verify all 4 rooms covered).
+  - verify: ≥ 2 eval-{role}.md files in `.harness/nodes/R3.4/run_1/`; verdict produced.
+  - eval: Roles must NOT have been the R3.3 implementer. Verdict feeds R3.7 fix-and-accept.
 
-- P2.7: ship — Final summary commit + tag `2d-rich-portfolio-shipped`.
-  Update progress.md with ship summary. Push to origin/main.
-  - verify: git status clean, all 4 gates green, push succeeds
-  - eval: tag exists on remote, deploy artifacts present in dist/
+- R3.5: implement-crosshair-feedback-and-tooltip — Add `.focused` class to the `.crosshair` element when `focusedInteractable` is non-null in FP. CSS color (gold→cyan) + scale 1.6×. New one-shot tooltip "Press E to interact" near crosshair, sessionStorage-gated so it only appears once per session, dismissed after 2.5s OR on first E press. Touches: `src/world3d/hud/Crosshair.tsx` (or wherever the crosshair lives — verify), `src/world3d/world3d.css`, possibly new `src/world3d/hud/InteractTooltip.tsx`.
+  - verify: `npm run build` succeeds; `npm run lint` succeeds; Playwright teleport into MyRoom + walk near bed; `document.querySelector('.crosshair').classList.contains('focused')` is true; computed background-color changed from gold; tooltip element visible; sessionStorage `suri-interact-hint-shown=1` set.
+  - eval: OUT-5. Files reviewed: Crosshair.tsx (or equivalent), new InteractTooltip.tsx, world3d.css, the zustand selector wiring. Watch for: tooltip overlap with EXIT ROOM on mobile, stale focused state after exiting room.
 
-## Hard constraints (all units)
+- R3.6: review-crosshair — Independent review of R3.5. Roles: a11y (focus visibility, screen-reader text on crosshair change), pm (does this actually solve discoverability?).
+  - verify: ≥ 2 eval-{role}.md files in `.harness/nodes/R3.6/run_1/`; verdict produced.
+  - eval: Roles must NOT have been the R3.5 implementer. Verdict feeds R3.7 fix-and-accept.
 
-- Do NOT touch `src/world3d/**` (3D is frozen)
-- Do NOT touch `src/data/rooms.ts` (shared with 3D)
-- Do NOT touch tests in `tests/` directory beyond what P1.9 already
-  exempted
-- 2D first paint < 150 KB gzip (was 66 KB after P1; can grow up to
-  150 KB to fit search index + monogram + craft polish)
-- 3D stays lazy-loaded
-- TypeScript strict, no `any`
-- Dark + light themes both work for every change
-- Mobile responsive ≥320px
-- All implement/fix units run all 4 gates before commit
-- Each implement/fix unit produces a git commit
-- Each review unit produces ≥2 independent subagent eval files
-- Fail-fast: subagents exit at 20 min / 3 gate fails, no thermal
-  retry loops
+- R3.7: fix-and-accept — Address all 🔴/🟡 findings from R3.2 + R3.4 + R3.6. Then run final acceptance against all 6 OUT-N. If no findings, jump straight to acceptance.
+  - verify: `npm run build` + `npm run lint` clean; all Playwright screenshots in `.harness/nodes/R3.7/run_1/screens/` exist with the names mandated in acceptance-criteria.md Verification section. Each OUT-N has a pass/fail line in `.harness/nodes/R3.7/run_1/eval.md`. Specific R3.2/R3.4/R3.6 findings cited in commit message.
+  - eval: PASS only if 6/6 OUT-N pass AND no new 🔴 findings introduced. ITERATE on partial pass. FAIL on any 🔴.
 
-## Ship target
+## Backlog Promotion Rules
 
-Tag `2d-rich-portfolio-shipped` on `main`, pushed to origin. Site
-deployed via Vercel auto-deploy on push.
+Anything that reviewers flag as 🟡-not-fixed-this-cycle goes to `.harness/backlog.md` with severity prefix. R3.7 must not pass with any open 🔴.
+
+## Outright Off-Limits
+
+- Do not touch `src/world3d/intro/*` — out of scope.
+- Do not regenerate or refactor `tests/3d-world.test.cjs` beyond keeping it green.
+- Do not push to remote — user has not requested it.
+- Do not enable/disable any dev tooling (`@react-three/drei` Stats panel, etc.) globally.

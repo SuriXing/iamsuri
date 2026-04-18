@@ -2,35 +2,17 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Edges } from '@react-three/drei';
-import { ROOM, GAP, FLOOR_Y, DOOR } from '../constants';
-import { ROOM_BY_ID, type RoomId } from '../data/rooms';
+import { ROOM, GAP, FLOOR_Y } from '../constants';
 import { useWorldStore } from '../store/worldStore';
 
 const HALL_COLOR = '#1e2233';
 const HALL_LEN = ROOM * 2 + GAP * 2 + 1;
 const HALL_WIDTH = GAP * 2;
 
-// R3.3 (OUT-3): doorway threshold patches.
-// (geometry comment unchanged)
-// R3.7 F6: each patch tinted to its adjacent room's floor color so the
-// seam disappears from the room side. Previously all patches used
-// HALL_COLOR (slate) which read as a dark strip across warm room floors.
-const DOOR_HALF = ROOM / 2 + GAP; // = HALF (3.7) in rooms.ts
-interface ThresholdPatch {
-  x: number;
-  z: number;
-  roomId: RoomId;
-}
-const THRESHOLD_PATCHES: ReadonlyArray<ThresholdPatch> = [
-  // x=-DOOR_HALF, z=-(GAP+0.05) → MyRoom side (x<0, z<0)
-  { x: -DOOR_HALF, z: -(GAP + 0.05), roomId: 'myroom' },
-  // x= DOOR_HALF, z=-(GAP+0.05) → ProductRoom side (x>0, z<0)
-  { x:  DOOR_HALF, z: -(GAP + 0.05), roomId: 'product' },
-  // x=-DOOR_HALF, z= (GAP+0.05) → BookRoom side (x<0, z>0)
-  { x: -DOOR_HALF, z:  (GAP + 0.05), roomId: 'book' },
-  // x= DOOR_HALF, z= (GAP+0.05) → IdeaLab side (x>0, z>0)
-  { x:  DOOR_HALF, z:  (GAP + 0.05), roomId: 'idealab' },
-];
+// R4.1: 4 doorway threshold patches DELETED. Closed-volume Room.tsx now
+// extends each room's floor 0.20u toward the corridor, so the room floor
+// tile-meets the hallway X-arm with a small overlap at the doorway. No
+// gap → no need for the per-doorway tinted patches.
 
 // Ceiling beams + tint pool deleted with the wood-blocks-in-corridor pass.
 
@@ -147,18 +129,8 @@ export function Hallway() {
         <meshPhongMaterial color={HALL_COLOR} flatShading />
       </mesh>
 
-      {/* R3.3 (OUT-3): doorway threshold patches — bridge the ~0.10-wide gap
-          between the room floor (z edge ±1.20) and the hallway X-arm floor
-          (z edge ±1.20) under each wall footprint where the door opening sits.
-          Sits at y=0.14 (bottom 0.13), comfortably above both adjacent floor tops
-          (room top 0.12, hall top 0.08) to avoid z-fight, and width=DOOR.width
-          stays inside the wall opening (no wall conflict). */}
-      {THRESHOLD_PATCHES.map((p, i) => (
-        <mesh key={`thresh-${i}`} position={[p.x, 0.14, p.z]} receiveShadow>
-          <boxGeometry args={[DOOR.width, 0.02, 0.30]} />
-          <meshPhongMaterial color={ROOM_BY_ID[p.roomId].color} flatShading />
-        </mesh>
-      ))}
+      {/* R4.1: doorway threshold patches DELETED. Room.tsx floor extends
+          0.20u into the corridor so the floors tile-meet at every doorway. */}
 
       {/* Coffee machine */}
       <mesh position={[-1.5, 0.42, 0]}>

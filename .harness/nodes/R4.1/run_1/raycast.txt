@@ -1,0 +1,6 @@
+room=myroom   hits=100/100 (100.00%)
+room=product  hits=100/100 (100.00%)
+room=book     hits=100/100 (100.00%)
+room=idealab  hits=100/100 (100.00%)
+
+TOTAL: 400/400 = 100.00%

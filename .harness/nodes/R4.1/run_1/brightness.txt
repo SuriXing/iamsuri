@@ -1,0 +1,10 @@
+R4.1 doorway PNG bottom-third PIL grayscale brightness (target: >=30 dark mode)
+========================================================================
+doorway-book-down.png                bottom-third mean =  82.91  PASS
+doorway-book-up.png                  bottom-third mean =  45.69  PASS
+doorway-idealab-down.png             bottom-third mean =  88.43  PASS
+doorway-idealab-up.png               bottom-third mean =  45.70  PASS
+doorway-myroom-down.png              bottom-third mean = 106.13  PASS
+doorway-myroom-up.png                bottom-third mean =  45.56  PASS
+doorway-product-down.png             bottom-third mean = 106.72  PASS
+doorway-product-up.png               bottom-third mean =  43.74  PASS

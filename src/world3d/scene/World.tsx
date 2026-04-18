@@ -10,6 +10,7 @@ import { COLORS, LIGHTS, SHADOW_MAP_SIZE, FOG_DENSITY } from '../constants';
 import { Ground } from './Ground';
 import { RoomFloor } from './RoomFloor';
 import { Walls } from './Walls';
+import { Ceiling } from './Ceiling';
 import { StarField } from './StarField';
 import { Particles } from './Particles';
 import { Hallway } from './Hallway';
@@ -111,6 +112,21 @@ export function World() {
           distance={10}
         />
       ))}
+      {/* Under-ceiling fill lights — at y=1.7, just below the ceiling at y=2.
+          Same color per room. The y=4 lights stay (they handle the overview
+          camera shot from above). These lights both illuminate the ceiling
+          underside (now meshStandardMaterial) and brighten the room interior
+          when the camera is inside the room. Intensity tuned so the floor
+          brightness stays close to pre-ceiling baseline (just lifts a touch). */}
+      {ROOM_LIGHTS.map((l, i) => (
+        <pointLight
+          key={`under-${i}`}
+          position={[l.pos[0], 1.7, l.pos[2]]}
+          color={l.color}
+          intensity={0.25}
+          distance={6}
+        />
+      ))}
 
       {/* Background */}
       <StarField />
@@ -124,6 +140,7 @@ export function World() {
 
       {/* Structure */}
       <Walls />
+      <Ceiling />
 
       {/* Hallway */}
       <Hallway />

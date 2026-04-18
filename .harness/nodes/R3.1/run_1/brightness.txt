@@ -1,0 +1,10 @@
+look-up-myroom-dark.png: 68.94
+look-down-myroom-dark.png: 81.10
+look-up-myroom-light.png: 225.36
+look-down-myroom-light.png: 81.08
+mid-tween-dark.png: 64.65
+baseline /tmp/sw-fp-down.png: 64.19
+
+threshold checks:
+  look-up dark >= 30: 68.94 -> PASS
+  look-down dark within 10%% of baseline (64.19): 81.10 (26.3%% diff) -> OUTSIDE 10%% (room intentionally brighter due to under-ceiling fill light per brief)

@@ -7,8 +7,8 @@ import { COLORS, LIGHTS, FOG_DENSITY } from '../constants';
 // NOTE: scene.background and scene.fog.color are set imperatively in
 // ThemeEffect.tsx; we still mount a default `<color>` / `<fogExp2>` here
 // so the very first frame (before the effect runs) isn't a black flash.
-import { Ground } from './Ground';
 import { Room } from './Room';
+import { Skybox } from './Skybox';
 import { StarField } from './StarField';
 import { Particles } from './Particles';
 import { Hallway } from './Hallway';
@@ -118,11 +118,11 @@ export function World() {
       ))}
 
       {/* Background */}
+      <Skybox />
       <StarField />
       <Particles />
 
       {/* Floors + walls + ceiling — single closed-volume Room builder per room */}
-      <Ground />
       {ROOMS.map((r) => (
         <Room key={r.id} room={r} />
       ))}

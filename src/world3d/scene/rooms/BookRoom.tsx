@@ -298,12 +298,12 @@ export function BookRoom() {
       {/* B1.3: invisible seat-read interactable on the cushion. Triggers
           the 许三观卖血记 modal via the existing focus + E flow. */}
       <mesh
-        position={[chairX, 0.55, chairZ - 0.02]}
+        position={[chairX, 1.3, chairZ - 0.02]}
         onUpdate={(m) => {
           m.userData.interactable = XU_SAN_GUAN_INTERACTABLE;
         }}
       >
-        <boxGeometry args={[0.7, 0.2, 0.6]} />
+        <boxGeometry args={[0.7, 1.0, 0.6]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
       {/* Back rest — flipped to -z (chair faces +z, toward back-wall shelves). */}

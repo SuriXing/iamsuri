@@ -5,6 +5,7 @@ import { useFrame } from '@react-three/fiber';
 // Named imports — namespace import defeats tree-shaking of three.
 import { Color, Mesh, PointLight } from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
+import { ROOM } from '../../constants';
 import { PRODUCT_ROOM_CONTENT } from '../../../data/productRoom';
 import { useWorldStore } from '../../store/worldStore';
 import { makeRng } from '../../util/rand';
@@ -194,7 +195,7 @@ export function ProductRoom() {
     <group>
       {/* ----- FLOOR STAGE — single rectangular slab ----- */}
       <mesh position={[ox, 0.18, oz]}>
-        <boxGeometry args={[3.6, 0.02, 3.6]} />
+        <boxGeometry args={[ROOM, 0.02, ROOM]} />
         <meshPhongMaterial color={bandTints[0]} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>

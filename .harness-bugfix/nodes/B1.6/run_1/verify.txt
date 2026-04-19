@@ -1,0 +1,8 @@
+--- Product Room: spawn FP, screenshot ---
+  product state: {"vm":"product","fp":true,"x":3.7,"z":-2}
+  screenshot → product-fp-fixed.png
+
+--- Book Room: chair focus from standing pose pitch=0 ---
+  south-of-chair-facing-N: {"focused":"读《许三观卖血记》(余华)","fp":true,"vt":"idle","x":-3.9,"z":3,"yaw":3.141592653589793,"pitch":0,"camPos":["-3.90","1.50","3.00"]}
+  modal: title=读《许三观卖血记》(余华) bodyLen=99
+  screenshot → book-modal-fixed.png

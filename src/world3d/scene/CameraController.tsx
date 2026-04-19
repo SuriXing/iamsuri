@@ -300,6 +300,15 @@ export function CameraController(): null {
         camera.fov = 95;
         camera.updateProjectionMatrix();
       }
+      // FP near-plane override. The overview near (CAMERA.near=0.5) sits
+      // farther out than the player collider radius (0.28), so when the
+      // player is against a wall the wall surface is INSIDE the near-clip
+      // plane and gets culled — looks like the wall went transparent and
+      // the skybox shows through. Use CAMERA.fpNear (0.05) in FP mode.
+      if (camera instanceof THREE.PerspectiveCamera && camera.near !== CAMERA.fpNear) {
+        camera.near = CAMERA.fpNear;
+        camera.updateProjectionMatrix();
+      }
       const { charPos, fpYaw, fpPitch } = s;
       camera.position.set(charPos.x, FP.eyeHeight, charPos.z);
       const cosP = Math.cos(fpPitch);
@@ -313,6 +322,11 @@ export function CameraController(): null {
     // Restore default FOV outside FP mode (so overview stays at 50°).
     if (camera instanceof THREE.PerspectiveCamera && camera.fov !== CAMERA.fov) {
       camera.fov = CAMERA.fov;
+      camera.updateProjectionMatrix();
+    }
+    // Restore overview near plane.
+    if (camera instanceof THREE.PerspectiveCamera && camera.near !== CAMERA.near) {
+      camera.near = CAMERA.near;
       camera.updateProjectionMatrix();
     }
 

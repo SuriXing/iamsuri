@@ -36,6 +36,14 @@ export const CAMERA = {
   // precision at distance 13. New ratio 400:1.
   near: 0.5,
   far: 200,
+  // FP-mode near override. In first-person the camera sits AT charPos,
+  // so wall surfaces sit ~radius (0.28) away when the player is against
+  // a wall — well inside the 0.5 overview-near plane → wall gets near-
+  // clipped and the skybox shows through (the "wall went transparent"
+  // bug). 0.05 is small enough that the wall stays opaque even when
+  // the player is hard against it; depth precision in FP doesn't matter
+  // because the visible distance is only ~5u.
+  fpNear: 0.05,
 } as const;
 
 /** Third-person follow camera (orbit around character). */

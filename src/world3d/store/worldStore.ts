@@ -8,6 +8,16 @@ export type ViewMode = 'overview' | RoomId;
 type ViewTransition = 'idle' | 'entering' | 'exiting';
 
 /**
+ * Why a room transition was triggered. 'manual' = E-key / number-key /
+ * direct setViewMode (player wasn't already inside the doorway, so the
+ * camera should teleport to the canonical room-entry pose). 'auto' =
+ * walk-through proximity detection — player is already past the door,
+ * so the FP camera should snap onto the player's CURRENT position
+ * without any positional teleport.
+ */
+type EnterReason = 'manual' | 'auto';
+
+/**
  * Top-level camera flow for the 3D world. The intro sequence runs once:
  *
  *   intro-static  (tilted top-down establishing shot, ~1.6s)
@@ -36,6 +46,8 @@ interface WorldState {
   // View
   viewMode: ViewMode;
   viewTransition: ViewTransition;
+  /** How the most recent room-enter was triggered. */
+  enterReason: EnterReason;
   // Player
   charPos: { x: number; z: number };
   charFacing: number; // radians
@@ -71,7 +83,7 @@ interface WorldState {
   // View transition state machine — avoids useFrame ordering races
   // between CameraController (writes fpActive at tween end) and
   // PlayerController (reads fpActive to decide movement).
-  beginRoomTransition: (room: RoomId) => void;
+  beginRoomTransition: (room: RoomId, reason?: EnterReason) => void;
   completeRoomTransition: () => void;
   beginExitTransition: () => void;
   // Intro actions
@@ -113,6 +125,7 @@ function loadTheme(): 'dark' | 'light' {
 export const useWorldStore = create<WorldState>((set) => ({
   viewMode: 'overview',
   viewTransition: 'idle',
+  enterReason: 'manual',
   charPos: { x: 0, z: 0 },
   charFacing: 0,
   fpActive: false,
@@ -143,7 +156,9 @@ export const useWorldStore = create<WorldState>((set) => ({
         modalInteractable: null,
       });
     } else {
-      set({ viewMode: v });
+      // Direct jumps (E key, number key, test bridge) are 'manual' —
+      // CameraController will teleport to the canonical room-entry pose.
+      set({ viewMode: v, enterReason: 'manual' });
     }
   },
   setCharPos: (x, z) => set({ charPos: { x, z } }),
@@ -194,8 +209,8 @@ export const useWorldStore = create<WorldState>((set) => ({
     set({ modalInteractable: i });
   },
   closeModal: () => set({ modalInteractable: null }),
-  beginRoomTransition: (room) =>
-    set({ viewMode: room, viewTransition: 'entering' }),
+  beginRoomTransition: (room, reason = 'manual') =>
+    set({ viewMode: room, viewTransition: 'entering', enterReason: reason }),
   completeRoomTransition: () =>
     set({ fpActive: true, viewTransition: 'idle' }),
   beginExitTransition: () =>

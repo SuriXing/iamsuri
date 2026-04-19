@@ -227,14 +227,31 @@ export function CameraController(): null {
       } else {
         const room = ROOM_BY_ID[s.viewMode];
         const isTop = room.center.z < 0;
-        const cx = room.center.x;
-        const cz = isTop
-          ? room.center.z + ROOM / 2 - 0.8
-          : room.center.z - ROOM / 2 + 0.8;
-        s.setCharPos(cx, cz);
-        s.setFp(false, isTop ? 0 : Math.PI, 0);
-        tw.targetPos.set(cx, FP.eyeHeight, cz);
-        tw.targetLook.set(room.center.x, 1.3, room.center.z);
+        if (s.enterReason === 'auto') {
+          // Walk-through: player is already at/just past the doorway.
+          // Snap the FP camera onto their CURRENT position so the
+          // transition is positionally seamless (≤0.5u teleport).
+          // FP yaw matches the follow camera's view direction so the
+          // player's "forward" stays continuous through the cut.
+          // (The follow cam at yaw=θ sits at -sinθ,-cosθ behind char and
+          // looks toward +sinθ,+cosθ; FP yaw convention has look =
+          // (-sinφ,-cosφ), so φ = θ + π.)
+          const continuedYaw = followCamYawRef.current + Math.PI;
+          s.setFp(false, continuedYaw, 0);
+          tw.targetPos.set(s.charPos.x, FP.eyeHeight, s.charPos.z);
+          const lookX = s.charPos.x - Math.sin(continuedYaw);
+          const lookZ = s.charPos.z - Math.cos(continuedYaw);
+          tw.targetLook.set(lookX, FP.eyeHeight, lookZ);
+        } else {
+          const cx = room.center.x;
+          const cz = isTop
+            ? room.center.z + ROOM / 2 - 0.8
+            : room.center.z - ROOM / 2 + 0.8;
+          s.setCharPos(cx, cz);
+          s.setFp(false, isTop ? 0 : Math.PI, 0);
+          tw.targetPos.set(cx, FP.eyeHeight, cz);
+          tw.targetLook.set(room.center.x, 1.3, room.center.z);
+        }
         tw.enteringRoom = true;
       }
       tw.lastViewMode = s.viewMode;

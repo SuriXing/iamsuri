@@ -1,0 +1,15 @@
+{
+  "node": "B1.1",
+  "status": "complete",
+  "verdict": "PASS",
+  "artifacts": [
+    "walkthrough.txt",
+    "walkthrough.cjs",
+    "screens/01-outside-door.png",
+    "screens/02-mid-doorway.png",
+    "screens/03-just-inside.png",
+    "screens/04-exiting.png"
+  ],
+  "summary": "Auto-enter rewritten as door-plane crossing test ((player−door)·(roomCenter−door)>0 AND insideDist≥0.4). CameraController now branches on enterReason: 'auto' skips setCharPos and snaps FP onto current charPos with continued yaw, giving 0.0u positional teleport (≤0.5u acceptance). Auto-exit upgraded to door-normal dot product so it works on any axis. PlayerController ROOM_MARGIN clamp opened by DOOR.width/2+colliderRadius along the door's normal axis within the door span so the player can walk back out. Walkthrough verified: entered=true, teleportΔ=0.000u, exited to overview without ESC, zero ping-pong. Pre-existing test 'keyboard flow' failure (lockedBefore=true) is from AUTO_UNLOCK_DIST proximity unlock, unrelated to B1.1; reproduces on unmodified main.",
+  "commits": []
+}

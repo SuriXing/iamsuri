@@ -15,11 +15,16 @@ const ROOM_NUMBER_KEYS: Record<string, RoomId> = {
 // hallway (walls block them from the room center). 1.6 is generous enough
 // to cover the corridor in front of each door without overlapping siblings.
 const PROXIMITY_THRESHOLD = 1.6;
-// Auto-enter: when the character walks INSIDE a room (past the doorway,
-// closer to the room center than to the doorway), automatically trigger
-// the room first-person view. The user wanted "walk into a room → camera
-// switches to first perspective" without having to press E.
-const AUTO_ENTER_DIST = 2.2;
+// Auto-enter: triggered when the player has CROSSED the door plane into
+// the room interior. We detect this with a door-normal dot product
+// (player−door)·(roomCenter−door) > 0, plus a minimum inside-distance to
+// avoid firing right at the doorway threshold (which created ping-pong
+// because the auto-exit test on the same frame would still pass too).
+//
+// Inside-distance must be ≥ AUTO_ENTER_INSIDE so the trigger sits a
+// little past the door plane, AND less than AUTO_EXIT_DIST below so the
+// two regions can't both fire on the same straight walk.
+const AUTO_ENTER_INSIDE = 0.4;
 // Auto-unlock distance — when the character walks within this radius of
 // a door we silently unlock it so they can keep walking through. Removes
 // the "press U to unlock then E to enter" friction; doors still render
@@ -150,14 +155,14 @@ export function InteractionManager(): null {
       const room = ROOM_BY_ID[s.viewMode];
       const dx = s.charPos.x - room.door.x;
       const dz = s.charPos.z - room.door.z;
-      // Hallway side of the door = OUTSIDE the room center along the
-      // door's room-normal axis. For a horizontal door (z-axis door),
-      // "hallway side" means dz has the opposite sign from (door.z - room.center.z).
-      const inwardZ = room.center.z - room.door.z; // points from door into room
-      const playerZRelDoor = s.charPos.z - room.door.z;
-      const onHallwaySide = inwardZ * playerZRelDoor < 0;
+      // Door-normal dot product: (player − door) · (roomCenter − door).
+      // Negative when the player has crossed back out to the hallway side.
+      // Works for any axis-aligned door, not just horizontal-wall doors.
+      const dxIn = room.center.x - room.door.x;
+      const dzIn = room.center.z - room.door.z;
+      const onHallwaySide = dx * dxIn + dz * dzIn < 0;
       if (onHallwaySide && Math.hypot(dx, dz) > AUTO_EXIT_DIST) {
-        s.setViewMode('overview');
+        s.beginExitTransition();
       }
       return;
     }
@@ -201,11 +206,18 @@ export function InteractionManager(): null {
     // race the intro tween and teleport the camera mid-cinematic.
     if (s.introPhase !== 'follow') return;
     for (const r of ROOMS) {
-      const dx = s.charPos.x - r.center.x;
-      const dz = s.charPos.z - r.center.z;
-      const d = Math.hypot(dx, dz);
-      if (d < AUTO_ENTER_DIST && s.unlockedDoors.has(r.id)) {
-        s.setViewMode(r.id);
+      // Door-plane crossing test: player has crossed the doorway into
+      // the room when the vector (player − door) points the same way as
+      // (roomCenter − door). Works for any axis-aligned door because
+      // the dot product handles arbitrary normals.
+      const dxDoor = s.charPos.x - r.door.x;
+      const dzDoor = s.charPos.z - r.door.z;
+      const dxIn = r.center.x - r.door.x;
+      const dzIn = r.center.z - r.door.z;
+      const crossed = dxDoor * dxIn + dzDoor * dzIn > 0;
+      const insideDist = Math.hypot(dxDoor, dzDoor);
+      if (crossed && insideDist >= AUTO_ENTER_INSIDE && s.unlockedDoors.has(r.id)) {
+        s.beginRoomTransition(r.id, 'auto');
         return;
       }
     }

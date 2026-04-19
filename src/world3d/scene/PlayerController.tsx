@@ -1,7 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useWorldStore } from '../store/worldStore';
 import { useKeyboard } from '../hooks/useKeyboard';
-import { SPEEDS, ROOM, CHARACTER } from '../constants';
+import { SPEEDS, ROOM, CHARACTER, DOOR } from '../constants';
 import { ROOM_BY_ID } from '../data/rooms';
 import { followCamYawRef } from './cameraRefs';
 import { hitTest } from './colliders';
@@ -105,9 +105,37 @@ export function PlayerController(): null {
     if (hitTest(nx, nz, radius)) nz = curZ;
 
     if (s.fpActive && s.viewMode !== 'overview') {
-      const rc = ROOM_BY_ID[s.viewMode].center;
-      nx = Math.max(rc.x - ROOM / 2 + ROOM_MARGIN, Math.min(rc.x + ROOM / 2 - ROOM_MARGIN, nx));
-      nz = Math.max(rc.z - ROOM / 2 + ROOM_MARGIN, Math.min(rc.z + ROOM / 2 - ROOM_MARGIN, nz));
+      const room = ROOM_BY_ID[s.viewMode];
+      const rc = room.center;
+      // Door span on the perpendicular axis — within this span we OPEN
+      // the room clamp on the door's normal axis so the player can walk
+      // back out through the doorway. Outside the span the wall clamp
+      // stays in force (the wall is solid there). Door normal axis is
+      // whichever axis has |door − center| > 0.
+      const doorDx = room.door.x - rc.x;
+      const doorDz = room.door.z - rc.z;
+      const doorIsZAxis = Math.abs(doorDz) > Math.abs(doorDx);
+      const halfSpan = DOOR.width / 2 + CHARACTER.colliderRadius;
+      let clampMinX = rc.x - ROOM / 2 + ROOM_MARGIN;
+      let clampMaxX = rc.x + ROOM / 2 - ROOM_MARGIN;
+      let clampMinZ = rc.z - ROOM / 2 + ROOM_MARGIN;
+      let clampMaxZ = rc.z + ROOM / 2 - ROOM_MARGIN;
+      if (doorIsZAxis) {
+        // Door is on +z or -z wall. Within ±halfSpan of door.x, allow
+        // the player to cross the door's z-edge (extra halfSpan beyond
+        // the wall) so they can walk back into the hallway.
+        if (Math.abs(nx - room.door.x) < halfSpan) {
+          if (doorDz > 0) clampMaxZ += halfSpan + ROOM_MARGIN;
+          else clampMinZ -= halfSpan + ROOM_MARGIN;
+        }
+      } else {
+        if (Math.abs(nz - room.door.z) < halfSpan) {
+          if (doorDx > 0) clampMaxX += halfSpan + ROOM_MARGIN;
+          else clampMinX -= halfSpan + ROOM_MARGIN;
+        }
+      }
+      nx = Math.max(clampMinX, Math.min(clampMaxX, nx));
+      nz = Math.max(clampMinZ, Math.min(clampMaxZ, nz));
     } else if (!s.fpActive) {
       nx = Math.max(-GROUND_LIMIT, Math.min(GROUND_LIMIT, nx));
       nz = Math.max(-GROUND_LIMIT, Math.min(GROUND_LIMIT, nz));

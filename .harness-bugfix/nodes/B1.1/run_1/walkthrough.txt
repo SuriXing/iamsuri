@@ -1,0 +1,15 @@
+Initial: {"charPos":{"x":-3.7,"z":0},"viewMode":"overview","fpActive":false}
+Entered FP: true
+FP-on at idx 8 t=7881: prev=(-3.700,-2.400) new=(-3.700,-2.400) Δ=0.000
+viewTransition=entering at idx 4: pos=(-3.700,-2.400)
+Walking back out (S)...
+Final: {"vm":"overview","fp":false,"x":0,"z":0}
+Exit reached overview within 2.5s: true
+FP flips during S-walk: 1, pingPong<0.5s: false
+PASSES: {
+  "entered": true,
+  "teleportDelta": 0,
+  "teleportLE05": true,
+  "exitedToOverview": true,
+  "noPingPong": true
+}

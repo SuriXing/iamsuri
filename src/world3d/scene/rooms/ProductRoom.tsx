@@ -173,7 +173,7 @@ export function ProductRoom() {
 
   // Server rack location (left back).
   const rackX = ox - 1.55;
-  const rackZ = oz + 0.9;
+  const rackZ = oz - 1.6;
 
   // Crate stack location (right back).
   const crateX = ox + 1.55;
@@ -192,31 +192,11 @@ export function ProductRoom() {
 
   return (
     <group>
-      {/* ----- FLOOR STAGE — base slab + two tint bands ----- */}
-      <mesh position={[ox, 0.15, oz - 0.3]}>
-        <boxGeometry args={[3.8, 0.05, 2.6]} />
+      {/* ----- FLOOR STAGE — single rectangular slab ----- */}
+      <mesh position={[ox, 0.18, oz]}>
+        <boxGeometry args={[3.6, 0.02, 3.6]} />
         <meshPhongMaterial color={bandTints[0]} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
-      </mesh>
-      <mesh position={[ox - 1.0, 0.178, oz - 0.3]}>
-        <boxGeometry args={[1.4, 0.02, 2.55]} />
-        <meshPhongMaterial color={bandTints[1]} flatShading />
-      </mesh>
-      <mesh position={[ox + 1.0, 0.178, oz - 0.3]}>
-        <boxGeometry args={[1.4, 0.02, 2.55]} />
-        <meshPhongMaterial color={bandTints[2]} flatShading />
-      </mesh>
-      {/* Cyan accent floor stripe */}
-      <mesh position={[ox, 0.185, oz + 0.6]}>
-        <boxGeometry args={[3.5, 0.005, 0.08]} />
-        <meshPhongMaterial color={CYAN} emissive={CYAN} emissiveIntensity={0.9} flatShading />
-      </mesh>
-      {/* F3.21 two-tone lighting fake — cool floor band cooling toward the
-          server rack (back-left). Thin overlay ~5% darker/cooler than the
-          base slate, sized to cover the rack quadrant. */}
-      <mesh position={[ox - 1.0, 0.184, oz + 0.6]}>
-        <boxGeometry args={[1.6, 0.005, 1.3]} />
-        <meshPhongMaterial color="#161e2f" flatShading />
       </mesh>
 
       {/* ----- DESK (top + trim + tapered legs) ----- */}

@@ -1,0 +1,14 @@
+{
+  "node": "B1.4",
+  "status": "complete",
+  "verdict": "PASS",
+  "artifacts": [
+    "yaw-trace.txt",
+    "screens/book-approach.png",
+    "screens/idealab-approach.png",
+    "screens/myroom-approach-no-rotate.png",
+    "screens/drag-overrides.png"
+  ],
+  "summary": "followCamYawHintRef + mouseDraggingRef added to cameraRefs. InteractionManager publishes atan2(roomCenter-charPos) when nearbyRoom is book or idealab in overview/follow mode; nulls otherwise. CameraController follow-branch lerps targetCamYawRef toward the hint at YAW_HINT_RATE=5 rad/s when not dragging, falling through to charFacing auto-drift otherwise. MouseOrbitController toggles mouseDraggingRef on pointer down/up. E2E walkthrough.cjs verifies all four acceptance points (book Δyaw≈0.005<0.3, idealab Δyaw≈0.001<0.3, myroom ΔtoHint≈0.7>0.3 (no auto-rotate), drag mid-action Δ≈2.88>0.5). Stable across 3 runs. lint+build clean.",
+  "commits": ["ac84d09e7012bc8a235821ea7e993653828271fc"]
+}

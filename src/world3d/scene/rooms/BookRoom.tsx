@@ -12,6 +12,7 @@ import type { InteractableData } from '../../store/worldStore';
 import { registerCollider, unregisterCollider } from '../colliders';
 
 const BLOG_INTERACTABLE: InteractableData = BOOK_ROOM_CONTENT.dialogues.blog;
+const XU_SAN_GUAN_INTERACTABLE: InteractableData = BOOK_ROOM_CONTENT.dialogues.xuSanGuan;
 
 // --- Cozy library palette (mahogany-shifted: red-brown register) ---
 // F3.15: nudged red +hue to lock tonal distinctness vs IdeaLab's olive-pine.
@@ -125,12 +126,19 @@ export function BookRoom() {
   });
 
   // Layout anchors.
+  // B1.3: swapped chair (couch) and shelves z so shelves sit at the back
+  // wall and the couch is in the middle ground. From FP-spawn POV (camera
+  // at oz - ROOM/2 + 0.8 looking toward room.center, +z direction), this
+  // puts shelves BEHIND the couch as required by OUT-3. The chair now
+  // faces +z (toward shelves / back wall), so the back rest sits on the
+  // -z side of the seat (camera-facing).
   const shelfLX = ox - 1.1;
   const shelfRX = ox + 1.0;
   const chairX = ox - 0.2;
-  const chairZ = oz + 0.9;
+  const chairZ = oz + 0.3;
   const tableX = ox + 0.8;
-  const tableZ = oz + 0.9;
+  const tableZ = oz + 0.3;
+  const shelfZ = oz + 1.5;
 
   // Furniture colliders — registered as playerOnly so the camera
   // wall-clip sweep ignores them while the player still bounces off.
@@ -142,16 +150,16 @@ export function BookRoom() {
       { id: 'br-chair',    x: chairX, z: chairZ, hx: 0.48, hz: 0.43 },
       // Side table — small footprint
       { id: 'br-table',    x: tableX, z: tableZ, hx: 0.28, hz: 0.28 },
-      // Left shelf wall (against -Z back wall)
-      { id: 'br-shelf-l',  x: shelfLX, z: oz - 1.5, hx: 0.85, hz: 0.20 },
+      // Left shelf wall (against +Z back wall — B1.3 swap)
+      { id: 'br-shelf-l',  x: shelfLX, z: shelfZ, hx: 0.85, hz: 0.20 },
       // Right shelf wall
-      { id: 'br-shelf-r',  x: shelfRX, z: oz - 1.5, hx: 0.85, hz: 0.20 },
+      { id: 'br-shelf-r',  x: shelfRX, z: shelfZ, hx: 0.85, hz: 0.20 },
       // Library ladder
-      { id: 'br-ladder',   x: shelfLX - 0.65, z: oz - 1.15, hx: 0.15, hz: 0.10 },
-      // Globe stand
-      { id: 'br-globe',    x: ox - 1.85, z: oz + 1.5, hx: 0.12, hz: 0.12 },
-      // Potted fern
-      { id: 'br-fern',     x: ox + 1.8, z: oz + 1.5, hx: 0.20, hz: 0.20 },
+      { id: 'br-ladder',   x: shelfLX - 0.65, z: shelfZ + 0.35, hx: 0.15, hz: 0.10 },
+      // Globe stand (relocated to -z side after B1.3 swap)
+      { id: 'br-globe',    x: ox - 1.85, z: oz - 1.5, hx: 0.12, hz: 0.12 },
+      // Potted fern (relocated to -z side)
+      { id: 'br-fern',     x: ox + 1.8, z: oz - 1.5, hx: 0.20, hz: 0.20 },
     ];
     for (const it of items) {
       registerCollider({ ...it, playerOnly: true });
@@ -159,7 +167,7 @@ export function BookRoom() {
     return () => {
       for (const it of items) unregisterCollider(it.id);
     };
-  }, [ox, oz, chairX, chairZ, tableX, tableZ, shelfLX, shelfRX]);
+  }, [ox, oz, chairX, chairZ, tableX, tableZ, shelfLX, shelfRX, shelfZ]);
 
   return (
     <group>
@@ -200,7 +208,7 @@ export function BookRoom() {
       {/* ----- BOOKSHELVES (with dusty pastel spines + edges on hero books) ----- */}
       <Bookshelf
         x={shelfLX}
-        z={oz - 1.5}
+        z={shelfZ}
         rows={4}
         booksPerRow={5}
         width={1.6}
@@ -218,9 +226,10 @@ export function BookRoom() {
         heroBookCount={4}
         edgeColor={edgeColor}
       />
-      {/* Blog interactable plane */}
+      {/* Blog interactable plane — shelves moved to +z (B1.3); the plane
+          sits on the camera-facing (-z) front face of the left shelf. */}
       <mesh
-        position={[shelfLX, 1.2, oz - 1.29]}
+        position={[shelfLX, 1.2, shelfZ - 0.21]}
         onUpdate={(m) => {
           m.userData.interactable = BLOG_INTERACTABLE;
         }}
@@ -230,7 +239,7 @@ export function BookRoom() {
       </mesh>
       <Bookshelf
         x={shelfRX}
-        z={oz - 1.5}
+        z={shelfZ}
         rows={4}
         booksPerRow={5}
         width={1.6}
@@ -250,12 +259,12 @@ export function BookRoom() {
       />
 
       {/* ----- LIBRARY LADDER (leaning against left shelf) ----- */}
-      <mesh position={[shelfLX - 0.75, 1.1, oz - 1.15]} rotation={[0, 0, -0.18]}>
+      <mesh position={[shelfLX - 0.75, 1.1, shelfZ + 0.35]} rotation={[0, 0, -0.18]}>
         <boxGeometry args={[0.04, 2.0, 0.04]} />
         <meshPhongMaterial color={WOOD_LIGHT} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh position={[shelfLX - 0.55, 1.1, oz - 1.15]} rotation={[0, 0, -0.18]}>
+      <mesh position={[shelfLX - 0.55, 1.1, shelfZ + 0.35]} rotation={[0, 0, -0.18]}>
         <boxGeometry args={[0.04, 2.0, 0.04]} />
         <meshPhongMaterial color={WOOD_LIGHT} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -264,9 +273,9 @@ export function BookRoom() {
       {[0.35, 0.75, 1.15, 1.55, 1.95].map((y, i) => (
         <mesh
           key={`rung-${i}`}
-          position={[shelfLX - 0.65 + (y - 1.1) * 0.18, y, oz - 1.15]}
+          position={[shelfLX - 0.65 + (y - 1.1) * 0.18, y, shelfZ + 0.35]}
           rotation={[0, 0, -0.18]}
-         
+
         >
           <boxGeometry args={[0.22, 0.03, 0.04]} />
           <meshPhongMaterial color={WOOD_LIGHT} flatShading />
@@ -281,19 +290,30 @@ export function BookRoom() {
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
       {/* Seat cushion */}
-      <mesh position={[chairX, 0.49, chairZ + 0.02]}>
+      <mesh position={[chairX, 0.49, chairZ - 0.02]}>
         <boxGeometry args={[0.82, 0.12, 0.72]} />
         <meshPhongMaterial color={CHAIR_GREEN} emissive={CHAIR_GREEN} emissiveIntensity={0.08} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      {/* Back rest */}
-      <mesh position={[chairX, 0.82, chairZ + 0.42]}>
+      {/* B1.3: invisible seat-read interactable on the cushion. Triggers
+          the 许三观卖血记 modal via the existing focus + E flow. */}
+      <mesh
+        position={[chairX, 0.55, chairZ - 0.02]}
+        onUpdate={(m) => {
+          m.userData.interactable = XU_SAN_GUAN_INTERACTABLE;
+        }}
+      >
+        <boxGeometry args={[0.7, 0.2, 0.6]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      {/* Back rest — flipped to -z (chair faces +z, toward back-wall shelves). */}
+      <mesh position={[chairX, 0.82, chairZ - 0.42]}>
         <boxGeometry args={[0.95, 0.9, 0.14]} />
         <meshPhongMaterial color={CHAIR_GREEN_DK} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
       {/* Back cushion */}
-      <mesh position={[chairX, 0.82, chairZ + 0.33]}>
+      <mesh position={[chairX, 0.82, chairZ - 0.33]}>
         <boxGeometry args={[0.8, 0.8, 0.08]} />
         <meshPhongMaterial color={CHAIR_GREEN} emissive={CHAIR_GREEN} emissiveIntensity={0.1} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -424,35 +444,35 @@ export function BookRoom() {
       </mesh>
 
       {/* ----- POTTED FERN (cozy corner greenery) ----- */}
-      <mesh position={[ox + 1.8, 0.22, oz + 1.5]}>
+      <mesh position={[ox + 1.8, 0.22, oz - 1.5]}>
         <boxGeometry args={[0.28, 0.34, 0.28]} />
         <meshPhongMaterial color={WOOD_MID} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh position={[ox + 1.8, 0.52, oz + 1.5]}>
+      <mesh position={[ox + 1.8, 0.52, oz - 1.5]}>
         <boxGeometry args={[0.36, 0.16, 0.36]} />
         <meshPhongMaterial color={FOREST} emissive={FOREST} emissiveIntensity={0.15} flatShading />
       </mesh>
-      <mesh position={[ox + 1.72, 0.64, oz + 1.48]}>
+      <mesh position={[ox + 1.72, 0.64, oz - 1.48]}>
         <boxGeometry args={[0.18, 0.2, 0.18]} />
         <meshPhongMaterial color={FOREST_LIGHT} emissive={FOREST_LIGHT} emissiveIntensity={0.15} flatShading />
       </mesh>
-      <mesh position={[ox + 1.88, 0.7, oz + 1.52]}>
+      <mesh position={[ox + 1.88, 0.7, oz - 1.52]}>
         <boxGeometry args={[0.16, 0.26, 0.16]} />
         <meshPhongMaterial color={FOREST_LIGHT} emissive={FOREST_LIGHT} emissiveIntensity={0.15} flatShading />
       </mesh>
 
       {/* ----- GLOBE ON LEFT CORNER (F3.15 hero: slow spin) ----- */}
-      <mesh position={[ox - 1.85, 0.3, oz + 1.5]}>
+      <mesh position={[ox - 1.85, 0.3, oz - 1.5]}>
         <boxGeometry args={[0.2, 0.06, 0.2]} />
         <meshPhongMaterial color={WOOD_DEEP} flatShading />
       </mesh>
-      <mesh position={[ox - 1.85, 0.38, oz + 1.5]}>
+      <mesh position={[ox - 1.85, 0.38, oz - 1.5]}>
         <boxGeometry args={[0.03, 0.2, 0.03]} />
         <meshPhongMaterial color={BRASS} flatShading />
       </mesh>
       {/* Spinning sphere + ring group — hero focal animation */}
-      <group ref={globeRef} position={[ox - 1.85, 0.56, oz + 1.5]}>
+      <group ref={globeRef} position={[ox - 1.85, 0.56, oz - 1.5]}>
         <mesh>
           <sphereGeometry args={[0.16, 8, 8]} />
           <meshPhongMaterial color="#8ba7b8" emissive="#8ba7b8" emissiveIntensity={0.15} flatShading />
@@ -489,7 +509,9 @@ export function BookRoom() {
       {/* Wide ambient lamp fill */}
       <pointLight position={[ox, 2.0, oz + 0.5]} color="#e8a860" intensity={0.4} distance={9} />
 
-      {/* ----- FRAMED PICTURE ABOVE CHAIR (gold frame — F3.15 breathes) ----- */}
+      {/* ----- FRAMED PICTURE ABOVE CHAIR (gold frame — F3.15 breathes) -----
+          Sits between the chair and the back-wall shelves so the FP
+          camera reads it as wall art behind the reading nook. */}
       <mesh ref={frameRef} position={[chairX, 1.85, chairZ + 0.55]}>
         <boxGeometry args={[0.6, 0.45, 0.04]} />
         <meshPhongMaterial

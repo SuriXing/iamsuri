@@ -16,6 +16,7 @@ interface BookRoomContent {
   blogStatus: string;
   dialogues: {
     blog: RoomDialogue;
+    xuSanGuan: RoomDialogue;
   };
   shelfBookColors: readonly string[];
 }
@@ -37,6 +38,10 @@ export const BOOK_ROOM_CONTENT: BookRoomContent = {
     blog: {
       title: 'Blog',
       body: blogBody,
+    },
+    xuSanGuan: {
+      title: '读《许三观卖血记》(余华)',
+      body: '余华的长篇小说，讲述丝厂送茧工许三观靠一次次卖血撑起一家人——从娶妻、养子，到饥荒年代用血换一碗面条，再到文革风暴中为儿子续命。粗粝、荒诞又带着冷幽默的家庭寓言，写尽小人物在时代碾压下的隐忍与温情。',
     },
   },
   shelfBookColors: ['#e94560', '#3b82f6', '#ffd700', '#22c55e', '#a78bfa', '#f97316'],

@@ -99,6 +99,7 @@ function WallStrip({ id, x, z, w, d, tint, edgeColor }: WallStripProps) {
           emissive={WALL_EMISSIVE}
           emissiveIntensity={0.12}
           flatShading
+          side={THREE.DoubleSide}
         />
         <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
@@ -109,6 +110,7 @@ function WallStrip({ id, x, z, w, d, tint, edgeColor }: WallStripProps) {
           emissive={WALL_EMISSIVE}
           emissiveIntensity={0.08}
           flatShading
+          side={THREE.DoubleSide}
         />
         <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
@@ -119,6 +121,7 @@ function WallStrip({ id, x, z, w, d, tint, edgeColor }: WallStripProps) {
           emissive={WALL_EMISSIVE}
           emissiveIntensity={0.18}
           flatShading
+          side={THREE.DoubleSide}
         />
         <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
@@ -196,6 +199,7 @@ function DoorwayWall({
             emissive={WALL_EMISSIVE}
             emissiveIntensity={0.12}
             flatShading
+            side={THREE.DoubleSide}
           />
           <Edges color={edgeColor} lineWidth={1.0} />
         </mesh>
@@ -238,6 +242,7 @@ function DoorwayWall({
           emissive={WALL_EMISSIVE}
           emissiveIntensity={0.12}
           flatShading
+          side={THREE.DoubleSide}
         />
         <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 // Named imports — namespace import defeats tree-shaking of three.
-import { Color, Group, Mesh } from 'three';
+import { Color, DoubleSide, Group, Mesh } from 'three';
 import { DOOR, DOOR_POLISH } from '../constants';
 import { useWorldStore } from '../store/worldStore';
 import type { RoomId } from '../data/rooms';
@@ -264,28 +264,28 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
           much darker wood tone so the doorway reads as cut-in framing. */}
       <mesh position={postLeft}>
         <boxGeometry args={jambArgs} />
-        <meshPhongMaterial color={JAMB_DARK_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.18} flatShading />
+        <meshPhongMaterial color={JAMB_DARK_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.18} flatShading side={DoubleSide} />
         <Edges color={edgeColor} lineWidth={1.4} />
       </mesh>
       <mesh position={postRight}>
         <boxGeometry args={jambArgs} />
-        <meshPhongMaterial color={JAMB_DARK_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.18} flatShading />
+        <meshPhongMaterial color={JAMB_DARK_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.18} flatShading side={DoubleSide} />
         <Edges color={edgeColor} lineWidth={1.4} />
       </mesh>
       <mesh position={headerPos}>
         <boxGeometry args={headerArgs} />
-        <meshPhongMaterial color={JAMB_DARK_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.18} flatShading />
+        <meshPhongMaterial color={JAMB_DARK_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.18} flatShading side={DoubleSide} />
         <Edges color={edgeColor} lineWidth={1.4} />
       </mesh>
       {/* Frame posts (lighter inner trim, tucked behind jambs) */}
       <mesh position={postLeft}>
         <boxGeometry args={postArgs} />
-        <meshPhongMaterial color={FRAME_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.3} flatShading />
+        <meshPhongMaterial color={FRAME_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.3} flatShading side={DoubleSide} />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
       <mesh position={postRight}>
         <boxGeometry args={postArgs} />
-        <meshPhongMaterial color={FRAME_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.3} flatShading />
+        <meshPhongMaterial color={FRAME_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.3} flatShading side={DoubleSide} />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
       {/* Contrasting frame moldings around the outside of each post */}
@@ -295,8 +295,7 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
           color={FRAME_MOLDING_COLOR}
           emissive={FRAME_EMISSIVE}
           emissiveIntensity={0.25}
-          flatShading
-        />
+          flatShading side={DoubleSide} />
         <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
       <mesh position={moldingRightPos}>
@@ -305,25 +304,24 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
           color={FRAME_MOLDING_COLOR}
           emissive={FRAME_EMISSIVE}
           emissiveIntensity={0.25}
-          flatShading
-        />
+          flatShading side={DoubleSide} />
         <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
       {/* Baseboards at bottom of each post */}
       <mesh position={baseboardLeftPos}>
         <boxGeometry args={baseboardArgs} />
-        <meshPhongMaterial color={FRAME_TRIM_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.2} flatShading />
+        <meshPhongMaterial color={FRAME_TRIM_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.2} flatShading side={DoubleSide} />
         <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
       <mesh position={baseboardRightPos}>
         <boxGeometry args={baseboardArgs} />
-        <meshPhongMaterial color={FRAME_TRIM_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.2} flatShading />
+        <meshPhongMaterial color={FRAME_TRIM_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.2} flatShading side={DoubleSide} />
         <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
       {/* Lintel */}
       <mesh position={lintelPos}>
         <boxGeometry args={lintelArgs} />
-        <meshPhongMaterial color={FRAME_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.3} flatShading />
+        <meshPhongMaterial color={FRAME_COLOR} emissive={FRAME_EMISSIVE} emissiveIntensity={0.3} flatShading side={DoubleSide} />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
       {/* Lintel trim board — overlaps the lintel top (gap fix from F3.6 review) */}
@@ -333,15 +331,14 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
           color={FRAME_MOLDING_COLOR}
           emissive={FRAME_EMISSIVE}
           emissiveIntensity={0.25}
-          flatShading
-        />
+          flatShading side={DoubleSide} />
         <Edges color={edgeColor} lineWidth={1.0} />
       </mesh>
 
       {/* Doormat — flat box at the doorway threshold, hallway side, accent-tinted */}
       <mesh position={matPos}>
         <boxGeometry args={matArgs} />
-        <meshPhongMaterial color={matColor} flatShading />
+        <meshPhongMaterial color={matColor} flatShading side={DoubleSide} />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
 
@@ -354,8 +351,7 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
             color={panelTints.bottom}
             emissive={accentColor}
             emissiveIntensity={0.12}
-            flatShading
-          />
+            flatShading side={DoubleSide} />
           <Edges color={edgeColor} lineWidth={1.2} />
         </mesh>
         {/* Middle field */}
@@ -365,8 +361,7 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
             color={panelTints.middle}
             emissive={accentColor}
             emissiveIntensity={0.15}
-            flatShading
-          />
+            flatShading side={DoubleSide} />
           <Edges color={edgeColor} lineWidth={1.2} />
         </mesh>
         {/* Top rail */}
@@ -376,25 +371,24 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
             color={panelTints.top}
             emissive={accentColor}
             emissiveIntensity={0.12}
-            flatShading
-          />
+            flatShading side={DoubleSide} />
           <Edges color={edgeColor} lineWidth={1.2} />
         </mesh>
         {/* Accent stripe — across the middle field */}
         <mesh position={stripPos(middleY)} rotation={[0, panelRotY, 0]}>
           <boxGeometry args={[DOOR.width * 0.8, 0.06, PANEL_THICK + 0.01]} />
-          <meshPhongMaterial color={accentColor} emissive={accentColor} emissiveIntensity={0.6} flatShading />
+          <meshPhongMaterial color={accentColor} emissive={accentColor} emissiveIntensity={0.6} flatShading side={DoubleSide} />
         </mesh>
         {/* Center mullion — thin vertical strip, full panel height, darker wood. */}
         <mesh position={stripPos(DOOR.height / 2)} rotation={[0, panelRotY, 0]}>
           <boxGeometry args={[0.04, DOOR.height, PANEL_THICK + 0.005]} />
-          <meshPhongMaterial color={panelTints.mullion} flatShading />
+          <meshPhongMaterial color={panelTints.mullion} flatShading side={DoubleSide} />
           <Edges color={edgeColor} lineWidth={1} />
         </mesh>
         {/* Inset panel rectangle on the middle field — slightly darker, thin. */}
         <mesh position={stripPos(middleY)} rotation={[0, panelRotY, 0]}>
           <boxGeometry args={[DOOR.width * 0.6, MID_H * 0.7, 0.02]} />
-          <meshPhongMaterial color={panelTints.inset} flatShading />
+          <meshPhongMaterial color={panelTints.inset} flatShading side={DoubleSide} />
           <Edges color={edgeColor} lineWidth={1} />
         </mesh>
         {/* Knob assembly: escutcheon plate + knob sphere (1.5× the F3.5 sizing —
@@ -403,13 +397,13 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
           {/* Escutcheon plate (flat box, sits flush against the door) */}
           <mesh rotation={[0, panelRotY, 0]}>
             <boxGeometry args={DOOR_POLISH.escutcheon as unknown as [number, number, number]} />
-            <meshPhongMaterial color={knobColor} emissive={knobColor} emissiveIntensity={0.3} flatShading />
+            <meshPhongMaterial color={knobColor} emissive={knobColor} emissiveIntensity={0.3} flatShading side={DoubleSide} />
             <Edges color={edgeColor} lineWidth={1.2} />
           </mesh>
           {/* Knob sphere — sits proud of the escutcheon */}
           <mesh position={horizontal ? [0, 0, 0.055] : [0.055, 0, 0]}>
             <sphereGeometry args={[DOOR_POLISH.knobRadius, 12, 10]} />
-            <meshPhongMaterial color={knobColor} emissive={knobColor} emissiveIntensity={0.45} flatShading />
+            <meshPhongMaterial color={knobColor} emissive={knobColor} emissiveIntensity={0.45} flatShading side={DoubleSide} />
             <Edges color={edgeColor} lineWidth={1.0} />
           </mesh>
         </group>
@@ -421,13 +415,13 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
           {/* Lock body — larger, pulses with the shackle as a single group */}
           <mesh ref={lockRef} position={[0, 0, 0]}>
             <boxGeometry args={[0.28, 0.24, 0.1]} />
-            <meshPhongMaterial color={LOCK_COLOR} emissive={LOCK_COLOR} emissiveIntensity={2.5} flatShading />
+            <meshPhongMaterial color={LOCK_COLOR} emissive={LOCK_COLOR} emissiveIntensity={2.5} flatShading side={DoubleSide} />
             <Edges color={edgeColor} lineWidth={1.2} />
           </mesh>
           {/* Lock shackle (box on top of the body) */}
           <mesh ref={lockShackleRef} position={[0, 0.18, 0]}>
             <boxGeometry args={[0.16, 0.12, 0.07]} />
-            <meshPhongMaterial color={LOCK_COLOR} emissive={LOCK_COLOR} emissiveIntensity={2.5} flatShading />
+            <meshPhongMaterial color={LOCK_COLOR} emissive={LOCK_COLOR} emissiveIntensity={2.5} flatShading side={DoubleSide} />
             <Edges color={edgeColor} lineWidth={1.0} />
           </mesh>
         </group>
@@ -436,11 +430,11 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
           {/* Green checkmark — two thin boxes forming an L (rotated 45deg). */}
           <mesh position={[x - 0.05, DOOR.frameHeight + 0.42, z]} rotation={[0, 0, Math.PI / 4]}>
             <boxGeometry args={[0.04, 0.18, 0.04]} />
-            <meshPhongMaterial color={CHECK_COLOR} emissive={CHECK_COLOR} emissiveIntensity={2.0} flatShading />
+            <meshPhongMaterial color={CHECK_COLOR} emissive={CHECK_COLOR} emissiveIntensity={2.0} flatShading side={DoubleSide} />
           </mesh>
           <mesh position={[x + 0.03, DOOR.frameHeight + 0.48, z]} rotation={[0, 0, -Math.PI / 4]}>
             <boxGeometry args={[0.04, 0.28, 0.04]} />
-            <meshPhongMaterial color={CHECK_COLOR} emissive={CHECK_COLOR} emissiveIntensity={2.0} flatShading />
+            <meshPhongMaterial color={CHECK_COLOR} emissive={CHECK_COLOR} emissiveIntensity={2.0} flatShading side={DoubleSide} />
           </mesh>
         </>
       )}
@@ -451,12 +445,12 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
         {/* Chain hanging from above (local +y) */}
         <mesh position={[0, 0.24, 0]}>
           <boxGeometry args={[0.02, 0.28, 0.02]} />
-          <meshPhongMaterial color={CHAIN_COLOR} flatShading />
+          <meshPhongMaterial color={CHAIN_COLOR} flatShading side={DoubleSide} />
         </mesh>
         {/* Metal cap on top of the lantern */}
         <mesh position={[0, 0.11, 0]}>
           <boxGeometry args={[0.22, 0.05, 0.22]} />
-          <meshPhongMaterial color={LANTERN_CAP_COLOR} flatShading />
+          <meshPhongMaterial color={LANTERN_CAP_COLOR} flatShading side={DoubleSide} />
           <Edges color={edgeColor} lineWidth={1.0} />
         </mesh>
         {/* Lantern glow body — lock-state color, F3.7 slightly larger */}
@@ -466,14 +460,13 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
             color={lanternBodyColor}
             emissive={lanternBodyColor}
             emissiveIntensity={unlocked ? 2.8 : 1.6}
-            flatShading
-          />
+            flatShading side={DoubleSide} />
           <Edges color={edgeColor} lineWidth={1.0} />
         </mesh>
         {/* Bottom finial */}
         <mesh position={[0, -0.14, 0]}>
           <boxGeometry args={[0.1, 0.04, 0.1]} />
-          <meshPhongMaterial color={LANTERN_CAP_COLOR} flatShading />
+          <meshPhongMaterial color={LANTERN_CAP_COLOR} flatShading side={DoubleSide} />
         </mesh>
       </group>
       {/* Lantern point light — stays at fixed world position */}

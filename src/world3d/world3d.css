@@ -383,9 +383,45 @@
 }
 .crosshair.active { display: block; }
 .crosshair.focused {
-  background: #22d3ee;
-  box-shadow: 0 0 8px rgba(34, 211, 238, 0.85);
-  transform: translate(-50%, -50%) scale(1.6);
+  background: #f5c678;
+  box-shadow: 0 0 10px rgba(245, 198, 120, 0.95);
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+/* "Press E" hint — appears when crosshair is focused on an interactable.
+   Sits ~22px below the crosshair so the eye reads them as one unit. */
+.crosshair-hint {
+  position: fixed;
+  top: calc(50% + 22px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  background: rgba(20, 14, 10, 0.85);
+  border: 1px solid #b8873a;
+  border-radius: 4px;
+  color: #f5c678;
+  font-family: system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 45;
+  opacity: 0;
+  transition: opacity 140ms ease-out, transform 140ms ease-out;
+}
+.crosshair-hint.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.crosshair-hint kbd {
+  background: #f5c678;
+  color: #1a1208;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-weight: 800;
+  margin-right: 3px;
 }
 
 /* R3.7 Y5: respect prefers-reduced-motion. Keep the 1.6× size cue (a
@@ -396,7 +432,7 @@
     transition: none;
   }
   .crosshair.focused {
-    transform: translate(-50%, -50%) scale(1.6);
+    transform: translate(-50%, -50%) scale(1.2);
   }
 }
 

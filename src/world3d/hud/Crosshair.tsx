@@ -5,5 +5,13 @@ export function Crosshair() {
   const focused = useWorldStore((s) => s.focusedInteractable);
   const cls =
     'crosshair' + (fpActive ? ' active' : '') + (focused ? ' focused' : '');
-  return <div id="crosshair" className={cls} />;
+  const hintCls = 'crosshair-hint' + (fpActive && focused ? ' visible' : '');
+  return (
+    <>
+      <div id="crosshair" className={cls} />
+      <div className={hintCls}>
+        <kbd>E</kbd> interact
+      </div>
+    </>
+  );
 }

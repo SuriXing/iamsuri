@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useWorldStore } from '../store/worldStore';
 import { ROOMS, ROOM_BY_ID } from '../data/rooms';
+import { ROOM } from '../constants';
 import { followCamYawHintRef } from './cameraRefs';
 import type { RoomId } from '../data/rooms';
 
@@ -236,7 +237,16 @@ export function InteractionManager(): null {
       const dzIn = r.center.z - r.door.z;
       const crossed = dxDoor * dxIn + dzDoor * dzIn > 0;
       const insideDist = Math.hypot(dxDoor, dzDoor);
-      if (crossed && insideDist >= AUTO_ENTER_INSIDE && s.unlockedDoors.has(r.id)) {
+      // Footprint guard: the dot-product half-plane test alone has no
+      // tangential bound — once any door on a wall is unlocked, walking
+      // past ANY door on that same wall would hit the half-plane (e.g.
+      // unlock myroom, then walk to product → product's z<-1.25 still
+      // satisfies myroom's `crossed`, hijacking the entry). Restrict to
+      // the room's own footprint.
+      const inFootprint =
+        Math.abs(s.charPos.x - r.center.x) < ROOM / 2 + 0.4 &&
+        Math.abs(s.charPos.z - r.center.z) < ROOM / 2 + 0.4;
+      if (crossed && inFootprint && insideDist >= AUTO_ENTER_INSIDE && s.unlockedDoors.has(r.id)) {
         s.beginRoomTransition(r.id, 'auto');
         return;
       }

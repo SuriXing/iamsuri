@@ -1,0 +1,14 @@
+
+=== Probe A: book seat focus + modal ===
+  on-chair state: {"vm":"book","fp":true,"focused":null,"focusedRoom":null,"pos":{"x":-3.9,"z":4}}
+  focus @ Δ(-0.2,0): Blog
+  modal title: Blog
+  modal body length: 77
+  contains 许三观: false
+
+=== Probe B: product room polish (top-down via __camera) ===
+
+=== Probe C: rapid in-out at doorway (book) ===
+  total fp flips during 3 cycles: 1; min gap between flips: Infinityms
+
+=== Probe D: yaw hint cleared after entry (longer sample) ===

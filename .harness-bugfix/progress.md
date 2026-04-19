@@ -1,0 +1,5 @@
+- **Tick 1** [B1.1] (door-walkthrough): completed — 2026-04-19T04:08:58.978Z
+- **Tick 2** [B1.2] (product-room-rack-and-carpet): completed — 2026-04-19T04:18:45.674Z
+- **Tick 3** [B1.3] (book-room-shelves-and-couch): completed — 2026-04-19T04:33:45.207Z
+- **Tick 4** [B1.4] (follow-cam-yaw-hint): completed — 2026-04-19T05:21:12.507Z
+- **Tick 5** [B1.5] (independent-review): completed — 2026-04-19T05:49:21.018Z

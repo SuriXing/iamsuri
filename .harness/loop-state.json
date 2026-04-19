@@ -1,79 +1,40 @@
 {
-  "tick": 6,
-  "unit": "R3.6",
-  "description": "Independent a11y+pm review; both ITERATE; tooltip-burned-under-modal (red) + PRM (yellow) + aria-live (yellow)",
-  "status": "completed",
-  "artifacts": [
-    ".harness/nodes/R3.6/run_1/eval-a11y.md",
-    ".harness/nodes/R3.6/run_1/eval-pm.md",
-    ".harness/nodes/R3.6/run_1/verdict.md"
-  ],
-  "next_unit": "R3.7",
+  "tick": 0,
+  "unit": null,
+  "description": "Loop initialized",
+  "status": "initialized",
+  "artifacts": [],
+  "next_unit": "R4.1",
   "blockers": [],
   "review_of_previous": "",
   "plan_file": ".harness/plan.md",
-  "units_total": 7,
+  "units_total": 11,
   "unit_ids": [
-    "R3.1",
-    "R3.2",
-    "R3.3",
-    "R3.4",
-    "R3.5",
-    "R3.6",
-    "R3.7"
+    "R4.1",
+    "R4.2",
+    "R4.3",
+    "R4.4",
+    "R4.5",
+    "R4.6",
+    "R4.7",
+    "R4.8",
+    "R4.9",
+    "R4.10",
+    "R4.11"
   ],
   "_written_by": "opc-harness",
-  "_plan_hash": "e9ea112e67dbcf6e",
-  "_last_modified": "2026-04-18T08:44:12.341Z",
-  "_git_head": "2352bf7d59ecbb6576e80f72ed0107be1f6d5342",
-  "_tick_history": [
-    {
-      "unit": "R3.1",
-      "tick": 1,
-      "status": "completed"
-    },
-    {
-      "unit": "R3.2",
-      "tick": 2,
-      "status": "completed",
-      "verdict": "PASS"
-    },
-    {
-      "unit": "R3.3",
-      "tick": 3,
-      "status": "completed"
-    },
-    {
-      "unit": "R3.4",
-      "tick": 4,
-      "status": "completed",
-      "verdict": "PASS"
-    },
-    {
-      "unit": "R3.5",
-      "tick": 5,
-      "status": "completed"
-    },
-    {
-      "unit": "R3.6",
-      "tick": 6,
-      "status": "completed",
-      "verdict": "PASS"
-    }
-  ],
-  "_max_total_ticks": 21,
-  "_started_at": "2026-04-18T06:52:06.282Z",
+  "_plan_hash": "a9113d66d5df732a",
+  "_last_modified": "2026-04-18T14:39:36.880Z",
+  "_git_head": "b0ff787bb7088cbd68fe1caef904bea86cd47c7b",
+  "_tick_history": [],
+  "_max_total_ticks": 33,
+  "_started_at": "2026-04-18T14:39:36.898Z",
   "_max_duration_hours": 24,
-  "_write_nonce": "293b74df681ba8b5",
+  "_write_nonce": "b6d614616e364f3b",
   "_external_validators": {
     "pre_commit_hooks": false,
     "test_script": false,
     "lint_script": true,
     "typecheck_script": false
-  },
-  "_last_review_evals": {
-    ".harness/nodes/R3.6/run_1/eval-a11y.md": "e0e847576b710247",
-    ".harness/nodes/R3.6/run_1/eval-pm.md": "d5e1e2d1085a8fb2",
-    ".harness/nodes/R3.6/run_1/verdict.md": "6f8f2dc80804b13a"
   }
 }

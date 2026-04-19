@@ -1,48 +1,55 @@
-# Acceptance Criteria — SuriWorld 3D R3 Polish
+# Acceptance Criteria — SuriWorld 3D R4 Architecture Refactor
 
-R3 of /3d FP-mode bug fixes addressing 6 issues raised after R2 (A–F)
-plus 2 better-solution patterns.
+R4 is a refactor loop addressing R3's self-critique: the bugs no longer manifest in
+screenshots, but the architecture that produced them is unchanged. Goal: make the
+code architecturally honest so future feature work doesn't resurface variants.
 
 ## Outcomes
 
-- OUT-1: Looking straight up in any of the 4 rooms (myroom, productroom, bookroom, idealab) at FP altitude shows a non-flat-black ceiling. Average pixel brightness in a 200×200 crop centered on screen at the look-up screenshot is ≥ 30 (out of 255) on dark theme and ≥ 180 on light theme. Implemented via `meshStandardMaterial` (or basic with theme-coordinated color, NOT raw `#2a1d10`) on a thin `boxGeometry`, plus relocated/added under-ceiling room lighting.
-- OUT-2: Average pixel brightness inside MyRoom (200×200 crop centered on the bed mesh, FP eye at room center) is within 10% of the pre-R3 baseline screenshot at `/tmp/sw-fp-down.png`. The ceiling fix MUST NOT seal the lights above it.
-- OUT-3: Standing at any doorway threshold in FP, looking down shows continuous floor (sampled bottom-third pixel brightness ≥ 10/255 in dark mode), no Ground plane at y=-0.5 visible, no dark void. Looking up at the threshold shows ceiling/hallway-ceiling (no stars in top-third of screenshot).
-- OUT-4: Stars render in all viewModes (revert the `viewMode === 'overview'` gate). The ceiling occludes them via depth testing — verified by entering a room mid-tween: at t=0.5s into the camera tween, stars are visible above the ceiling line and absent below it (no full-frame pop). Particles `py[i]` is clamped at < 1.95 each frame so dust never breaches the ceiling.
-- OUT-5: When `focusedInteractable` is non-null in FP, the `.crosshair` element gains a `.focused` class that changes color (gold→cyan, hex shift verifiable in computed style) AND scales up by 1.6×. A one-shot tooltip "Press E to interact" appears within 200ms of focus, dismissed after 2.5s OR after first E press, persisted in sessionStorage so it does not repeat.
-- OUT-6: All OUT-1 through OUT-5 pass screenshot verification in BOTH dark mode and light mode. Mobile viewport 390×844: EXIT ROOM button, exit-hint banner, and the new interact tooltip do not visually overlap (bounding-box check via Playwright `boundingBox()`).
+- OUT-1: Every room is constructed as a single closed-volume mesh group via a shared `Room.tsx` builder taking `{id, center, footprint, accentColor, floorColor}` and emitting floor + 4 walls (with door cutouts) + ceiling as one logical unit. The Ground plane at y=−0.5 is REMOVED from the scene (rooms+hallway floors must tile the entire walkable space). Verified by raycasting downward from 100 sample points covering each room's footprint at FP eye height (1.5) — every ray must hit a floor mesh before y=−0.1, and `git grep "Ground"` in src/ must show only the deletion commit. Failure mode: any raycast that misses or any visible dark void in the 8 doorway screenshots (4 rooms × down/up) fails OUT-1.
+- OUT-2: StarField is occluded by a full-coverage room shell. Verified by 4 screenshots of REAL PointerLock pitch=−π/2 (camera looking straight up) inside each room — bright pixel count >200/255 must be ≤ 5 in the FULL frame, not a center crop. Real PointerLock pitch is achieved by either (a) `page.locator('canvas').click()` then incremental `page.mouse.move()` deltas, OR (b) DEV-exposed `window.__camera = camera` mutated to `rotation.x = -Math.PI/2`. Screenshot taken AFTER one RAF paint. Failure mode: bright count > 5 in any room's straight-up shot fails OUT-2 — even the previously-tolerated "stars past finite ceiling extent" must be gone now.
+- OUT-3: All in-world interactable prompts ("Press E to interact") are world-anchored via drei `<Html>` attached to the interactable mesh, not center-screen HUD chrome. Crosshair retains its focus-state visual (cyan + 1.6× scale). Verified by 4 screenshots showing prompt visibly anchored within 50px of the target interactable's projected screen position; plus a 30°-rotated screenshot showing the prompt has moved with the object on screen. Failure mode: prompt remains at screen center, or prompt does not track the object across camera rotation, fails OUT-3.
+- OUT-4: First-time user gets a single 5-second onboarding overlay on first room entry per session: "Move with WASD · Look with mouse · Press E to interact · Press ESC to exit". Dismissible via click or any key. Persisted via `sessionStorage.setItem('suri-onboarding-shown', '1')`. Verified by Playwright: clear sessionStorage → load /3d → enter myroom → screenshot showing overlay → reload → enter myroom → screenshot showing NO overlay. Failure mode: overlay shows on second entry, or doesn't show on first entry, or doesn't dismiss on click/key, fails OUT-4.
+- OUT-5: A single `useWorldStore` selector `isAnyModalOpen` returns true when ANY modal/dialogue/overlay is open (intro modal, dialogue, interact-modal, onboarding overlay, room-entry toast). All HUD components (crosshair tooltip, future contextual hints) gate on this selector. Verified by `git grep -nE "(introPhase|dialogueOpen|modalOpen)" src/world3d/hud/` returning ONLY the new selector definition (no direct key reads in HUD code). Plus Playwright: open dialogue → verify Press-E hint does not show; close → focus interactable → hint shows. Failure mode: any HUD component still reads individual keys directly, or hint shows over a modal, fails OUT-5.
+- OUT-6: A real PointerLock E2E test exists at `tests/3d-fp-flow.spec.cjs` runs the full user journey: load /3d → start → intro dialogue → dismiss → enter myroom → look around (real mouse-move) → focus interactable → press E → close interact modal → press ESC to exit → enter productroom → exit. Test captures 6+ named screenshots, asserts zero `pageerror` and zero `console.error`. Used as the per-unit smoke test from R4.4 onward. Failure mode: test exits non-zero, OR any console error captured, OR a screenshot reveals a visual regression vs prior tick, fails OUT-6.
+- OUT-7: OUT-2 (R3) brightness band is RESTORED to ±10% of pre-R3 baseline (`/tmp/sw-fp-down.png` = 64.19, target window 57.8–70.6), undoing R3.7's lower-bound amendment. Light-theme ceiling brightness ≥ 180 must still hold simultaneously. Achieved by reducing emissive intensity now that closed-volume room provides ambient occlusion (less reliance on emissive bounce). Verified by `look-down-myroom-dark.png` brightness 57.8–70.6 AND `look-up-myroom-light.png` brightness ≥180, sampled with PIL. Failure mode: either threshold missed, fails OUT-7.
 
 ## Verification
 
-- OUT-1: Playwright screenshot `look-up-{room}-{theme}.png` for all 4 rooms × 2 themes. Pixel-brightness sampling via PIL on a 200×200 center crop. Threshold: dark ≥ 30, light ≥ 180.
-- OUT-2: Playwright screenshot `myroom-baseline-{theme}.png` after R3 vs `/tmp/sw-fp-down.png` baseline. PIL average brightness on bed-area crop. Threshold: |new - old| / old < 0.10.
-- OUT-3: Playwright screenshots `doorway-down-{room}.png` and `doorway-up-{room}.png` for all 4 rooms. Bottom-third pixel brightness sampled with PIL. UP check: 200×200 overhead crop bright pixel count ≤ 5 (>200/255), mirroring the OUT-1 method (R3.7 amendment per R3.4 reviewer recommendation; finite ceiling extent past building footprint is intentional architecture, not a bleed-through defect — top-third sampling caught those legitimate stars too).
-- OUT-4: Playwright with frame timer — screenshot at exactly t=500ms after `beginRoomTransition()` call. Visual diff: stars present above midline, absent below. Plus a code-level assertion: read `World.tsx` and confirm `viewMode === 'overview' && <StarField />` gate is removed.
-- OUT-5: Playwright `evaluate()` reads `document.querySelector('.crosshair').classList.contains('focused')` after triggering proximity to a known interactable. Computed-style color check: getComputedStyle background-color must change. Tooltip element queryable by selector and visible. SessionStorage key set.
-- OUT-6: All screenshots taken at both 1280×800 and 390×844 viewports, both `theme: dark` and `theme: light` set via `window.__worldStore.getState().toggleTheme()`. Bounding-box overlap check: `intersect(rect(.exit-hint), rect(.back-btn), rect(.interact-tooltip)) === empty`.
+- OUT-1: TypeScript file diff (Walls.tsx + Ceiling.tsx + per-room files reduced; new `Room.tsx` exists; `ROOMS.map(r => <Room {...r}/>)` in World.tsx). Raycast script `tests/raycast-coverage.cjs` runs 100 rays per room; output to `.harness/nodes/{node}/run_1/raycast.txt`. Doorway screenshots (8 PNGs) — bottom-third PIL brightness ≥30 in dark mode.
+- OUT-2: Real PointerLock pitch verification described in outcome. Screenshots `.harness/nodes/{node}/run_1/screens/look-up-real-pitch-{room}.png`. PIL bright-pixel count on full frame.
+- OUT-3: 4 anchored-prompt screenshots + 1 rotation-test screenshot per room. Manual visual inspection by reviewer (not just bounding box) — does the prompt READ as part of the world, not HUD chrome?
+- OUT-4: Playwright sequence + 2 screenshots (first-time vs second-time). Plus check `sessionStorage.getItem('suri-onboarding-shown') === '1'` after first dismiss.
+- OUT-5: `git grep` output saved to `.harness/nodes/{node}/run_1/grep-modal-keys.txt`; integration test screenshots.
+- OUT-6: `npm run test:e2e` (or whatever script wires the spec) exits 0; saves to `.harness/nodes/{node}/run_1/e2e-output.txt` plus 6 milestone PNGs.
+- OUT-7: PIL brightness numbers logged to `.harness/nodes/{node}/run_1/brightness.txt`. Both thresholds compared against criterion.
 
 ## Quality Constraints
 
-- No new console errors during room enter/exit cycle (Playwright captures `page.on('pageerror')` and `page.on('console', msg if msg.type() == 'error')`).
-- `npm run build` succeeds (TypeScript compile + Vite build, no warnings about new code).
-- All commits atomic, one per implement/fix unit. No `--no-verify`.
-- Pre-existing tests in `tests/3d-world.test.cjs` continue to pass.
-- No FPS regression measurable: dev FPS counter (if present) within 5fps of pre-R3 baseline; otherwise frame-time sampling via `requestAnimationFrame` over 3 seconds shows median frame ≤ 18ms.
-- File-level discipline: Ceiling.tsx is the only structural file touched for ceiling work; new crosshair/tooltip code is colocated in HUD layer not bleeding into scene/.
+- No new console errors during full E2E run (Playwright `pageerror` + `console.error` handlers capture 0 errors).
+- `npm run build` + `npm run lint` clean on every commit.
+- All commits atomic, one logical change per commit. No `--no-verify`.
+- Pre-existing `tests/3d-world.test.cjs` continues to pass.
+- No FPS regression: dev frame-time median ≤ 18ms over 3-second sample inside a room.
+- File-level discipline: `Room.tsx` is the only structural file for room construction; `InteractPrompt3D.tsx` is the only file for world-anchored prompts; `OnboardingOverlay.tsx` is the only file for the new overlay; `isAnyModalOpen` selector lives in `worldStore.ts`. No bleed across layers.
+- Reviewer roles run in serial-with-context (Round 1 parallel for fresh angles; Round 2 second-wave reviewers see Round 1 findings).
+- E2E smoke test runs after every implement unit, not just at the end.
 
 ## Out of Scope
 
-- Mobile swipe-down-to-exit gesture (called out as "better" but separate UX feature, not a bug).
-- Texture maps for the ceiling (just a solid material is sufficient — KISS).
-- Replacing the room point lights with area lights or refactoring the lighting system globally.
-- Audio cues for interactability.
-- Refactoring StarField/Particles to instance via a shader instead of points/instancedMesh.
-- Animations on the new ceiling box (no swaying lamps, no parallax).
+- Mobile-specific onboarding copy or tap-to-interact gestures (still desktop-FP focused).
+- New room content or new interactables (refactor preserves existing scene state).
+- Window/door geometry beyond what's needed for closed-volume seams.
+- Replacing zustand or migrating to a different state library.
+- Audio cues, haptics, or controller support.
+- Refactoring intro sequence (`src/world3d/intro/*` remains off-limits).
+- Texture maps or PBR materials beyond the existing `meshStandardMaterial`.
+- Pushing R3 commits to origin (deferred until user explicitly requests).
 
 ## Quality Baseline (polished)
 
-- Dark mode + light mode both supported and visually verified.
-- Responsive: desktop 1280×800 + mobile 390×844 verified for all changes.
-- Loading/error/empty states: room-entry toast, exit hint, intro dialogue all preserved unchanged.
-- Focus styles preserved on EXIT ROOM, interact buttons, the new "Press E" tooltip kbd.
-- Favicon, font loading, color tokens unchanged.
+- Dark mode + light mode both supported and visually verified by READING screenshots, not just numbers (R3 critique G).
+- Responsive: desktop 1280×800 + mobile 390×844 verified for all UI changes (overlay, world-anchored prompts must not overlap EXIT ROOM at mobile).
+- Loading/error/empty states: room-entry toast, exit hint, intro dialogue, new onboarding overlay all preserved/coordinated under `isAnyModalOpen`.
+- Focus styles preserved on EXIT ROOM, interact modal, onboarding overlay's dismiss button.
+- Favicon, font loading, color tokens unchanged from R3.

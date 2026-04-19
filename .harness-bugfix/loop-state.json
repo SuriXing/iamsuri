@@ -1,0 +1,60 @@
+{
+  "tick": 5,
+  "unit": "B1.5",
+  "description": "Completed unit B1.5 (independent-review)",
+  "status": "completed",
+  "artifacts": [],
+  "next_unit": null,
+  "blockers": [],
+  "review_of_previous": "",
+  "plan_file": ".harness-bugfix/plan.md",
+  "units_total": 5,
+  "unit_ids": [
+    "B1.1",
+    "B1.2",
+    "B1.3",
+    "B1.4",
+    "B1.5"
+  ],
+  "_written_by": "opc-harness",
+  "_plan_hash": "1007269e518bd4bd",
+  "_last_modified": "2026-04-19T05:49:21.003Z",
+  "_git_head": "887a9e76451fd4794cf35649cd07359a04585747",
+  "_tick_history": [
+    {
+      "unit": "B1.1",
+      "tick": 1,
+      "status": "completed"
+    },
+    {
+      "unit": "B1.2",
+      "tick": 2,
+      "status": "completed"
+    },
+    {
+      "unit": "B1.3",
+      "tick": 3,
+      "status": "completed"
+    },
+    {
+      "unit": "B1.4",
+      "tick": 4,
+      "status": "completed"
+    },
+    {
+      "unit": "B1.5",
+      "tick": 5,
+      "status": "completed"
+    }
+  ],
+  "_max_total_ticks": 15,
+  "_started_at": "2026-04-19T03:50:46.087Z",
+  "_max_duration_hours": 24,
+  "_write_nonce": "cbe430a103cc65b5",
+  "_external_validators": {
+    "pre_commit_hooks": false,
+    "test_script": false,
+    "lint_script": true,
+    "typecheck_script": false
+  }
+}

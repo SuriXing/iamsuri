@@ -226,39 +226,39 @@ export function CameraController(): null {
       });
 
       if (s.viewMode === 'overview') {
-        // Returning to overview: reset character and flip out of FP.
-        s.setCharPos(0, 0);
-        s.setFp(false);
-        // Target: behind the (centered) character at the current orbit
-        // yaw/pitch (so resuming after a room visit doesn't jolt the
-        // camera back to a default angle).
-        const yaw = followCamYawRef.current;
-        const pitch = followCamPitchRef.current;
-        const cosP = Math.cos(pitch);
-        tw.targetPos.set(
-          -Math.sin(yaw) * cosP * FOLLOW.distance,
-          Math.sin(pitch) * FOLLOW.distance,
-          -Math.cos(yaw) * cosP * FOLLOW.distance,
-        );
-        tw.targetLook.set(0, FOLLOW.lookHeight, 0);
+        // Returning to overview: per user request, the post-intro
+        // experience is ALWAYS first-person, so we don't pull the camera
+        // back to a third-person orbit and we don't recenter the
+        // character. The player keeps standing exactly where they
+        // walked out of the room. No camera tween — we just clear the
+        // viewTransition flag and let the FP block (below) drive the
+        // camera from the player's current position next frame.
+        tw.active = false;
+        tw.enteringRoom = false;
+        tw.lastViewMode = s.viewMode;
+        useWorldStore.setState({ viewTransition: 'idle' });
+        // Make sure FP stays on. fpYaw stays as-is so the player keeps
+        // looking the same direction they were looking inside the room.
+        if (!s.fpActive) s.setFp(true);
+        return;
       } else {
         const room = ROOM_BY_ID[s.viewMode];
         const isTop = room.center.z < 0;
         if (s.enterReason === 'auto') {
-          // Walk-through: player is already at/just past the doorway.
-          // Snap the FP camera onto their CURRENT position so the
-          // transition is positionally seamless (≤0.5u teleport).
-          // FP yaw matches the follow camera's view direction so the
-          // player's "forward" stays continuous through the cut.
-          // (The follow cam at yaw=θ sits at -sinθ,-cosθ behind char and
-          // looks toward +sinθ,+cosθ; FP yaw convention has look =
-          // (-sinφ,-cosφ), so φ = θ + π.)
-          const continuedYaw = followCamYawRef.current + Math.PI;
-          s.setFp(false, continuedYaw, 0);
-          tw.targetPos.set(s.charPos.x, FP.eyeHeight, s.charPos.z);
-          const lookX = s.charPos.x - Math.sin(continuedYaw);
-          const lookZ = s.charPos.z - Math.cos(continuedYaw);
-          tw.targetLook.set(lookX, FP.eyeHeight, lookZ);
+          // Walk-through: player is already standing at/just past the
+          // doorway in FP. There's no camera transition to do — the FP
+          // block (below) already drives the camera from charPos every
+          // frame. Just clear the tween, mark transition complete, and
+          // let the FP camera continue seamlessly.
+          tw.active = false;
+          tw.enteringRoom = false;
+          tw.lastViewMode = s.viewMode;
+          // Make sure FP stays on (advanceDialogue + auto-exit both keep
+          // it on, but be defensive). Preserve current fpYaw / fpPitch.
+          if (!s.fpActive) s.setFp(true);
+          // Skip the room-tween machinery entirely: just complete and go.
+          s.completeRoomTransition();
+          return;
         } else {
           const cx = room.center.x;
           const cz = isTop

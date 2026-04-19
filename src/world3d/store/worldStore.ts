@@ -228,13 +228,23 @@ export const useWorldStore = create<WorldState>((set) => ({
   },
   advanceDialogue: () =>
     set((s) => {
-      // For now there's only a single line; advancing ends the intro
-      // and drops the player into 'follow' mode. When more lines are
-      // added later, this is the place to increment dialogueIndex.
+      // Advancing ends the intro and drops the player straight into
+      // first-person. Per user request, the entire post-intro experience
+      // is FP — overview/follow third-person camera is only used for the
+      // intro cinematic.
+      // FP look convention: look = (-sin(fpYaw), -cos(fpYaw)). Char facing:
+      // forward = (sin(charFacing), cos(charFacing)). So fpYaw = charFacing + π
+      // makes the eyes look the same direction the avatar was facing.
       if (typeof window !== 'undefined') {
         window.sessionStorage?.setItem('suri-intro-played', '1');
       }
-      return { introPhase: 'follow', dialogueIndex: s.dialogueIndex + 1 };
+      return {
+        introPhase: 'follow',
+        dialogueIndex: s.dialogueIndex + 1,
+        fpActive: true,
+        fpYaw: s.charFacing + Math.PI,
+        fpPitch: 0,
+      };
     }),
 }));
 

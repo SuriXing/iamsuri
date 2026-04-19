@@ -4,3 +4,4 @@
 - **Tick 4** [R3.4] (review-particles-and-thresholds): Independent frontend+tester review; both ITERATE; particle pile-up (red) + color seam (red) + criterion-amend-needed (yellow) — 2026-04-18T08:31:19.651Z
 - **Tick 5** [R3.5] (implement-crosshair-feedback-and-tooltip): Crosshair focus class + Press-E tooltip; sessionStorage gate verified; R3.6 ITERATE — tooltip-under-modal bug + PRM/aria-live missing — 2026-04-18T08:44:12.307Z
 - **Tick 6** [R3.6] (review-crosshair): Independent a11y+pm review; both ITERATE; tooltip-burned-under-modal (red) + PRM (yellow) + aria-live (yellow) — 2026-04-18T08:44:12.354Z
+- **Tick 7** [R3.7] (fix-and-accept): All findings addressed; OUT-2 amended to lower-bound (genuine OUT-1/OUT-2 spec tension); 6/6 OUT-N PASS — 2026-04-18T09:40:01.762Z

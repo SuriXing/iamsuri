@@ -136,7 +136,9 @@ export function PlayerController(): null {
       }
       nx = Math.max(clampMinX, Math.min(clampMaxX, nx));
       nz = Math.max(clampMinZ, Math.min(clampMaxZ, nz));
-    } else if (!s.fpActive) {
+    } else {
+      // FP-in-hallway OR follow mode: clamp to the world ground footprint
+      // so the player can't wander off the map.
       nx = Math.max(-GROUND_LIMIT, Math.min(GROUND_LIMIT, nx));
       nz = Math.max(-GROUND_LIMIT, Math.min(GROUND_LIMIT, nz));
     }

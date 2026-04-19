@@ -1,0 +1,108 @@
+
+--- Probe 1.myroom: walk in / out ---
+  myroom: entered=false
+  myroom: exited=true
+  myroom: flips=0 pingPong=false
+
+--- Probe 1.product: walk in / out ---
+  product: entered=false
+  product: exited=true
+  product: flips=0 pingPong=false
+
+--- Probe 1.book: walk in / out ---
+  book: entered=false
+  book: exited=false
+  book: flips=1 pingPong=false
+
+--- Probe 1.idealab: walk in / out ---
+  idealab: entered=true
+  idealab: exited=false
+  idealab: flips=1 pingPong=false
+
+--- Probe 2: interrupted approach (book threshold, stop short) ---
+  stopped at -3.656,-0.399 fp=false vm=overview
+  after 1s: fp=false vm=overview
+  after walk away: fp=false vm=overview
+
+--- Probe 3: diagonal approach (idealab, SE = D+S) ---
+  diagonal entered: false
+
+--- Probe 4: manual E key still works ---
+  before E: nearby=null fp=false
+  after E: vm=myroom fp=true
+
+--- Probe 5: U key still works (lock toggle) ---
+  before U: nearby=product unlocked=true
+  after U: unlocked=true
+
+--- Probe 7: yaw hint clears on book-room entry ---
+  book: entered=false cam.y t0=-0.22439865248392155 t+0.5=-0.15061811057866928
+
+--- Probe 8: book room seat interactable ---
+  starting fp state: vm=overview fp=false focused=null
+  after w: pos=-7.28,-0.42 focused=null
+  after a: pos=-8.88,-0.44 focused=null
+  after s: pos=-8.89,1.96 focused=null
+  after d: pos=-5.85,1.96 focused=null
+
+--- Probe 8b: cushion blocks player? ---
+  cushion collider info: null
+
+=== RESULTS ===
+{
+  "walkMy": {
+    "roomId": "myroom",
+    "entered": false,
+    "exited": true,
+    "pingPong": false,
+    "flips": 0
+  },
+  "walkProd": {
+    "roomId": "product",
+    "entered": false,
+    "exited": true,
+    "pingPong": false,
+    "flips": 0
+  },
+  "walkBook": {
+    "roomId": "book",
+    "entered": false,
+    "exited": false,
+    "pingPong": false,
+    "flips": 1
+  },
+  "walkLab": {
+    "roomId": "idealab",
+    "entered": true,
+    "exited": false,
+    "pingPong": false,
+    "flips": 1
+  },
+  "interrupted": {
+    "stoppedShort": true,
+    "stayedOut": true
+  },
+  "diagonal": {
+    "diagonalEntered": false
+  },
+  "manualE": {
+    "manualEEntered": true
+  },
+  "uKey": {
+    "uToggle": false
+  },
+  "yawHint": {
+    "bookEntered": false,
+    "camYaw1": -0.22439865248392155,
+    "camYaw2": -0.15061811057866928
+  },
+  "bookSeat": {
+    "focused": null,
+    "modalTitle": null
+  },
+  "cushion": {
+    "note": "see source — ColliderRegistry not exposed; checked focus reachability above"
+  }
+}
+
+errors: 0

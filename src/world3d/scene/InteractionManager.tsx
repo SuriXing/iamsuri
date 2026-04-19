@@ -170,7 +170,7 @@ export function InteractionManager(): null {
       return;
     }
 
-    if (s.viewMode !== 'overview' || s.fpActive) {
+    if (s.viewMode !== 'overview') {
       if (s.nearbyRoom !== null) s.setNearbyRoom(null);
       followCamYawHintRef.current = null;
       return;

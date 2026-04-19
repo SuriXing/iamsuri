@@ -1,0 +1,133 @@
+
+--- Probe 1.myroom: walk in / out ---
+  myroom entered: fp=true vm=product pos=(1.55,-2.16)
+  myroom exited: vm=product fp=true pos=(1.55,-2.16)
+  myroom flips=1 pingPong=false
+
+--- Probe 1.product: walk in / out ---
+  product entered: fp=true vm=myroom pos=(-1.55,-2.16)
+  product exited: vm=myroom fp=true pos=(-1.55,-2.16)
+  product flips=1 pingPong=false
+
+--- Probe 1.book: walk in / out ---
+  book entered: fp=true vm=book pos=(-5.85,2.23)
+  book exited: vm=overview fp=false pos=(0.00,0.00)
+  book flips=2 pingPong=false
+
+--- Probe 1.idealab: walk in / out ---
+  idealab entered: fp=true vm=book pos=(0.18,1.61)
+  idealab exited: vm=book fp=true pos=(-1.55,1.55)
+  idealab flips=1 pingPong=false
+
+--- Probe 2: interrupted approach (book) ---
+  brief nudge → pos=(-3.92,0.77) fp=false vm=overview
+  +1.2s → fp=false vm=overview
+  walked away → pos=(-3.86,1.57) fp=false vm=idealab
+
+--- Probe 4: manual E key still works ---
+  before E: nearby=myroom fp=false pos=(-3.70,0.00)
+  after E: vm=myroom fp=true
+
+--- Probe 5: U key still works ---
+  before U: nearby=book unlocked-myroom=false
+  after U: unlocked-myroom=false
+
+--- Probe 7: yaw hint behavior on book approach + entry ---
+  final state vm=book fp=true pos=(-5.82,1.60)
+  enterIdx=6 of 30
+  pre-entry yaw change = 0.232 rad
+  post-entry yaw delta = 0.000 rad
+
+--- Probe 7b: no yaw hint for myroom/product approach ---
+  myroom approach: camY -0.150 → -0.082 Δ=0.068
+
+--- Probe 8: book room seat interactable + cushion blocking ---
+  in book room: vm=book fp=true pos=(-5.85,2.88)
+  NO FOCUS ACQUIRED. positions visited: [{"k":"s","ms":800,"pos":["-5.85","4.07"],"focused":null},{"k":"d","ms":600,"pos":["-5.36","4.34"],"focused":null},{"k":"w","ms":400,"pos":["-5.09","3.86"],"focused":null},{"k":"d","ms":400,"pos":["-5.09","4.13"],"focused":null},{"k":"s","ms":400,"pos":["-5.36","4.62"],"focused":null}]
+
+=== RESULTS ===
+{
+  "walk_myroom": {
+    "roomId": "myroom",
+    "entered": true,
+    "exited": false,
+    "pingPong": false,
+    "flips": 1
+  },
+  "walk_product": {
+    "roomId": "product",
+    "entered": true,
+    "exited": false,
+    "pingPong": false,
+    "flips": 1
+  },
+  "walk_book": {
+    "roomId": "book",
+    "entered": false,
+    "exited": false,
+    "pingPong": false,
+    "flips": 2
+  },
+  "walk_idealab": {
+    "roomId": "idealab",
+    "entered": false,
+    "exited": false,
+    "pingPong": false,
+    "flips": 1
+  },
+  "interrupted": {
+    "pos": {
+      "x": -3.92019610614293,
+      "z": 0.769099262019859,
+      "vm": "overview",
+      "fp": false,
+      "vt": "idle",
+      "nearby": "book",
+      "modalTitle": null,
+      "focused": null,
+      "unlocked": [
+        "myroom",
+        "product",
+        "book",
+        "idealab"
+      ]
+    },
+    "after1s": {
+      "x": -3.92019610614293,
+      "z": 0.769099262019859,
+      "vm": "overview",
+      "fp": false,
+      "vt": "idle",
+      "nearby": "book",
+      "modalTitle": null,
+      "focused": null,
+      "unlocked": [
+        "myroom",
+        "product",
+        "book",
+        "idealab"
+      ]
+    },
+    "didNotAutoEnter": true
+  },
+  "manualE": {
+    "manualEEntered": true,
+    "hadNearby": true
+  },
+  "uKey": {
+    "uToggle": false
+  },
+  "yawHint": {
+    "entered": true,
+    "preYawChange": 0.23218993229637552,
+    "postYawDelta": 0
+  },
+  "noYawForOthers": {
+    "myroomYawDelta": 0.06764269914008136
+  },
+  "bookSeat": {
+    "focused": null
+  }
+}
+
+errors: 0

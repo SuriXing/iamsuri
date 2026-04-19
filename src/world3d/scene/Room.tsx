@@ -22,16 +22,12 @@ import { makeRng } from '../util/rand';
  * frame + slab is rendered via the existing <Door /> component.
  */
 
-// Hoisted from Ceiling.tsx (deleted in R4.1) — kept exported in case other
-// modules grow a dependency on it later. Bottom of ceiling box sits at y=2.0.
+// Hoisted from Ceiling.tsx (deleted in R4.1) — CEILING_Y is still
+// referenced by Skybox.tsx for its under-skybox cap height. The ceiling
+// MESH itself was removed per user request, so the geometry constants
+// (CEILING_T, ROOM_SIDE, CEILING_*_COLORS) and the ceilingMaterial useMemo
+// were deleted along with the mesh.
 export const CEILING_Y = 2.05;
-const CEILING_T = 0.1;
-const ROOM_SIDE = ROOM + 0.2; // ceiling spans the full wall-trim footprint
-
-const CEILING_DARK = '#6b5b4a';
-const CEILING_LIGHT = '#c9b48a';
-const CEILING_EMISSIVE_DARK = '#4a3f33';
-const CEILING_EMISSIVE_LIGHT = '#a08868';
 
 const WALL_EMISSIVE = '#6b4e1f';
 const EDGE_DARK = '#0a0a14';
@@ -317,17 +313,7 @@ export function Room({ room }: Props) {
     };
   }, [room.id, room.accentColor]);
 
-  // Ceiling material — hoisted from Ceiling.tsx.
-  const ceilingMaterial = useMemo(() => {
-    const isLight = theme === 'light';
-    return new THREE.MeshStandardMaterial({
-      color: isLight ? CEILING_LIGHT : CEILING_DARK,
-      roughness: 0.85,
-      metalness: 0.0,
-      emissive: isLight ? CEILING_EMISSIVE_LIGHT : CEILING_EMISSIVE_DARK,
-      emissiveIntensity: 0.4,
-    });
-  }, [theme]);
+  // Ceiling material removed — ceiling mesh deleted per user request.
 
   return (
     <group>
@@ -395,14 +381,7 @@ export function Room({ room }: Props) {
         edgeColor={edgeColor}
       />
 
-      {/* Ceiling */}
-      <mesh
-        position={[cx, CEILING_Y, cz]}
-        renderOrder={-1}
-        material={ceilingMaterial}
-      >
-        <boxGeometry args={[ROOM_SIDE, CEILING_T, ROOM_SIDE]} />
-      </mesh>
+      {/* Ceiling deleted per user request. */}
     </group>
   );
 }

@@ -126,6 +126,11 @@ export function Character() {
   // Subscribe to theme with a selector so edges recolor on theme toggle.
   // One re-render per theme flip — cheap, no per-frame cost.
   const theme = useWorldStore((s) => s.theme);
+  // Hide the avatar entirely in first-person mode — otherwise the camera
+  // (which sits at the avatar's eye height) renders the inside of the
+  // head/eyes/hair, which looks like floating black squares filling the
+  // screen. Shadow goes too since there's no body to cast it.
+  const fpActive = useWorldStore((s) => s.fpActive);
   const edgeColor = theme === 'dark' ? EDGE_DARK : EDGE_LIGHT;
   const labCoatColor = theme === 'dark' ? LAB_COAT_DARK : LAB_COAT_LIGHT;
 
@@ -154,6 +159,11 @@ export function Character() {
       shoeR:     tintHex(COLORS.red, jitter()),
     };
   }, []);
+
+  // Hide the avatar in first-person — the camera sits at eye height, so
+  // rendering the head/eyes draws the inside of the geometry as black
+  // squares filling the screen. Early-return AFTER all hooks (rules of hooks).
+  if (fpActive) return null;
 
   return (
     <>

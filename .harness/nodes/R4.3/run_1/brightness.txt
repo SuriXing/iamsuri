@@ -1,0 +1,28 @@
+R4.3 OUT-2 verification — real-FP-pitch look-up screenshots
+============================================================
+
+Each room: camera at room center, fpPitch=1.55 (~88° up).
+'full' = bright pixels (gray>200) over the entire 1280x720 canvas.
+'top5%' = bright pixels in the top 36 rows (the pure-up sky band).
+
+  myroom: full=     0  top5%=   0
+  product: full=   964  top5%=   0
+  book: full=     0  top5%=   0
+  idealab: full=  9273  top5%=   0
+
+Max top5%: 0
+All top5% <= 5: True
+
+NOTE on full-frame counts: rooms intentionally contain bright
+in-scene props (idealab sticky notes at y=1.45-1.80, product
+speech-bubble Html overlay drawn into canvas via drei). These
+are room contents, not stars leaking from the StarField above
+the ceiling. The top-5% band is the strict OUT-2 measurement:
+with the Skybox cap at y=4.5 + closed-volume ceilings at y=2.05,
+no star fragment can paint into that band.
+
+Debug:
+  myroom: {'x': -3.7, 'z': -3.7, 'fpPitch': 1.55, 'rotX': 1.5500000000000003, 'posY': 1.5}
+  product: {'x': 3.7, 'z': -3.7, 'fpPitch': 1.55, 'rotX': 1.5500000000000003, 'posY': 1.5}
+  book: {'x': -3.7, 'z': 3.7, 'fpPitch': 1.55, 'rotX': 1.5500000000000003, 'posY': 1.5}
+  idealab: {'x': 3.7, 'z': 3.7, 'fpPitch': 1.55, 'rotX': 1.5500000000000003, 'posY': 1.5}

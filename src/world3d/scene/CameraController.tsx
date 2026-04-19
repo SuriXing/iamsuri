@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useEffect, useRef } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useWorldStore, type ViewMode } from '../store/worldStore';
 import { ROOM_BY_ID } from '../data/rooms';
@@ -158,6 +158,19 @@ function lerpAngle(a: number, b: number, t: number): number {
  * position / lookAt each frame.
  */
 export function CameraController(): null {
+  const { camera } = useThree();
+  // DEV-only handle for E2E tests that need to manipulate camera rotation
+  // directly (e.g. real PointerLock-pitch verification by setting
+  // camera.rotation.x without going through the FP yaw/pitch store).
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      window.__camera = camera as THREE.PerspectiveCamera;
+      return () => {
+        if (window.__camera === camera) window.__camera = undefined;
+      };
+    }
+  }, [camera]);
+
   const tweenRef = useRef<TweenState>({
     active: false,
     progress: 0,

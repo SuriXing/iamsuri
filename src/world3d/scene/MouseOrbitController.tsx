@@ -4,6 +4,7 @@ import { useWorldStore } from '../store/worldStore';
 import {
   targetCamYawRef,
   targetCamPitchRef,
+  mouseDraggingRef,
   FOLLOW_PITCH_MIN,
   FOLLOW_PITCH_MAX,
 } from './cameraRefs';
@@ -55,6 +56,7 @@ export function MouseOrbitController(): null {
       if (!overviewOrbitEnabled() && !fpLookEnabled()) return;
       if (e.button !== 0) return;
       dragging = true;
+      mouseDraggingRef.current = true;
       lastX = e.clientX;
       lastY = e.clientY;
       el.style.cursor = 'grabbing';
@@ -62,6 +64,7 @@ export function MouseOrbitController(): null {
     const onMouseUp = (): void => {
       if (dragging) el.style.cursor = '';
       dragging = false;
+      mouseDraggingRef.current = false;
     };
     const onMouseMove = (e: MouseEvent): void => {
       if (!dragging) return;
@@ -89,11 +92,13 @@ export function MouseOrbitController(): null {
       if (e.touches.length !== 1) return;
       if (!overviewOrbitEnabled() && !fpLookEnabled()) return;
       dragging = true;
+      mouseDraggingRef.current = true;
       lastX = e.touches[0].clientX;
       lastY = e.touches[0].clientY;
     };
     const onTouchEnd = (): void => {
       dragging = false;
+      mouseDraggingRef.current = false;
     };
     const onTouchMove = (e: TouchEvent): void => {
       if (!dragging || e.touches.length !== 1) return;

@@ -1,0 +1,28 @@
+
+=== Test 1: BOOK approach ===
+t=0 {"x":-3,"z":0.5,"vm":"overview","fp":false,"near":"book","yaw":3.141592653589793}
+t=2 {"x":-3,"z":0.5,"vm":"overview","fp":false,"near":"book","yaw":6.0661696395613705}
+book target=-0.215 actual=6.066 Δ=0.002 (need < 0.3)
+
+=== Test 2: IDEALAB approach ===
+t=0 {"x":3,"z":0.5,"vm":"overview","fp":false,"near":"idealab","yaw":4.938785812854899}
+t=2 {"x":3,"z":0.5,"vm":"overview","fp":false,"near":"idealab","yaw":6.498190174473324}
+idealab target=0.215 actual=6.498 Δ=0.000 (need < 0.3)
+
+=== Test 3: MYROOM approach (NO auto-rotate) ===
+t=0 {"x":-3,"z":-0.5,"vm":"overview","fp":false,"near":"myroom","yaw":7.658113758882032}
+t=2 {"x":-3,"z":-0.5,"vm":"overview","fp":false,"near":"myroom","yaw":8.964582894127302}
+myroom hint-target=-2.926 actual=8.965 ΔtoHint=0.676 ΔdriftFromT0=1.306
+
+=== Test 4: drag overrides hint ===
+mid-drag {"x":-3,"z":0.5,"vm":"overview","fp":false,"near":"book","yaw":9.458668176195555}
+drag yaw=9.459 vs hint=-0.215 Δ=2.892 (drag should win → > 0.5)
+
+=== VERDICT ===
+{
+  "book": true,
+  "idealab": true,
+  "myroom_no_rotate": true,
+  "drag_overrides": true
+}
+ALL PASS? true

@@ -9,6 +9,8 @@ import {
   followCamPitchRef,
   targetCamYawRef,
   targetCamPitchRef,
+  followCamYawHintRef,
+  mouseDraggingRef,
 } from './cameraRefs';
 import { listWallColliders } from './colliders';
 
@@ -31,6 +33,13 @@ const CAMERA_PUSHBACK = 0.25;
 // fighting active mouse drag (drag updates targetCamYawRef directly,
 // overriding this drift).
 const AUTO_YAW_DRIFT = 0.6;
+// Yaw-hint speed: when InteractionManager publishes a target yaw to
+// face a "spotlight" room (book / idealab), we lerp the target yaw
+// toward that hint at this rate. The follow→target lerp (FOLLOW.yawLerp
+// = 3.5 rad/s) sits in series, so the EFFECTIVE yaw rate is the slower
+// of the two stages. With both ~ 4 rad/s, a worst-case ≈3 rad gap
+// converges to within 0.3 rad in well under 2 s.
+const YAW_HINT_RATE = 5.0;
 
 // Shared scratch vectors — avoid per-frame allocation in useFrame.
 const scratchPos = new THREE.Vector3();
@@ -165,6 +174,14 @@ export function CameraController(): null {
   useEffect(() => {
     if (import.meta.env.DEV) {
       window.__camera = camera as THREE.PerspectiveCamera;
+      // Expose the follow-cam yaw / hint refs for E2E tests so they can
+      // read the actual smoothed yaw without having to back-solve from
+      // camera position (which lags behind the ref while the position
+      // lerp is still converging).
+      const w = window as unknown as Record<string, unknown>;
+      w.__followCamYawRef = followCamYawRef;
+      w.__followCamYawHintRef = followCamYawHintRef;
+      w.__mouseDraggingRef = mouseDraggingRef;
       return () => {
         if (window.__camera === camera) window.__camera = undefined;
       };
@@ -394,13 +411,29 @@ export function CameraController(): null {
       // Default DEFAULT_YAW=π puts the camera on the +Z side, so the
       // ideal yaw is `charFacing + π` (camera behind character relative
       // to its facing direction).
-      const desiredYaw = charFacing + Math.PI;
-      const driftFactor = 1 - Math.exp(-AUTO_YAW_DRIFT * delta);
-      targetCamYawRef.current = lerpAngle(
-        targetCamYawRef.current,
-        desiredYaw,
-        driftFactor,
-      );
+      //
+      // OUT-4: when InteractionManager publishes a yaw hint (player is
+      // approaching book / idealab), prefer the hint over the drift so
+      // the spotlight room rotates into frame. Mouse-drag still wins —
+      // we skip the hint entirely if a drag is in progress so the user
+      // never feels the camera fighting their cursor.
+      const hint = followCamYawHintRef.current;
+      if (hint !== null && !mouseDraggingRef.current) {
+        const hintFactor = 1 - Math.exp(-YAW_HINT_RATE * delta);
+        targetCamYawRef.current = lerpAngle(
+          targetCamYawRef.current,
+          hint,
+          hintFactor,
+        );
+      } else {
+        const desiredYaw = charFacing + Math.PI;
+        const driftFactor = 1 - Math.exp(-AUTO_YAW_DRIFT * delta);
+        targetCamYawRef.current = lerpAngle(
+          targetCamYawRef.current,
+          desiredYaw,
+          driftFactor,
+        );
+      }
 
       // Smooth lerp toward the (now drifted + possibly drag-updated) targets.
       const factor = 1 - Math.exp(-FOLLOW.yawLerp * delta);

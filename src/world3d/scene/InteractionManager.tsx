@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useWorldStore } from '../store/worldStore';
 import { ROOMS, ROOM_BY_ID } from '../data/rooms';
+import { followCamYawHintRef } from './cameraRefs';
 import type { RoomId } from '../data/rooms';
 
 const ROOM_NUMBER_KEYS: Record<string, RoomId> = {
@@ -152,6 +153,7 @@ export function InteractionManager(): null {
     // position toward the hallway side), drop them back to overview.
     // This pairs with auto-enter so the player never needs ESC.
     if (s.fpActive && s.viewMode !== 'overview' && s.introPhase === 'follow' && !s.modalInteractable) {
+      followCamYawHintRef.current = null;
       const room = ROOM_BY_ID[s.viewMode];
       const dx = s.charPos.x - room.door.x;
       const dz = s.charPos.z - room.door.z;
@@ -169,6 +171,7 @@ export function InteractionManager(): null {
 
     if (s.viewMode !== 'overview' || s.fpActive) {
       if (s.nearbyRoom !== null) s.setNearbyRoom(null);
+      followCamYawHintRef.current = null;
       return;
     }
 
@@ -185,6 +188,23 @@ export function InteractionManager(): null {
       }
     }
     if (nearest !== s.nearbyRoom) s.setNearbyRoom(nearest);
+
+    // Yaw hint for follow-cam: when the player is approaching book or
+    // idealab in overview mode, publish the desired yaw so CameraController
+    // can rotate the room into frame. atan2 uses the (sinθ, cosθ) look-
+    // direction convention from the follow-cam math (camera sits opposite
+    // the look vector).
+    if (
+      s.introPhase === 'follow' &&
+      (nearest === 'book' || nearest === 'idealab')
+    ) {
+      const room = ROOM_BY_ID[nearest];
+      const dx = room.center.x - s.charPos.x;
+      const dz = room.center.z - s.charPos.z;
+      followCamYawHintRef.current = Math.atan2(dx, dz);
+    } else {
+      followCamYawHintRef.current = null;
+    }
 
     // Auto-unlock: any door the character walks up to silently unlocks.
     // Removes the U-key friction; doors still visibly animate open.

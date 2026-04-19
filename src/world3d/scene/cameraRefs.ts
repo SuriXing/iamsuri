@@ -18,6 +18,12 @@
 interface MutableNumberRef {
   current: number;
 }
+interface MutableNullableNumberRef {
+  current: number | null;
+}
+interface MutableBoolRef {
+  current: boolean;
+}
 
 // Default pitch ≈ 63° above horizontal — overhead walking-sim read.
 const DEFAULT_PITCH = 1.1;
@@ -41,3 +47,19 @@ export const targetCamPitchRef: MutableNumberRef = { current: DEFAULT_PITCH };
 
 export const FOLLOW_PITCH_MIN = 0.25;
 export const FOLLOW_PITCH_MAX = 1.35;
+
+/**
+ * Yaw hint published by InteractionManager when the player is approaching
+ * a "spotlight" room (book / idealab). CameraController's follow branch
+ * lerps `targetCamYawRef` toward this value so the room rotates into
+ * frame as the player walks up. `null` = no hint, fall through to the
+ * existing auto-yaw-drift behavior.
+ */
+export const followCamYawHintRef: MutableNullableNumberRef = { current: null };
+
+/**
+ * Set true on pointerdown / false on pointerup by MouseOrbitController.
+ * CameraController consults this to make sure the yaw hint never fights
+ * an active mouse drag — drag wins, hint pauses.
+ */
+export const mouseDraggingRef: MutableBoolRef = { current: false };

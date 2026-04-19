@@ -12,6 +12,7 @@ import { Skybox } from './Skybox';
 import { StarField } from './StarField';
 import { Particles } from './Particles';
 import { Hallway } from './Hallway';
+import { SpawnSignpost } from './SpawnSignpost';
 import { Character } from './Character';
 import { MyRoom } from './rooms/MyRoom';
 import { ProductRoom } from './rooms/ProductRoom';
@@ -129,6 +130,7 @@ export function World() {
 
       {/* Hallway */}
       <Hallway />
+      <SpawnSignpost />
 
       {/* Rooms */}
       <MyRoom />

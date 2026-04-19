@@ -4,6 +4,8 @@ import { useWorldStore } from '../store/worldStore';
 import { ROOMS, ROOM_BY_ID } from '../data/rooms';
 import { ROOM } from '../constants';
 import { followCamYawHintRef } from './cameraRefs';
+import { followCamYawRef } from './cameraRefs';
+import { fpTransitionRef } from './fpTransitionRef';
 import type { RoomId } from '../data/rooms';
 
 const ROOM_NUMBER_KEYS: Record<string, RoomId> = {
@@ -32,6 +34,13 @@ const AUTO_ENTER_INSIDE = 0.4;
 // the "press U to unlock then E to enter" friction; doors still render
 // their lock state and can be re-locked, but proximity is enough to open.
 const AUTO_UNLOCK_DIST = 1.4;
+// When the player explicitly U-closes a door, we record it here so the
+// auto-unlock proximity check below stops re-opening it on the very next
+// frame (which made U feel broken — door would visually close then snap
+// back open). The flag is cleared once the player walks beyond
+// USER_LOCK_RESET_DIST so re-approach still auto-opens.
+const userClosedDoors = new Set<RoomId>();
+const USER_LOCK_RESET_DIST = 2.2;
 // Auto-exit (FP mode): when the character walks past the doorway INTO
 // the hallway from inside a room, drop them back to overview/follow mode.
 // Measured against the room's door position. Larger than AUTO_ENTER_DIST
@@ -63,7 +72,21 @@ export function InteractionManager(): null {
       // except Enter/Space is swallowed. Enter/Space advance the
       // dialogue — handled by the Dialogue component directly, so here
       // we just freeze everything else.
-      if (s.introPhase !== 'follow') return;
+      //
+      // Exception: if the user starts walking (WASD / arrows) during the
+      // dialogue phase, advance dialogue immediately and drop into FP so
+      // movement input takes effect this frame.
+      if (s.introPhase !== 'follow') {
+        if (s.introPhase === 'dialogue') {
+          const k = e.key.toLowerCase();
+          const isMove =
+            k === 'w' || k === 'a' || k === 's' || k === 'd' ||
+            k === 'arrowup' || k === 'arrowdown' ||
+            k === 'arrowleft' || k === 'arrowright';
+          if (isMove) s.advanceDialogue();
+        }
+        return;
+      }
 
       // When a modal is open, only Escape is allowed. Number keys / U / E
       // must not fire a room jump or unlock while the modal has focus.
@@ -74,6 +97,12 @@ export function InteractionManager(): null {
 
       if (e.key === 'Escape') {
         if (s.viewMode !== 'overview') {
+          // Exit semantics match the EXIT ROOM button: teleport to spawn,
+          // drop out of FP into the third-person follow camera, fade.
+          window.dispatchEvent(new CustomEvent('suri-fade'));
+          s.setCharPos(0, 0);
+          s.setCharFacing(0);
+          s.setFp(false, 0, 0);
           s.setViewMode('overview');
           return;
         }
@@ -90,13 +119,62 @@ export function InteractionManager(): null {
         return;
       }
 
+      // FP mode in the book room: F teleports the player to the reading
+      // chair, facing the door. Charm interaction — pairs with the
+      // "Press F to sit & read" sign rendered above the chair.
+      if (s.fpActive && s.viewMode === 'book' && key === 'f') {
+        const room = ROOM_BY_ID.book;
+        // Chair anchor mirrors BookRoom.tsx (chairX = ox - 0.2, chairZ = oz + 0.3).
+        const seatX = room.center.x - 0.2;
+        const seatZ = room.center.z + 0.3;
+        window.dispatchEvent(new CustomEvent('suri-fade'));
+        s.setCharPos(seatX, seatZ);
+        // Face -z (toward the door — door is on -z side of room center).
+        // FP look = (-sin(yaw), -cos(yaw)); -z direction ⇒ yaw = 0.
+        s.setFp(true, 0, 0);
+        return;
+      }
+
       if (s.viewMode === 'overview' && !s.fpActive) {
+        // First movement after intro → switch into first-person.
+        const k2 = e.key.toLowerCase();
+        // Build the (mx, mz) input vector from the key, mirroring
+        // PlayerController's follow-mode mapping.
+        let mx = 0;
+        let mz = 0;
+        if (k2 === 'w' || k2 === 'arrowup') mz = 1;
+        else if (k2 === 's' || k2 === 'arrowdown') mz = -1;
+        else if (k2 === 'a' || k2 === 'arrowleft') mx = -1;
+        else if (k2 === 'd' || k2 === 'arrowright') mx = 1;
+        const isMove = mx !== 0 || mz !== 0;
+        if (isMove) {
+          // Convert key vector → world direction using the current
+          // follow-cam yaw (PlayerController convention):
+          //   worldX = sin(yaw)*mz - cos(yaw)*mx
+          //   worldZ = cos(yaw)*mz + sin(yaw)*mx
+          // FP look = (-sin(fpYaw), -cos(fpYaw)). Solve fpYaw so the
+          // FP camera looks ALONG the world direction the avatar is
+          // about to walk:  fpYaw = atan2(-worldX, -worldZ).
+          const camYaw = followCamYawRef.current;
+          const sinY = Math.sin(camYaw);
+          const cosY = Math.cos(camYaw);
+          const worldX = sinY * mz - cosY * mx;
+          const worldZ = cosY * mz + sinY * mx;
+          const fpYaw = Math.atan2(-worldX, -worldZ);
+          // Hand off to CameraController for a smooth ~1.4s tween from
+          // the third-person follow pose to the first-person eye pose.
+          fpTransitionRef.pending = { yaw: fpYaw };
+          // fall through so the move-key still registers the same frame
+        }
         // U: toggle the nearby door — unlock if locked, close if unlocked.
         if (key === 'u' && s.nearbyRoom) {
           if (s.unlockedDoors.has(s.nearbyRoom)) {
             s.lockDoor(s.nearbyRoom);
+            // Block proximity auto-unlock until the player walks away.
+            userClosedDoors.add(s.nearbyRoom);
           } else {
             s.unlockDoor(s.nearbyRoom);
+            userClosedDoors.delete(s.nearbyRoom);
           }
           return;
         }
@@ -207,10 +285,20 @@ export function InteractionManager(): null {
       followCamYawHintRef.current = null;
     }
 
-    // Auto-unlock: any door the character walks up to silently unlocks.
-    // Removes the U-key friction; doors still visibly animate open.
-    if (s.introPhase === 'follow' && nearest && nearestDist < AUTO_UNLOCK_DIST && !s.unlockedDoors.has(nearest)) {
+    // Auto-unlock: any door the character walks up to silently unlocks,
+    // UNLESS the player just U-closed it — in that case we wait until
+    // they walk past USER_LOCK_RESET_DIST before allowing re-auto-open.
+    if (s.introPhase === 'follow' && nearest && nearestDist < AUTO_UNLOCK_DIST && !s.unlockedDoors.has(nearest) && !userClosedDoors.has(nearest)) {
       s.unlockDoor(nearest);
+    }
+    // Reset the user-closed flag for any door the player has walked away
+    // from — re-approach will then auto-open as normal.
+    if (userClosedDoors.size > 0) {
+      for (const id of userClosedDoors) {
+        const r = ROOM_BY_ID[id];
+        const d = Math.hypot(s.charPos.x - r.door.x, s.charPos.z - r.door.z);
+        if (d > USER_LOCK_RESET_DIST) userClosedDoors.delete(id);
+      }
     }
 
     // Auto-enter: if character is well INSIDE a room (closer to the

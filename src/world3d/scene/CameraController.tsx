@@ -13,6 +13,10 @@ import {
   mouseDraggingRef,
 } from './cameraRefs';
 import { listWallColliders } from './colliders';
+import { fpTransitionRef } from './fpTransitionRef';
+
+// Auto third-person → first-person tween (triggered by first WASD post-intro).
+const FP_TRANSITION_DURATION = 1.4;
 
 // Room-entry / room-exit tween duration.
 const ROOM_TWEEN_DURATION = 1.0;
@@ -142,6 +146,15 @@ interface TweenState {
   /** Room tween tracking: current viewMode the tween is driving toward. */
   lastViewMode: ViewMode;
   enteringRoom: boolean;
+  /** Auto third-person → first-person tween in progress. */
+  fpTransition: null | {
+    progress: number;
+    duration: number;
+    startPos: THREE.Vector3;
+    startLook: THREE.Vector3;
+    startFov: number;
+    targetYaw: number;
+  };
 }
 
 function easeInOut(t: number): number {
@@ -199,6 +212,7 @@ export function CameraController(): null {
     currentLook: new THREE.Vector3(...CAMERA.lookAt),
     lastViewMode: 'overview',
     enteringRoom: false,
+    fpTransition: null,
   });
   // Camera yaw is kept in a shared module ref (followCamYawRef) so the
   // PlayerController can read it for camera-relative walking without
@@ -209,6 +223,72 @@ export function CameraController(): null {
     const camera = state.camera;
     const s = useWorldStore.getState();
     const tw = tweenRef.current;
+
+    // ── Auto third-person → first-person transition ─────────
+    // InteractionManager sets fpTransitionRef.pending on the first WASD
+    // post-intro. We capture the current follow-cam pose, then lerp
+    // position + look + FOV to the FP eye pose over ~0.7s. fpActive is
+    // flipped at completion so PlayerController keeps using follow-mode
+    // input mapping during the tween (smoother visual).
+    if (fpTransitionRef.pending && !tw.fpTransition && !s.fpActive) {
+      const startPos = camera.position.clone();
+      const startLook = tw.currentLook.clone();
+      const startFov =
+        camera instanceof THREE.PerspectiveCamera ? camera.fov : CAMERA.fov;
+      tw.fpTransition = {
+        progress: 0,
+        duration: FP_TRANSITION_DURATION,
+        startPos,
+        startLook,
+        startFov,
+        targetYaw: fpTransitionRef.pending.yaw,
+      };
+      fpTransitionRef.pending = null;
+    }
+
+    if (tw.fpTransition) {
+      const ft = tw.fpTransition;
+      ft.progress += delta / ft.duration;
+      const done = ft.progress >= 1;
+      const p = done ? 1 : ft.progress;
+      const ease = easeInOut(p);
+
+      const { charPos } = s;
+      // Target FP eye pose at the character's current XZ.
+      const targetX = charPos.x;
+      const targetY = FP.eyeHeight;
+      const targetZ = charPos.z;
+      const yaw = ft.targetYaw;
+      const lookX = targetX - Math.sin(yaw);
+      const lookY = FP.eyeHeight;
+      const lookZ = targetZ - Math.cos(yaw);
+
+      camera.position.set(
+        ft.startPos.x + (targetX - ft.startPos.x) * ease,
+        ft.startPos.y + (targetY - ft.startPos.y) * ease,
+        ft.startPos.z + (targetZ - ft.startPos.z) * ease,
+      );
+      tw.currentLook.set(
+        ft.startLook.x + (lookX - ft.startLook.x) * ease,
+        ft.startLook.y + (lookY - ft.startLook.y) * ease,
+        ft.startLook.z + (lookZ - ft.startLook.z) * ease,
+      );
+      camera.lookAt(tw.currentLook);
+
+      if (camera instanceof THREE.PerspectiveCamera) {
+        const targetFov = 95; // matches FP block below
+        camera.fov = ft.startFov + (targetFov - ft.startFov) * ease;
+        camera.updateProjectionMatrix();
+      }
+
+      if (done) {
+        // Flip into FP at the exact end pose so the next frame's FP
+        // block continues seamlessly without a snap.
+        s.setFp(true, yaw, 0);
+        tw.fpTransition = null;
+      }
+      return;
+    }
 
     // ── Room enter / exit tweens ─────────────────────────────
     // These take precedence over intro phases — if the user somehow

@@ -1,4 +1,5 @@
 import { BackButton } from './BackButton';
+import { BookRoomCornerHint } from './BookRoomCornerHint';
 import { BottomHint } from './BottomHint';
 import { Crosshair } from './Crosshair';
 import { Dialogue } from './Dialogue';
@@ -6,6 +7,7 @@ import { ExitHint } from './ExitHint';
 import { IntroHint } from './IntroHint';
 import { InteractModal } from './InteractModal';
 import { InteractTooltip } from './InteractTooltip';
+import { PerspectiveTransition } from './PerspectiveTransition';
 import { RoomEntryToast } from './RoomEntryToast';
 import { RoomOverlays } from './RoomOverlays';
 import { ThemeToggle } from './ThemeToggle';
@@ -41,6 +43,8 @@ export function Hud() {
       <Dialogue />
       <ThemeToggle />
       <ViewSwitcher />
+      <PerspectiveTransition />
+      <BookRoomCornerHint />
       {/* Project quick-access (BLOG / ANONCAFE / Mentor Table). Hidden
           while inside a room so it doesn't overlap EXIT ROOM + panels.
           Inlined here (instead of importing ProjectsDock) so the 3D

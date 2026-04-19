@@ -362,14 +362,16 @@ export function IdeaLab() {
         </mesh>
       ))}
 
-      {/* ----- IDEA BOARD / WHITEBOARD (interactable preserved) ----- */}
-      <mesh position={[ox, 1.25, oz - 2.08]}>
+      {/* ----- IDEA BOARD / WHITEBOARD (interactable preserved) -----
+          Moved to the +z wall (opposite the door) so it no longer blocks
+          the doorway. Writing surface faces -z (toward the door). */}
+      <mesh position={[ox, 1.25, oz + 2.08]}>
         <boxGeometry args={[2.6, 1.7, 0.08]} />
         <meshPhongMaterial color={WOOD_MID} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
       <mesh
-        position={[ox, 1.25, oz - 2.03]}
+        position={[ox, 1.25, oz + 2.03]}
         onUpdate={(m) => {
           m.userData.interactable = IDEA_BOARD_INTERACTABLE;
         }}
@@ -379,32 +381,32 @@ export function IdeaLab() {
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       {BOARD_LINES.map((l, i) => (
-        <mesh key={`bline-${i}`} position={[ox + l.x, l.y, oz - 1.99]}>
+        <mesh key={`bline-${i}`} position={[ox + l.x, l.y, oz + 1.99]}>
           <boxGeometry args={[l.w, l.h, 0.012]} />
           <meshPhongMaterial color={l.c} emissive={l.c} emissiveIntensity={0.7} flatShading />
         </mesh>
       ))}
       {/* Heading bar (warm copper — F3.17 retint away from electric green) */}
-      <mesh position={[ox, 1.96, oz - 1.99]}>
+      <mesh position={[ox, 1.96, oz + 1.99]}>
         <boxGeometry args={[1.6, 0.09, 0.012]} />
         <meshPhongMaterial color={COPPER_ACCENT} emissive={COPPER_ACCENT} emissiveIntensity={1.0} flatShading />
       </mesh>
       {/* Whiteboard marker tray */}
-      <mesh position={[ox, 0.48, oz - 2.0]}>
+      <mesh position={[ox, 0.48, oz + 2.0]}>
         <boxGeometry args={[2.2, 0.04, 0.08]} />
         <meshPhongMaterial color={METAL_MID} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       {/* 3 markers on tray */}
-      <mesh position={[ox - 0.5, 0.51, oz - 1.98]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[ox - 0.5, 0.51, oz + 1.98]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.018, 0.018, 0.14, 6]} />
         <meshPhongMaterial color={ELECTRIC_GREEN} flatShading />
       </mesh>
-      <mesh position={[ox - 0.3, 0.51, oz - 1.98]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[ox - 0.3, 0.51, oz + 1.98]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.018, 0.018, 0.14, 6]} />
         <meshPhongMaterial color="#fb7185" flatShading />
       </mesh>
-      <mesh position={[ox - 0.1, 0.51, oz - 1.98]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[ox - 0.1, 0.51, oz + 1.98]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.018, 0.018, 0.14, 6]} />
         <meshPhongMaterial color="#60a5fa" flatShading />
       </mesh>

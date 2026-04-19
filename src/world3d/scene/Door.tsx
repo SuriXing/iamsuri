@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Edges } from '@react-three/drei';
+import { Edges, Html } from '@react-three/drei';
 // Named imports — namespace import defeats tree-shaking of three.
 import { Color, DoubleSide, Group, Mesh } from 'three';
 import { DOOR, DOOR_POLISH } from '../constants';
@@ -15,6 +15,7 @@ interface DoorProps {
   horizontal: boolean;
   roomId: RoomId;
   accentColor: string;
+  label?: string;
 }
 
 const FRAME_COLOR = '#6b4e1f';
@@ -63,7 +64,7 @@ function tintHex(hex: string, dL: number, dH = 0): string {
   return `#${c.getHexString()}`;
 }
 
-export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
+export function Door({ x, z, horizontal, roomId, accentColor, label }: DoorProps) {
   const unlocked = useWorldStore((s) => s.unlockedDoors.has(roomId));
   const theme = useWorldStore((s) => s.theme);
   const edgeColor = theme === 'dark' ? EDGE_DARK : EDGE_LIGHT;
@@ -73,7 +74,10 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
   const lockShackleRef = useRef<Mesh>(null);
   const lanternGroupRef = useRef<Group>(null);
   const lanternBodyRef = useRef<Mesh>(null);
-  const angleRef = useRef<number>(unlocked ? DOOR.openAngle : 0);
+  // Initial angle uses the same swing-direction logic as the per-frame
+  // tween below so doors that open on mount don't snap from the wrong side.
+  const initialSwingDir = horizontal ? -Math.sign(z) : -Math.sign(x);
+  const angleRef = useRef<number>(unlocked ? initialSwingDir * DOOR.openAngle : 0);
 
   // Per-door deterministic wood tones for the 3-strip panel.
   // F3.21: rails are guaranteed darker than the field by at least 0.15 L
@@ -121,7 +125,13 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
     // 4 doors × locks + lanterns all pulsing was contributing to user
     // perception of "flicker" even at ±5% slow. Now the door is a static
     // physical object that opens and closes — that's it.
-    const target = unlocked ? DOOR.openAngle : 0;
+    // Door swing direction: ALL doors should "pull" (open into the room),
+    // never "push" (open into the hallway). The room is on the side away
+    // from origin. For horizontal doors, room side = sign(z). The base
+    // openAngle is negative; flip it for bottom-row rooms (z>0) so they
+    // also swing into the room instead of into the hallway.
+    const swingDir = horizontal ? -Math.sign(z) : -Math.sign(x);
+    const target = unlocked ? swingDir * DOOR.openAngle : 0;
     const factor = 1 - Math.exp(-DOOR.hingeLerp * 60 * delta);
     angleRef.current += (target - angleRef.current) * factor;
     if (hingeRef.current) hingeRef.current.rotation.y = angleRef.current;
@@ -485,6 +495,43 @@ export function Door({ x, z, horizontal, roomId, accentColor }: DoorProps) {
         intensity={DOOR_POLISH.spillLight.intensity}
         distance={DOOR_POLISH.spillLight.distance}
       />
+
+      {/* Carved wood plaque — room name above the door, hallway side.
+          Uses drei <Html> so the text auto-faces the camera and stays
+          legible at any distance/angle. */}
+      {label && (
+        <Html
+          position={[
+            x - insideSignX * 0.18,
+            DOOR.frameHeight + 0.42,
+            z - insideSignZ * 0.18,
+          ]}
+          center
+          distanceFactor={5}
+          zIndexRange={[10, 0]}
+          pointerEvents="none"
+        >
+          <div
+            style={{
+              background: 'rgba(35, 22, 12, 0.92)',
+              color: '#f5c678',
+              border: `1px solid ${accentColor}`,
+              borderRadius: '4px',
+              padding: '3px 10px',
+              fontFamily: 'system-ui, sans-serif',
+              fontSize: '13px',
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+              userSelect: 'none',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+            }}
+          >
+            {label}
+          </div>
+        </Html>
+      )}
     </group>
   );
 }

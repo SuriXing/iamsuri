@@ -346,6 +346,7 @@ export function Room({ room }: Props) {
         horizontal={true}
         roomId={room.id}
         accentColor={room.accentColor}
+        label={room.label}
       />
 
       {/* Opposite wall — solid, away from origin. */}

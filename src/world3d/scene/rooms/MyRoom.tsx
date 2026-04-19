@@ -469,6 +469,196 @@ export function MyRoom() {
         );
       })}
 
+      {/* ----- MEDAL DISPLAY (mounted on bookshelf back, BELOW trophies) -----
+          3 NHSDLC speaker medals — pulled back onto the same bookshelf as
+          the trophies per user request. They sit on a thin display ledge
+          attached to the shelf back panel, stacked directly below the
+          trophy cap so the visual hierarchy reads top→bottom: trophies,
+          medals, photo frames. */}
+      <mesh position={[shelfX, 1.45, shelfZ]}>
+        <boxGeometry args={[1.20, 0.02, 0.30]} />
+        <meshPhongMaterial color={WOOD} flatShading />
+        <Edges color={EDGE_COLOR} lineWidth={1} />
+      </mesh>
+      {[
+        {
+          dx: -0.32,
+          ribbon: '#3b82f6', // blue ribbon
+          disc: '#cd7f32',   // bronze
+          short: 'Online2 3rd Speaker',
+          title: 'NHSDLC Fall 2025 — Online 2 · 3rd Speaker (Novice)',
+          body:
+            "🥉 3rd Speaker — Novice Division\n" +
+            "Tournament: NHSDLC Fall Online 2\n\n" +
+            "Individual speaker award alongside the team's Runners-up finish. Speaker points are scored round-by-round by judges across the prelims and the elimination bracket — being top-3 in a novice field of ~80 speakers means I was consistently the clearest, most well-organized speaker in the rooms I debated in. Cross-fire was the round I leveled up the most: stopped reading prepared questions and started actually responding to what the opp had just said.",
+        },
+        {
+          dx: 0,
+          ribbon: '#dc2626', // red ribbon
+          disc: '#cd7f32',
+          short: 'BJ Offline 4th Speaker',
+          title: 'NHSDLC Fall 2025 — Beijing Offline · 4th Speaker (Novice)',
+          body:
+            "🏅 4th Speaker — Novice Division\n" +
+            "Tournament: NHSDLC Fall Beijing Offline\n\n" +
+            "Same tournament where my partner and I won Champion. The 4th speaker placement is the in-person speaker score — which, unlike online, includes presence: how you stand, how you make eye contact with the judge, whether your voice fills the room. Walking out with both the team gold AND a top-5 speaker award from an in-person field was the proudest moment of the season.",
+        },
+        {
+          dx: 0.32,
+          ribbon: '#16a34a', // green ribbon
+          disc: '#cd7f32',
+          short: 'Online6 6th Speaker',
+          title: 'NHSDLC Fall 2025 — Online 6 · 6th Speaker (Novice)',
+          body:
+            "🏅 6th Speaker — Novice Division\n" +
+            "Tournament: NHSDLC Fall Online 6\n\n" +
+            "Individual award from the same Online 6 tournament where the team won Champion. By this point in the season, the speaker award almost felt secondary — the real signal was that the prep system was working: same partner, same prep workflow, two championships in three tournaments. 6th in a novice field of ~100 speakers is the kind of consistency I'm proud of.",
+        },
+      ].map((m, i) => {
+        const interactable = { title: m.title, body: m.body };
+        const handleClick = (e: { stopPropagation: () => void }) => {
+          e.stopPropagation();
+          useWorldStore.getState().openModal(interactable);
+        };
+        const handlePointerOver = (e: { stopPropagation: () => void }) => {
+          e.stopPropagation();
+          document.body.style.cursor = 'pointer';
+        };
+        const handlePointerOut = (e: { stopPropagation: () => void }) => {
+          e.stopPropagation();
+          document.body.style.cursor = '';
+        };
+        const attachInteractable = (mesh: Mesh | null) => {
+          if (mesh) mesh.userData.interactable = interactable;
+        };
+        return (
+          <group key={`medal-${i}`} position={[shelfX + m.dx, 0, shelfZ + 0.05]}>
+            {/* Ribbon — short colored bar above the disc */}
+            <mesh
+              position={[0, 1.56, 0]}
+              onClick={handleClick}
+              onPointerOver={handlePointerOver}
+              onPointerOut={handlePointerOut}
+              ref={attachInteractable}
+            >
+              <boxGeometry args={[0.05, 0.08, 0.012]} />
+              <meshPhongMaterial color={m.ribbon} emissive={m.ribbon} emissiveIntensity={0.35} flatShading />
+              <Edges color={EDGE_COLOR} lineWidth={1} />
+            </mesh>
+            {/* Disc — chunky cylinder body */}
+            <mesh
+              position={[0, 1.50, 0]}
+              rotation={[Math.PI / 2, 0, 0]}
+              onClick={handleClick}
+              onPointerOver={handlePointerOver}
+              onPointerOut={handlePointerOut}
+              ref={attachInteractable}
+            >
+              <cylinderGeometry args={[0.05, 0.05, 0.018, 16]} />
+              <meshPhongMaterial color={m.disc} emissive={m.disc} emissiveIntensity={0.4} flatShading />
+              <Edges color={EDGE_COLOR} lineWidth={1.2} />
+            </mesh>
+            {/* Inner disc highlight — tiny gold star marker */}
+            <mesh
+              position={[0, 1.50, 0.012]}
+              onClick={handleClick}
+              onPointerOver={handlePointerOver}
+              onPointerOut={handlePointerOut}
+              ref={attachInteractable}
+            >
+              <boxGeometry args={[0.022, 0.022, 0.005]} />
+              <meshPhongMaterial color={GOLD} emissive={GOLD} emissiveIntensity={0.6} flatShading />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* ----- PHOTO FRAMES (mounted on bookshelf, lowest tier) -----
+          Three empty wood-edged frames — pulled onto the same bookshelf as
+          the trophies + medals so all three layers stack on the SAME unit.
+          Order top→bottom: trophies (1.85), medals (1.50), frames (1.05). */}
+      <mesh position={[shelfX, 1.00, shelfZ]}>
+        <boxGeometry args={[1.20, 0.02, 0.30]} />
+        <meshPhongMaterial color={WOOD} flatShading />
+        <Edges color={EDGE_COLOR} lineWidth={1} />
+      </mesh>
+      {[
+        {
+          dx: -0.4,
+          photoColor: '#f5d0c4',
+          title: 'Photo Frame 1 (placeholder)',
+          body:
+            "📷 Photo coming soon.\n\n" +
+            "Suri will fill this slot with a real photo. The frame is " +
+            "already wired — drop in the image and a caption and it'll " +
+            "render in this modal.",
+        },
+        {
+          dx: 0,
+          photoColor: '#d4e4f5',
+          title: 'Photo Frame 2 (placeholder)',
+          body:
+            "📷 Photo coming soon.\n\n" +
+            "Suri will fill this slot with a real photo. The frame is " +
+            "already wired — drop in the image and a caption and it'll " +
+            "render in this modal.",
+        },
+        {
+          dx: 0.4,
+          photoColor: '#dcecd4',
+          title: 'Photo Frame 3 (placeholder)',
+          body:
+            "📷 Photo coming soon.\n\n" +
+            "Suri will fill this slot with a real photo. The frame is " +
+            "already wired — drop in the image and a caption and it'll " +
+            "render in this modal.",
+        },
+      ].map((f, i) => {
+        const interactable = { title: f.title, body: f.body };
+        const handleClick = (e: { stopPropagation: () => void }) => {
+          e.stopPropagation();
+          useWorldStore.getState().openModal(interactable);
+        };
+        const handlePointerOver = (e: { stopPropagation: () => void }) => {
+          e.stopPropagation();
+          document.body.style.cursor = 'pointer';
+        };
+        const handlePointerOut = (e: { stopPropagation: () => void }) => {
+          e.stopPropagation();
+          document.body.style.cursor = '';
+        };
+        const attachInteractable = (mesh: Mesh | null) => {
+          if (mesh) mesh.userData.interactable = interactable;
+        };
+        return (
+          <group key={`frame-${i}`} position={[shelfX + f.dx, 0, shelfZ + 0.05]}>
+            {/* Outer dark wood frame */}
+            <mesh
+              position={[0, 1.20, 0]}
+              onClick={handleClick}
+              onPointerOver={handlePointerOver}
+              onPointerOut={handlePointerOut}
+              ref={attachInteractable}
+            >
+              <boxGeometry args={[0.30, 0.30, 0.025]} />
+              <meshPhongMaterial color={FRAME_DARK} flatShading />
+              <Edges color={EDGE_COLOR} lineWidth={1.2} />
+            </mesh>
+            {/* Inner photo plate — pastel placeholder */}
+            <mesh
+              position={[0, 1.20, 0.014]}
+              onClick={handleClick}
+              onPointerOver={handlePointerOver}
+              onPointerOut={handlePointerOut}
+              ref={attachInteractable}
+            >
+              <boxGeometry args={[0.24, 0.24, 0.005]} />
+              <meshPhongMaterial color={f.photoColor} emissive={f.photoColor} emissiveIntensity={0.25} flatShading />
+            </mesh>
+          </group>
+        );
+      })}
+
       {/* ----- RUG + INNER BORDER ----- */}
       <mesh position={[bedX, 0.075, bedZ + 0.7]}>
         <boxGeometry args={[1.8, 0.03, 1.2]} />

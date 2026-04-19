@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Edges } from '@react-three/drei';
+import { Edges, Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 // Named imports — namespace import defeats tree-shaking of three.
 import { Group, Mesh, PointLight } from 'three';
@@ -132,13 +132,19 @@ export function BookRoom() {
   // puts shelves BEHIND the couch as required by OUT-3. The chair now
   // faces +z (toward shelves / back wall), so the back rest sits on the
   // -z side of the seat (camera-facing).
-  const shelfLX = ox - 1.1;
-  const shelfRX = ox + 1.0;
+  // B1.3: swapped chair (couch) and shelves z so shelves sit at the back
+  // wall and the couch is in the middle ground. Per latest user request,
+  // the back wall behind the sofa is now ONE FULL-WIDTH bookshelf rather
+  // than two narrower ones — reads as "library wall of books".
+  const shelfX = ox;
   const chairX = ox - 0.2;
   const chairZ = oz + 0.3;
   const tableX = ox + 0.8;
   const tableZ = oz + 0.3;
   const shelfZ = oz + 1.5;
+  // Full-width shelf footprint — spans nearly the whole room (ROOM=5)
+  // minus a small margin so it doesn't punch through the side walls.
+  const SHELF_FULL_WIDTH = 4.4;
 
   // Furniture colliders — registered as playerOnly so the camera
   // wall-clip sweep ignores them while the player still bounces off.
@@ -150,12 +156,10 @@ export function BookRoom() {
       { id: 'br-chair',    x: chairX, z: chairZ, hx: 0.48, hz: 0.43 },
       // Side table — small footprint
       { id: 'br-table',    x: tableX, z: tableZ, hx: 0.28, hz: 0.28 },
-      // Left shelf wall (against +Z back wall — B1.3 swap)
-      { id: 'br-shelf-l',  x: shelfLX, z: shelfZ, hx: 0.85, hz: 0.20 },
-      // Right shelf wall
-      { id: 'br-shelf-r',  x: shelfRX, z: shelfZ, hx: 0.85, hz: 0.20 },
+      // Full back-wall library — one continuous shelf footprint
+      { id: 'br-shelf',    x: shelfX, z: shelfZ, hx: SHELF_FULL_WIDTH / 2, hz: 0.20 },
       // Library ladder
-      { id: 'br-ladder',   x: shelfLX - 0.65, z: shelfZ + 0.35, hx: 0.15, hz: 0.10 },
+      { id: 'br-ladder',   x: shelfX - 1.6, z: shelfZ + 0.35, hx: 0.15, hz: 0.10 },
       // Globe stand (relocated to -z side after B1.3 swap)
       { id: 'br-globe',    x: ox - 1.85, z: oz - 1.5, hx: 0.12, hz: 0.12 },
       // Potted fern (relocated to -z side)
@@ -167,7 +171,7 @@ export function BookRoom() {
     return () => {
       for (const it of items) unregisterCollider(it.id);
     };
-  }, [ox, oz, chairX, chairZ, tableX, tableZ, shelfLX, shelfRX, shelfZ]);
+  }, [ox, oz, chairX, chairZ, tableX, tableZ, shelfX, shelfZ]);
 
   return (
     <group>
@@ -205,66 +209,74 @@ export function BookRoom() {
         <meshPhongMaterial color={AMBER} emissive={AMBER} emissiveIntensity={0.5} flatShading />
       </mesh>
 
-      {/* ----- BOOKSHELVES (with dusty pastel spines + edges on hero books) ----- */}
+      {/* ----- BOOKSHELF (single full-width back-wall library) ----- */}
       <Bookshelf
-        x={shelfLX}
+        x={shelfX}
         z={shelfZ}
-        rows={4}
-        booksPerRow={5}
-        width={1.6}
+        rows={5}
+        booksPerRow={16}
+        width={SHELF_FULL_WIDTH}
         depth={0.38}
-        rowSpacing={0.5}
+        rowSpacing={0.46}
         baseY={0.3}
         plankColor={WOOD_MID}
         bookColors={DUSTY_SPINES}
         backPanelColor={WOOD_DEEP}
         withFrameBox
         frameBoxColor={WOOD_DEEP}
-        frameBoxHeight={2.2}
-        frameBoxY={1.2}
+        frameBoxHeight={2.5}
+        frameBoxY={1.35}
         seed={0xb001a5}
-        heroBookCount={4}
+        heroBookCount={10}
         edgeColor={edgeColor}
       />
-      {/* Blog interactable plane — shelves moved to +z (B1.3); the plane
-          sits on the camera-facing (-z) front face of the left shelf. */}
+      {/* Blog interactable plane — sits on the camera-facing (-z) front
+          face of the shelf, spanning most of its width so the player can
+          press E anywhere along the wall. */}
       <mesh
-        position={[shelfLX, 1.2, shelfZ - 0.21]}
+        position={[shelfX, 1.2, shelfZ - 0.21]}
         onUpdate={(m) => {
           m.userData.interactable = BLOG_INTERACTABLE;
         }}
       >
-        <boxGeometry args={[1.7, 2.0, 0.02]} />
+        <boxGeometry args={[SHELF_FULL_WIDTH * 0.9, 2.0, 0.02]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
-      <Bookshelf
-        x={shelfRX}
-        z={shelfZ}
-        rows={4}
-        booksPerRow={5}
-        width={1.6}
-        depth={0.38}
-        rowSpacing={0.5}
-        baseY={0.3}
-        plankColor={WOOD_MID}
-        bookColors={DUSTY_SPINES}
-        backPanelColor={WOOD_DEEP}
-        withFrameBox
-        frameBoxColor={WOOD_DEEP}
-        frameBoxHeight={2.2}
-        frameBoxY={1.2}
-        seed={0xb0012e}
-        heroBookCount={4}
-        edgeColor={edgeColor}
-      />
+      {/* "Press E to read my book reviews" sign — floats above the shelf
+          so users discover the interactable. */}
+      <Html
+        position={[shelfX, 2.7, shelfZ - 0.25]}
+        center
+        distanceFactor={3.4}
+        zIndexRange={[15, 0]}
+        pointerEvents="none"
+      >
+        <div
+          style={{
+            background: 'rgba(15, 12, 10, 0.78)',
+            color: '#f5c678',
+            border: '1px solid #b8873a',
+            borderRadius: '6px',
+            padding: '4px 10px',
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: '13px',
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            userSelect: 'none',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+          }}
+        >
+          Press <kbd style={{ background: '#f5c678', color: '#1a1208', padding: '1px 6px', borderRadius: '3px', fontWeight: 800 }}>E</kbd> at the shelf to read my book reviews
+        </div>
+      </Html>
 
-      {/* ----- LIBRARY LADDER (leaning against left shelf) ----- */}
-      <mesh position={[shelfLX - 0.75, 1.1, shelfZ + 0.35]} rotation={[0, 0, -0.18]}>
+      {/* ----- LIBRARY LADDER (leaning against shelf, far-left side) ----- */}
+      <mesh position={[shelfX - 1.7, 1.1, shelfZ + 0.35]} rotation={[0, 0, -0.18]}>
         <boxGeometry args={[0.04, 2.0, 0.04]} />
         <meshPhongMaterial color={WOOD_LIGHT} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh position={[shelfLX - 0.55, 1.1, shelfZ + 0.35]} rotation={[0, 0, -0.18]}>
+      <mesh position={[shelfX - 1.5, 1.1, shelfZ + 0.35]} rotation={[0, 0, -0.18]}>
         <boxGeometry args={[0.04, 2.0, 0.04]} />
         <meshPhongMaterial color={WOOD_LIGHT} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -273,7 +285,7 @@ export function BookRoom() {
       {[0.35, 0.75, 1.15, 1.55, 1.95].map((y, i) => (
         <mesh
           key={`rung-${i}`}
-          position={[shelfLX - 0.65 + (y - 1.1) * 0.18, y, shelfZ + 0.35]}
+          position={[shelfX - 1.6 + (y - 1.1) * 0.18, y, shelfZ + 0.35]}
           rotation={[0, 0, -0.18]}
 
         >
@@ -282,7 +294,9 @@ export function BookRoom() {
         </mesh>
       ))}
 
-      {/* ----- READING CHAIR (hero — base + seat cushion + back + arms) ----- */}
+      {/* ----- READING CHAIR (hero — base + seat cushion + back + arms) -----
+          Flipped to face -z (toward the door) so the user can read seated
+          while looking back at the doorway. Back rest moved to +z side. */}
       {/* Base block */}
       <mesh position={[chairX, 0.28, chairZ]}>
         <boxGeometry args={[0.95, 0.32, 0.85]} />
@@ -290,7 +304,7 @@ export function BookRoom() {
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
       {/* Seat cushion */}
-      <mesh position={[chairX, 0.49, chairZ - 0.02]}>
+      <mesh position={[chairX, 0.49, chairZ + 0.02]}>
         <boxGeometry args={[0.82, 0.12, 0.72]} />
         <meshPhongMaterial color={CHAIR_GREEN} emissive={CHAIR_GREEN} emissiveIntensity={0.08} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -298,7 +312,7 @@ export function BookRoom() {
       {/* B1.3: invisible seat-read interactable on the cushion. Triggers
           the 许三观卖血记 modal via the existing focus + E flow. */}
       <mesh
-        position={[chairX, 1.3, chairZ - 0.02]}
+        position={[chairX, 1.3, chairZ + 0.02]}
         onUpdate={(m) => {
           m.userData.interactable = XU_SAN_GUAN_INTERACTABLE;
         }}
@@ -306,14 +320,14 @@ export function BookRoom() {
         <boxGeometry args={[0.7, 1.0, 0.6]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
-      {/* Back rest — flipped to -z (chair faces +z, toward back-wall shelves). */}
-      <mesh position={[chairX, 0.82, chairZ - 0.42]}>
+      {/* Back rest — on +z side (chair faces -z, toward door). */}
+      <mesh position={[chairX, 0.82, chairZ + 0.42]}>
         <boxGeometry args={[0.95, 0.9, 0.14]} />
         <meshPhongMaterial color={CHAIR_GREEN_DK} flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
       {/* Back cushion */}
-      <mesh position={[chairX, 0.82, chairZ - 0.33]}>
+      <mesh position={[chairX, 0.82, chairZ + 0.33]}>
         <boxGeometry args={[0.8, 0.8, 0.08]} />
         <meshPhongMaterial color={CHAIR_GREEN} emissive={CHAIR_GREEN} emissiveIntensity={0.1} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -329,13 +343,13 @@ export function BookRoom() {
         <meshPhongMaterial color={CHAIR_GREEN_DK} flatShading />
       </mesh>
       {/* Throw blanket draped over arm */}
-      <mesh position={[chairX - 0.48, 0.73, chairZ - 0.1]} rotation={[0, 0, 0.2]}>
+      <mesh position={[chairX - 0.48, 0.73, chairZ + 0.1]} rotation={[0, 0, 0.2]}>
         <boxGeometry args={[0.2, 0.04, 0.5]} />
         <meshPhongMaterial color="#c47a5e" emissive="#c47a5e" emissiveIntensity={0.12} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       {/* Cushion on seat */}
-      <mesh position={[chairX + 0.15, 0.6, chairZ + 0.15]} rotation={[0, 0.3, 0]}>
+      <mesh position={[chairX + 0.15, 0.6, chairZ - 0.15]} rotation={[0, 0.3, 0]}>
         <boxGeometry args={[0.35, 0.12, 0.32]} />
         <meshPhongMaterial color="#dda0a0" emissive="#dda0a0" emissiveIntensity={0.15} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
@@ -526,6 +540,77 @@ export function BookRoom() {
         <boxGeometry args={[0.5, 0.35, 0.02]} />
         <meshPhongMaterial color={WOOD_MID} emissive={WOOD_MID} emissiveIntensity={0.1} flatShading />
       </mesh>
+
+      {/* ----- 许三观卖血记 book on table (visible cover with title) -----
+          Sits propped up on the side table next to the open book / tea cup
+          so the user can see the title before interacting. */}
+      <group position={[tableX - 0.05, 0.62, tableZ - 0.05]} rotation={[0, 0.25, 0]}>
+        {/* Book block (red cover) */}
+        <mesh>
+          <boxGeometry args={[0.22, 0.04, 0.3]} />
+          <meshPhongMaterial color="#9f1239" emissive="#9f1239" emissiveIntensity={0.18} flatShading />
+          <Edges color={edgeColor} lineWidth={1} />
+        </mesh>
+        {/* Title label on top face — drei Html, fixed-size pixels, faces camera */}
+        <Html
+          position={[0, 0.025, 0]}
+          center
+          distanceFactor={2.2}
+          zIndexRange={[10, 0]}
+          pointerEvents="none"
+        >
+          <div
+            style={{
+              color: '#fff8e0',
+              fontFamily: '"PingFang SC", "Hiragino Sans GB", system-ui, sans-serif',
+              fontSize: '14px',
+              fontWeight: 700,
+              textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+              whiteSpace: 'nowrap',
+              userSelect: 'none',
+            }}
+          >
+            许三观卖血记
+          </div>
+        </Html>
+      </group>
+
+      {/* "Press F to sit" floating sign above the reading chair —
+          drei <Html> automatically billboards (DOM stays camera-facing).
+          distanceFactor keeps it tiny at distance, larger up close —
+          so it appears to "move with the perspective" as the player
+          walks around it. Pointer-events disabled so clicks pass
+          through to the chair interactable behind it. */}
+      <Html
+        position={[chairX, 1.55, chairZ + 0.05]}
+        center
+        distanceFactor={4}
+        zIndexRange={[20, 0]}
+        pointerEvents="none"
+      >
+        <div
+          style={{
+            background: 'rgba(20, 14, 10, 0.85)',
+            color: '#f5c678',
+            border: '1px solid #b8873a',
+            borderRadius: '5px',
+            padding: '3px 8px',
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: '12px',
+            fontWeight: 700,
+            letterSpacing: '0.04em',
+            whiteSpace: 'nowrap',
+            userSelect: 'none',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+          }}
+        >
+          Press <kbd style={{ background: '#f5c678', color: '#1a1208', padding: '0 5px', borderRadius: '3px', fontWeight: 800 }}>F</kbd> to sit
+        </div>
+      </Html>
+
+      {/* "Press F to sit" sign removed — replaced by the small corner
+          hint in HUD (BookRoomCornerHint) so it stays out of the scene
+          and doesn't get blocked by furniture. */}
     </group>
   );
 }

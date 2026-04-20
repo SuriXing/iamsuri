@@ -734,3 +734,9 @@ body.world3d-light-theme .dialogue-next {
     margin: 0 2px;
   }
 }
+
+/* P3 — WASD onboarding pulse */
+@keyframes wasdPulse {
+  0%, 100% { opacity: 0.85; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 1.0;  transform: translate(-50%, -50%) scale(1.06); }
+}

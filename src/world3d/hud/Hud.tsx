@@ -12,6 +12,7 @@ import { RoomEntryToast } from './RoomEntryToast';
 import { RoomOverlays } from './RoomOverlays';
 import { ThemeToggle } from './ThemeToggle';
 import { ViewSwitcher } from './ViewSwitcher';
+import { WasdPulse } from './WasdPulse';
 import { PROJECT_LINKS } from '../../data/links';
 import '../../components/shared/ProjectsDock.css';
 import { useWorldStore } from '../store/worldStore';
@@ -45,6 +46,7 @@ export function Hud() {
       <ViewSwitcher />
       <PerspectiveTransition />
       <BookRoomCornerHint />
+      <WasdPulse />
       {/* Project quick-access (BLOG / ANONCAFE / Mentor Table). Hidden
           while inside a room so it doesn't overlap EXIT ROOM + panels.
           Inlined here (instead of importing ProjectsDock) so the 3D

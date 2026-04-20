@@ -390,10 +390,14 @@ export function CameraController(): null {
         camera.updateProjectionMatrix();
       }
       const { charPos, fpYaw, fpPitch } = s;
-      camera.position.set(charPos.x, FP.eyeHeight, charPos.z);
+      // Seated pose: lower the eye height to ~1.0m (sitting on the
+      // BookRoom couch). Free-look still works; walk is disabled by the
+      // PlayerController seated guard.
+      const eyeY = s.seated ? 1.0 : FP.eyeHeight;
+      camera.position.set(charPos.x, eyeY, charPos.z);
       const cosP = Math.cos(fpPitch);
       const lookX = charPos.x - Math.sin(fpYaw) * cosP;
-      const lookY = FP.eyeHeight + Math.sin(fpPitch);
+      const lookY = eyeY + Math.sin(fpPitch);
       const lookZ = charPos.z - Math.cos(fpYaw) * cosP;
       tw.currentLook.set(lookX, lookY, lookZ);
       camera.lookAt(lookX, lookY, lookZ);

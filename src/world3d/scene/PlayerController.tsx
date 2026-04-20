@@ -32,6 +32,11 @@ export function PlayerController(): null {
     if (s.viewTransition !== 'idle') return;
     // Freeze movement until the intro finishes and the user clicks Next.
     if (s.introPhase !== 'follow') return;
+    // Freeze movement while seated (BookRoom couch). InteractionManager
+    // handles the WASD-press → standUp transition; this guard makes sure
+    // the same key press doesn't ALSO walk the player off the chair on
+    // the same frame.
+    if (s.seated) return;
 
     const dt = Math.min(0.2, delta);
 

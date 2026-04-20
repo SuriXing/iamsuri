@@ -66,6 +66,9 @@ interface WorldState {
   // Intro sequence
   introPhase: IntroPhase;
   dialogueIndex: number;
+  // BookRoom F-to-sit: when true, lower camera + freeze WASD walk.
+  // First WASD press (or F) clears it.
+  seated: boolean;
 
   // Actions
   setViewMode: (v: ViewMode) => void;
@@ -89,6 +92,9 @@ interface WorldState {
   // Intro actions
   setIntroPhase: (p: IntroPhase) => void;
   advanceDialogue: () => void;
+  // Seated (BookRoom couch). Clears fpActive position only — keeps yaw.
+  sitDown: () => void;
+  standUp: () => void;
 }
 
 // localStorage persistence for unlocked doors
@@ -145,6 +151,7 @@ export const useWorldStore = create<WorldState>((set) => ({
       ? 'follow'
       : 'intro-static',
   dialogueIndex: 0,
+  seated: false,
 
   setViewMode: (v) => {
     // Centralize the "leaving a room" cleanup so stale focus/modal state
@@ -154,6 +161,7 @@ export const useWorldStore = create<WorldState>((set) => ({
         viewMode: v,
         focusedInteractable: null,
         modalInteractable: null,
+        seated: false,
       });
     } else {
       // Direct jumps (E key, number key, test bridge) are 'manual' —
@@ -219,6 +227,7 @@ export const useWorldStore = create<WorldState>((set) => ({
       viewTransition: 'exiting',
       focusedInteractable: null,
       modalInteractable: null,
+      seated: false,
     }),
   setIntroPhase: (p) => {
     if (p === 'follow' && typeof window !== 'undefined') {
@@ -246,6 +255,8 @@ export const useWorldStore = create<WorldState>((set) => ({
         fpPitch: 0,
       };
     }),
+  sitDown: () => set({ seated: true }),
+  standUp: () => set({ seated: false }),
 }));
 
 // Test/dev seam: expose store on window (typed via global.d.ts). Gated

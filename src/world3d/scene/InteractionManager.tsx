@@ -120,9 +120,13 @@ export function InteractionManager(): null {
       }
 
       // FP mode in the book room: F teleports the player to the reading
-      // chair, facing the door. Charm interaction — pairs with the
-      // "Press F to sit & read" sign rendered above the chair.
+      // chair, facing the door, and toggles the seated pose (lowers
+      // camera + locks WASD walk). Pressing F again stands up.
       if (s.fpActive && s.viewMode === 'book' && key === 'f') {
+        if (s.seated) {
+          s.standUp();
+          return;
+        }
         const room = ROOM_BY_ID.book;
         // Chair anchor mirrors BookRoom.tsx (chairX = ox - 0.2, chairZ = oz + 0.3).
         const seatX = room.center.x - 0.2;
@@ -132,6 +136,17 @@ export function InteractionManager(): null {
         // Face -z (toward the door — door is on -z side of room center).
         // FP look = (-sin(yaw), -cos(yaw)); -z direction ⇒ yaw = 0.
         s.setFp(true, 0, 0);
+        s.sitDown();
+        return;
+      }
+
+      // While seated, the FIRST WASD press stands the player back up
+      // (and falls through so the same press doesn't also try to walk
+      // through the chair on the same frame — PlayerController has a
+      // seated guard that returns early).
+      if (s.seated && (key === 'w' || key === 'a' || key === 's' || key === 'd' ||
+          key === 'arrowup' || key === 'arrowdown' || key === 'arrowleft' || key === 'arrowright')) {
+        s.standUp();
         return;
       }
 

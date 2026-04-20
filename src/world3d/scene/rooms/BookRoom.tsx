@@ -7,12 +7,20 @@ import { ROOM_BY_ID } from '../../data/rooms';
 import { Bookshelf } from '../parts/Bookshelf';
 import { useWorldStore } from '../../store/worldStore';
 import { makeRng } from '../../util/rand';
-import { BOOK_ROOM_CONTENT } from '../../../data/bookRoom';
+import { BOOK_ROOM_CONTENT, BOOK_ENTRIES } from '../../../data/bookRoom';
 import type { InteractableData } from '../../store/worldStore';
 import { registerCollider, unregisterCollider } from '../colliders';
 
-const BLOG_INTERACTABLE: InteractableData = BOOK_ROOM_CONTENT.dialogues.blog;
 const XU_SAN_GUAN_INTERACTABLE: InteractableData = BOOK_ROOM_CONTENT.dialogues.xuSanGuan;
+
+// Front-wall flanking shelves (centered around the door on -Z wall at z=oz-2.5).
+// Shelf back sits at z = oz - 2.3, leaving a ~0.6m door gap between them.
+const FRONT_SHELF_WIDTH = 1.6;
+const FRONT_SHELF_DEPTH = 0.38;
+const FRONT_SHELF_ROWS = 4;
+const FRONT_SHELF_BOOKS_PER_ROW = 5;
+const FRONT_SHELF_ROW_SPACING = 0.46;
+const FRONT_SHELF_BASE_Y = 0.3;
 
 // --- Cozy library palette (mahogany-shifted: red-brown register) ---
 // F3.15: nudged red +hue to lock tonal distinctness vs IdeaLab's olive-pine.
@@ -158,12 +166,16 @@ export function BookRoom() {
       { id: 'br-table',    x: tableX, z: tableZ, hx: 0.28, hz: 0.28 },
       // Full back-wall library — one continuous shelf footprint
       { id: 'br-shelf',    x: shelfX, z: shelfZ, hx: SHELF_FULL_WIDTH / 2, hz: 0.20 },
+      // Front-wall flanking shelves (library entrance)
+      { id: 'br-shelf-fl', x: ox - 1.3, z: oz - 2.3, hx: FRONT_SHELF_WIDTH / 2, hz: 0.20 },
+      { id: 'br-shelf-fr', x: ox + 1.3, z: oz - 2.3, hx: FRONT_SHELF_WIDTH / 2, hz: 0.20 },
       // Library ladder
       { id: 'br-ladder',   x: shelfX - 1.6, z: shelfZ + 0.35, hx: 0.15, hz: 0.10 },
-      // Globe stand (relocated to -z side after B1.3 swap)
-      { id: 'br-globe',    x: ox - 1.85, z: oz - 1.5, hx: 0.12, hz: 0.12 },
-      // Potted fern (relocated to -z side)
-      { id: 'br-fern',     x: ox + 1.8, z: oz - 1.5, hx: 0.20, hz: 0.20 },
+      // Globe stand — moved to left side wall (mid-room) to clear the
+      // new front-wall flanking shelves.
+      { id: 'br-globe',    x: ox - 2.15, z: oz - 0.2, hx: 0.12, hz: 0.12 },
+      // Potted fern — moved to right side wall (mid-room).
+      { id: 'br-fern',     x: ox + 2.15, z: oz - 0.2, hx: 0.20, hz: 0.20 },
     ];
     for (const it of items) {
       registerCollider({ ...it, playerOnly: true });
@@ -230,45 +242,89 @@ export function BookRoom() {
         heroBookCount={10}
         edgeColor={edgeColor}
       />
-      {/* Blog interactable plane — sits on the camera-facing (-z) front
-          face of the shelf, spanning most of its width so the player can
-          press E anywhere along the wall. */}
-      <mesh
-        position={[shelfX, 1.2, shelfZ - 0.21]}
-        onUpdate={(m) => {
-          m.userData.interactable = BLOG_INTERACTABLE;
-        }}
-      >
-        <boxGeometry args={[SHELF_FULL_WIDTH * 0.9, 2.0, 0.02]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-      </mesh>
-      {/* "Press E to read my book reviews" sign — floats above the shelf
-          so users discover the interactable. */}
-      <Html
-        position={[shelfX, 2.7, shelfZ - 0.25]}
-        center
-        distanceFactor={3.4}
-        zIndexRange={[15, 0]}
-        pointerEvents="none"
-      >
-        <div
-          style={{
-            background: 'rgba(15, 12, 10, 0.78)',
-            color: '#f5c678',
-            border: '1px solid #b8873a',
-            borderRadius: '6px',
-            padding: '4px 10px',
-            fontFamily: 'system-ui, sans-serif',
-            fontSize: '13px',
-            fontWeight: 600,
-            whiteSpace: 'nowrap',
-            userSelect: 'none',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
-          }}
-        >
-          Press <kbd style={{ background: '#f5c678', color: '#1a1208', padding: '1px 6px', borderRadius: '3px', fontWeight: 800 }}>E</kbd> at the shelf to read my book reviews
-        </div>
-      </Html>
+      {/* Blog interactable plane REMOVED — replaced by per-book interactables
+          on the new front-wall shelves (see below). */}
+
+      {/* "Press E to read my book reviews" floating sign REMOVED — the
+          catalog-driven per-book interactables now make discovery obvious
+          (crosshair + "E interact" pill on each hero book). */}
+
+      {/* ----- FRONT-WALL LIBRARY (flanking shelves around the door) -----
+          The door sits at z=oz-2.5 (ROOM/2 offset), centered on ox. Two
+          shelves flank it with a ~0.6m gap in the middle. Back of each
+          shelf flush to the -Z wall (z = oz - 2.3), front faces +Z so
+          the player sees books immediately on entering the room. */}
+      {(() => {
+        // Place shelves clearly inside the room — wall spans z ∈ [1.15, 1.25].
+        // Shelf with depth 0.38 centered at z=1.5 → back panel at ~1.31,
+        // front face at ~1.69. Clear of the wall and clear of furniture
+        // (table at z=oz+0.3=4.0). Leaves a ~0.6m door gap between shelves.
+        const frontShelfZ = oz - 2.2;
+        const leftShelfX = ox - 1.3;
+        const rightShelfX = ox + 1.3;
+        return (
+          <>
+            <Bookshelf
+              x={leftShelfX}
+              z={frontShelfZ}
+              rows={FRONT_SHELF_ROWS}
+              booksPerRow={FRONT_SHELF_BOOKS_PER_ROW}
+              width={FRONT_SHELF_WIDTH}
+              depth={FRONT_SHELF_DEPTH}
+              rowSpacing={FRONT_SHELF_ROW_SPACING}
+              baseY={FRONT_SHELF_BASE_Y}
+              plankColor={WOOD_MID}
+              bookColors={DUSTY_SPINES}
+              backPanelColor={WOOD_DEEP}
+              seed={0xb001b0}
+              heroBookCount={6}
+              edgeColor={edgeColor}
+            />
+            <Bookshelf
+              x={rightShelfX}
+              z={frontShelfZ}
+              rows={FRONT_SHELF_ROWS}
+              booksPerRow={FRONT_SHELF_BOOKS_PER_ROW}
+              width={FRONT_SHELF_WIDTH}
+              depth={FRONT_SHELF_DEPTH}
+              rowSpacing={FRONT_SHELF_ROW_SPACING}
+              baseY={FRONT_SHELF_BASE_Y}
+              plankColor={WOOD_MID}
+              bookColors={DUSTY_SPINES}
+              backPanelColor={WOOD_DEEP}
+              seed={0xb001b1}
+              heroBookCount={6}
+              edgeColor={edgeColor}
+            />
+
+            {/* Per-book invisible interactable boxes on the front-facing
+                (+Z) side of each shelf. */}
+            {BOOK_ENTRIES.map((entry) => {
+              const shelfCenterX = entry.shelf === 'front-left' ? leftShelfX : rightShelfX;
+              const bookSpacing = FRONT_SHELF_WIDTH / (FRONT_SHELF_BOOKS_PER_ROW + 1);
+              const bx = shelfCenterX - FRONT_SHELF_WIDTH / 2 + bookSpacing * (entry.col + 1);
+              const by = FRONT_SHELF_BASE_Y + entry.row * FRONT_SHELF_ROW_SPACING + 0.22;
+              const bz = frontShelfZ + FRONT_SHELF_DEPTH / 2 - 0.02;
+              const interactable: InteractableData = {
+                title: `${entry.title} · ${entry.author}`,
+                body: entry.review,
+              };
+              return (
+                <mesh
+                  key={`book-int-${entry.id}`}
+                  position={[bx, by, bz]}
+                  onUpdate={(m) => {
+                    m.userData.interactable = interactable;
+                  }}
+                >
+                  <boxGeometry args={[0.22, 0.34, 0.1]} />
+                  <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+                </mesh>
+              );
+            })}
+          </>
+        );
+      })()}
 
       {/* ----- LIBRARY LADDER (leaning against shelf, far-left side) ----- */}
       <mesh position={[shelfX - 1.7, 1.1, shelfZ + 0.35]} rotation={[0, 0, -0.18]}>
@@ -457,36 +513,36 @@ export function BookRoom() {
         <meshPhongMaterial color="#dd5a5a" emissive="#dd5a5a" emissiveIntensity={0.4} flatShading />
       </mesh>
 
-      {/* ----- POTTED FERN (cozy corner greenery) ----- */}
-      <mesh position={[ox + 1.8, 0.22, oz - 1.5]}>
+      {/* ----- POTTED FERN (moved to right side wall — F3.16 declutter) ----- */}
+      <mesh position={[ox + 2.15, 0.22, oz - 0.2]}>
         <boxGeometry args={[0.28, 0.34, 0.28]} />
         <meshPhongMaterial color={WOOD_MID} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      <mesh position={[ox + 1.8, 0.52, oz - 1.5]}>
+      <mesh position={[ox + 2.15, 0.52, oz - 0.2]}>
         <boxGeometry args={[0.36, 0.16, 0.36]} />
         <meshPhongMaterial color={FOREST} emissive={FOREST} emissiveIntensity={0.15} flatShading />
       </mesh>
-      <mesh position={[ox + 1.72, 0.64, oz - 1.48]}>
+      <mesh position={[ox + 2.07, 0.64, oz - 0.18]}>
         <boxGeometry args={[0.18, 0.2, 0.18]} />
         <meshPhongMaterial color={FOREST_LIGHT} emissive={FOREST_LIGHT} emissiveIntensity={0.15} flatShading />
       </mesh>
-      <mesh position={[ox + 1.88, 0.7, oz - 1.52]}>
+      <mesh position={[ox + 2.23, 0.7, oz - 0.22]}>
         <boxGeometry args={[0.16, 0.26, 0.16]} />
         <meshPhongMaterial color={FOREST_LIGHT} emissive={FOREST_LIGHT} emissiveIntensity={0.15} flatShading />
       </mesh>
 
-      {/* ----- GLOBE ON LEFT CORNER (F3.15 hero: slow spin) ----- */}
-      <mesh position={[ox - 1.85, 0.3, oz - 1.5]}>
+      {/* ----- GLOBE ON LEFT SIDE WALL (F3.15 hero: slow spin) ----- */}
+      <mesh position={[ox - 2.15, 0.3, oz - 0.2]}>
         <boxGeometry args={[0.2, 0.06, 0.2]} />
         <meshPhongMaterial color={WOOD_DEEP} flatShading />
       </mesh>
-      <mesh position={[ox - 1.85, 0.38, oz - 1.5]}>
+      <mesh position={[ox - 2.15, 0.38, oz - 0.2]}>
         <boxGeometry args={[0.03, 0.2, 0.03]} />
         <meshPhongMaterial color={BRASS} flatShading />
       </mesh>
       {/* Spinning sphere + ring group — hero focal animation */}
-      <group ref={globeRef} position={[ox - 1.85, 0.56, oz - 1.5]}>
+      <group ref={globeRef} position={[ox - 2.15, 0.56, oz - 0.2]}>
         <mesh>
           <sphereGeometry args={[0.16, 8, 8]} />
           <meshPhongMaterial color="#8ba7b8" emissive="#8ba7b8" emissiveIntensity={0.15} flatShading />

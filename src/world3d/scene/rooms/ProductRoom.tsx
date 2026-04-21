@@ -6,7 +6,7 @@ import { useFrame } from '@react-three/fiber';
 import { Color, Mesh, PointLight } from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
 import { ROOM } from '../../constants';
-import { PRODUCT_ROOM_CONTENT } from '../../../data/productRoom';
+import { PRODUCT_ROOM_CONTENT, PROJECT_SHOWCASE_ENTRIES } from '../../../data/productRoom';
 import { useWorldStore } from '../../store/worldStore';
 import { makeRng } from '../../util/rand';
 import type { InteractableData } from '../../store/worldStore';
@@ -438,6 +438,74 @@ export function ProductRoom() {
           <Edges color={edgeColor} lineWidth={1} />
         </mesh>
       ))}
+
+      {/* ----- PROJECT SHOWCASE WALL — 4 product cards on back wall (-Z) ----- */}
+      {/* Mount on the inside face of the -Z wall above the crates. Cards
+          face +Z (toward the player who walks in from the +Z door). */}
+      {(() => {
+        const wallZ = oz - 2.42;
+        const cardY = 2.45;
+        const cardW = 0.74;
+        const cardH = 0.58;
+        const spacing = 0.95;
+        // Even spacing centered on ox: offsets [-1.5, -0.5, 0.5, 1.5] * spacing.
+        const offsets = [-1.5, -0.5, 0.5, 1.5];
+        return PROJECT_SHOWCASE_ENTRIES.map((entry, i) => {
+          const cx = ox + offsets[i] * spacing;
+          const interactable: InteractableData = {
+            title: entry.title,
+            body: entry.pitch,
+            ...(entry.link ? { link: entry.link } : {}),
+          };
+          return (
+            <group key={`showcase-${entry.id}`} position={[cx, cardY, wallZ]}>
+              {/* Card backplate (dark slate) */}
+              <mesh position={[0, 0, 0]}>
+                <boxGeometry args={[cardW, cardH, 0.04]} />
+                <meshPhongMaterial color={SLATE_DEEP} flatShading />
+                <Edges color={edgeColor} lineWidth={1.2} />
+              </mesh>
+              {/* Inner accent panel (colored, slightly inset) */}
+              <mesh position={[0, 0.04, 0.025]}>
+                <boxGeometry args={[cardW * 0.85, cardH * 0.55, 0.012]} />
+                <meshPhongMaterial color={entry.accent} emissive={entry.accent} emissiveIntensity={0.85} flatShading />
+              </mesh>
+              {/* Bottom brand bar */}
+              <mesh position={[0, -cardH / 2 + 0.08, 0.025]}>
+                <boxGeometry args={[cardW * 0.85, 0.06, 0.012]} />
+                <meshPhongMaterial color={entry.accent} emissive={entry.accent} emissiveIntensity={1.4} flatShading />
+              </mesh>
+              {/* Corner LED dot (top-right) */}
+              <mesh position={[cardW / 2 - 0.08, cardH / 2 - 0.08, 0.03]}>
+                <boxGeometry args={[0.05, 0.05, 0.015]} />
+                <meshPhongMaterial color={CYAN} emissive={CYAN} emissiveIntensity={2.5} flatShading />
+              </mesh>
+              {/* Invisible interactable hit box */}
+              <mesh
+                position={[0, 0, 0.05]}
+                visible={false}
+                onUpdate={(m) => {
+                  m.userData.interactable = interactable;
+                }}
+              >
+                <boxGeometry args={[cardW, cardH, 0.04]} />
+                <meshBasicMaterial transparent opacity={0} />
+              </mesh>
+            </group>
+          );
+        });
+      })()}
+
+      {/* ----- SHOWCASE WALL SHELF (brushed-metal beneath the cards) ----- */}
+      <mesh position={[ox, 2.08, oz - 2.4]}>
+        <boxGeometry args={[4.0, 0.04, 0.18]} />
+        <meshPhongMaterial color={METAL_LIGHT} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh position={[ox, 2.05, oz - 2.4]}>
+        <boxGeometry args={[4.0, 0.02, 0.16]} />
+        <meshPhongMaterial color={CYAN_DIM} emissive={CYAN_DIM} emissiveIntensity={0.6} flatShading />
+      </mesh>
 
       {/* ----- CYAN ACCENT POINT LIGHT near server rack ----- */}
       <pointLight

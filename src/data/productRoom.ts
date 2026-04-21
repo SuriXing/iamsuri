@@ -34,3 +34,28 @@ export const PRODUCT_ROOM_CONTENT: ProductRoomContent = {
   },
   showcaseCubeColors: ['#e94560', '#ffd700', '#22c55e'],
 };
+
+/**
+ * Project showcase wall — 4 product cards mounted on the back wall above
+ * the crates. Each card is interactable (title + pitch + link). Designed
+ * to mirror the MyRoom hero-trophy pattern. Suri to fill real pitches later.
+ */
+export interface ProjectShowcaseEntry {
+  id: string;
+  title: string;
+  pitch: string;
+  /** Pastel/neon accent color for the card border. */
+  accent: string;
+  /** Optional external link surfaced in the modal. */
+  link?: string;
+}
+
+const SHOWCASE_PLACEHOLDER_PITCH =
+  '(Project pitch coming soon — Suri is still writing this one up.)';
+
+export const PROJECT_SHOWCASE_ENTRIES: ReadonlyArray<ProjectShowcaseEntry> = [
+  { id: 'problem-solver', title: 'Problem Solver', pitch: SHOWCASE_PLACEHOLDER_PITCH, accent: '#22d3ee', link: 'https://problem-solver.vercel.app' },
+  { id: 'mentor-table',   title: 'Mentor Table',   pitch: SHOWCASE_PLACEHOLDER_PITCH, accent: '#22c55e', link: 'https://mentor-table.vercel.app' },
+  { id: 'debate-coach',   title: 'Debate Coach',   pitch: SHOWCASE_PLACEHOLDER_PITCH, accent: '#facc15' },
+  { id: 'study-stack',    title: 'Study Stack',    pitch: SHOWCASE_PLACEHOLDER_PITCH, accent: '#fb7185' },
+];

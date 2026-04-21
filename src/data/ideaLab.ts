@@ -23,6 +23,30 @@ interface IdeaLabContent {
   };
 }
 
+/**
+ * Concept-art frames mounted on the IdeaLab sketch wall (left -X wall).
+ * Each entry becomes one interactable picture frame in the 3D scene with
+ * a click-to-read modal. Placeholder text — Suri to fill later.
+ */
+export interface ConceptEntry {
+  id: string;
+  title: string;
+  /** Pastel placeholder color for the inner art plate. */
+  artColor: string;
+  /** Multi-paragraph backstory shown in the modal. */
+  backstory: string;
+}
+
+const CONCEPT_PLACEHOLDER =
+  '(Concept story coming soon — Suri is still sketching this one.)';
+
+export const CONCEPT_ENTRIES: ReadonlyArray<ConceptEntry> = [
+  { id: 'ai-study-buddy', title: 'AI Study Buddy', artColor: '#9bb58c', backstory: CONCEPT_PLACEHOLDER },
+  { id: 'debate-trainer', title: 'Debate Trainer', artColor: '#dda0a0', backstory: CONCEPT_PLACEHOLDER },
+  { id: 'visual-math',    title: 'Visual Math',    artColor: '#8ba7b8', backstory: CONCEPT_PLACEHOLDER },
+  { id: 'memory-palace',  title: 'Memory Palace',  artColor: '#d4b48c', backstory: CONCEPT_PLACEHOLDER },
+];
+
 const WHITEBOARD_IDEAS: readonly WhiteboardIdea[] = [
   { id: 'ai-study-buddy', title: 'AI Study Buddy' },
   { id: 'debate-trainer', title: 'Debate Trainer' },

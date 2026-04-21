@@ -7,7 +7,7 @@ import { Group, InstancedMesh, Mesh, Object3D, PointLight } from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
 import { registerCollider, unregisterCollider } from '../colliders';
 import { FLOOR_Y } from '../../constants';
-import { IDEA_LAB_CONTENT } from '../../../data/ideaLab';
+import { IDEA_LAB_CONTENT, CONCEPT_ENTRIES } from '../../../data/ideaLab';
 import { useWorldStore } from '../../store/worldStore';
 import { makeRng } from '../../util/rand';
 import type { InteractableData } from '../../store/worldStore';
@@ -316,6 +316,7 @@ export function IdeaLab() {
     const items = [
       { id: 'il-bench', x: benchX, z: benchZ, hx: 1.3,  hz: 0.5 },
       { id: 'il-stool', x: ox + 1.5, z: oz - 1.2, hx: 0.25, hz: 0.25 },
+      { id: 'il-chest', x: ox - 2.05, z: oz - 0.2, hx: 0.32, hz: 0.4 },
     ] as const;
     for (const it of items) registerCollider({ ...it, playerOnly: true });
     return () => { for (const it of items) unregisterCollider(it.id); };
@@ -696,6 +697,96 @@ export function IdeaLab() {
           />
         </instancedMesh>
       </group>
+
+      {/* ----- SKETCH WALL (left wall, -X) — 4 framed concept-art frames ----- */}
+      {/* Mount on the inside face of the -X wall. Frames face +X (into the
+          room). Z spread evenly across the room. Each frame = outer wood
+          frame + inner pastel art plate + invisible interactable box. */}
+      {(() => {
+        const wallX = ox - 2.42;
+        const frameY = 1.5;
+        const frameW = 0.74;   // along Z
+        const frameH = 0.92;   // along Y
+        const innerW = 0.58;
+        const innerH = 0.74;
+        const spacing = 1.0;
+        const startZ = oz - 1.5;
+        return CONCEPT_ENTRIES.map((entry, i) => {
+          const fz = startZ + i * spacing;
+          const interactable: InteractableData = { title: entry.title, body: entry.backstory };
+          return (
+            <group key={`concept-${entry.id}`} position={[wallX, frameY, fz]} rotation={[0, Math.PI / 2, 0]}>
+              {/* Outer wood frame */}
+              <mesh position={[0, 0, 0]}>
+                <boxGeometry args={[frameW, frameH, 0.05]} />
+                <meshPhongMaterial color={WOOD_DEEP} flatShading />
+                <Edges color={edgeColor} lineWidth={1.2} />
+              </mesh>
+              {/* Inner art plate (pastel) */}
+              <mesh position={[0, 0, 0.028]}>
+                <boxGeometry args={[innerW, innerH, 0.01]} />
+                <meshPhongMaterial color={entry.artColor} emissive={entry.artColor} emissiveIntensity={0.3} flatShading />
+                <Edges color={edgeColor} lineWidth={1} />
+              </mesh>
+              {/* Tiny brass nameplate at bottom */}
+              <mesh position={[0, -frameH / 2 + 0.06, 0.04]}>
+                <boxGeometry args={[innerW * 0.6, 0.06, 0.012]} />
+                <meshPhongMaterial color={COPPER_ACCENT} emissive={COPPER_ACCENT} emissiveIntensity={0.5} flatShading />
+              </mesh>
+              {/* Invisible interactable hit box (slightly forward, full frame size) */}
+              <mesh
+                position={[0, 0, 0.06]}
+                visible={false}
+                onUpdate={(m) => {
+                  m.userData.interactable = interactable;
+                }}
+              >
+                <boxGeometry args={[frameW, frameH, 0.04]} />
+                <meshBasicMaterial transparent opacity={0} />
+              </mesh>
+            </group>
+          );
+        });
+      })()}
+
+      {/* ----- TOOL CHEST (decorative, below sketch wall) ----- */}
+      {(() => {
+        const chestX = ox - 2.05;
+        const chestZ = oz - 0.2;
+        return (
+          <group>
+            {/* Chest body */}
+            <mesh position={[chestX, 0.42, chestZ]}>
+              <boxGeometry args={[0.6, 0.48, 0.78]} />
+              <meshPhongMaterial color={WOOD_MID} flatShading />
+              <Edges color={edgeColor} lineWidth={1.2} />
+            </mesh>
+            {/* Lid trim */}
+            <mesh position={[chestX, 0.67, chestZ]}>
+              <boxGeometry args={[0.62, 0.04, 0.8]} />
+              <meshPhongMaterial color={WOOD_DEEP} flatShading />
+            </mesh>
+            {/* Drawer face */}
+            <mesh position={[chestX + 0.305, 0.32, chestZ]}>
+              <boxGeometry args={[0.02, 0.18, 0.6]} />
+              <meshPhongMaterial color={WOOD_LIGHT} flatShading />
+              <Edges color={edgeColor} lineWidth={1} />
+            </mesh>
+            {/* Drawer handle */}
+            <mesh position={[chestX + 0.32, 0.32, chestZ]}>
+              <boxGeometry args={[0.02, 0.04, 0.16]} />
+              <meshPhongMaterial color={METAL_LIGHT} flatShading />
+            </mesh>
+            {/* Metal corner braces (4 corners on top) */}
+            {[[-0.28, 0.36], [0.28, 0.36], [-0.28, -0.36], [0.28, -0.36]].map(([dx, dz], i) => (
+              <mesh key={`brace-${i}`} position={[chestX + dx, 0.66, chestZ + dz]}>
+                <boxGeometry args={[0.06, 0.06, 0.06]} />
+                <meshPhongMaterial color={METAL_DARK} flatShading />
+              </mesh>
+            ))}
+          </group>
+        );
+      })()}
 
       {/* ----- GOLD ACCENT LIGHT at workbench (room accent per rooms.ts #fbbf24) ----- */}
       <pointLight

@@ -4,11 +4,10 @@ import { ROOMS, ROOM_BY_ID } from '../data/rooms';
 import type { RoomId } from '../data/rooms';
 
 /**
- * Door-state sign for the door the player is currently FACING the most
- * (highest dot product with the FP look vector). One sign at a time —
- * the sign is the visual contract for what U will toggle. Reads:
- *   🔒 red  → locked, U will open it
- *   🚪 teal → open,   U will close it
+ * Permanent door-state sign per room. Always visible above each door
+ * once the player is walking in FP. U targets the door the avatar is
+ * currently facing (handled in InteractionManager) — the signs are the
+ * persistent visual reminder of every door's open/closed state.
  */
 function DoorSign({ id }: { id: RoomId }) {
   const room = ROOM_BY_ID[id];
@@ -29,22 +28,12 @@ function DoorSign({ id }: { id: RoomId }) {
 export function EnterPrompt3D() {
   const viewMode = useWorldStore((s) => s.viewMode);
   const fpActive = useWorldStore((s) => s.fpActive);
-  const fpYaw = useWorldStore((s) => s.fpYaw);
-  const charPos = useWorldStore((s) => s.charPos);
   if (viewMode !== 'overview' || !fpActive) return null;
-
-  // Mirror the U-key logic: pick the door with the highest forward dot.
-  const lookX = -Math.sin(fpYaw);
-  const lookZ = -Math.cos(fpYaw);
-  let target: RoomId | null = null;
-  let bestDot = 0;
-  for (const r of ROOMS) {
-    const dx = r.door.x - charPos.x;
-    const dz = r.door.z - charPos.z;
-    const len = Math.hypot(dx, dz) || 1;
-    const dot = (dx * lookX + dz * lookZ) / len;
-    if (dot > bestDot) { bestDot = dot; target = r.id; }
-  }
-  if (!target) return null;
-  return <DoorSign key={target} id={target} />;
+  return (
+    <>
+      {ROOMS.map((r) => (
+        <DoorSign key={r.id} id={r.id} />
+      ))}
+    </>
+  );
 }

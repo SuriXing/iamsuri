@@ -78,6 +78,7 @@ export function BookRoom() {
   const oz = center.z;
 
   const theme = useWorldStore((s) => s.theme);
+  const seated = useWorldStore((s) => s.seated);
   const edgeColor = theme === 'dark' ? '#0a0a14' : '#5a4830';
 
   // Deterministic dust motes — 5 small floating cubes near the reading nook.
@@ -221,27 +222,34 @@ export function BookRoom() {
         <meshPhongMaterial color={AMBER} emissive={AMBER} emissiveIntensity={0.5} flatShading />
       </mesh>
 
-      {/* ----- BOOKSHELF (single full-width back-wall library) ----- */}
-      <Bookshelf
-        x={shelfX}
-        z={shelfZ}
-        rows={5}
-        booksPerRow={16}
-        width={SHELF_FULL_WIDTH}
-        depth={0.38}
-        rowSpacing={0.46}
-        baseY={0.3}
-        plankColor={WOOD_MID}
-        bookColors={DUSTY_SPINES}
-        backPanelColor={WOOD_DEEP}
-        withFrameBox
-        frameBoxColor={WOOD_DEEP}
-        frameBoxHeight={2.5}
-        frameBoxY={1.35}
-        seed={0xb001a5}
-        heroBookCount={10}
-        edgeColor={edgeColor}
-      />
+      {/* ----- BOOKSHELF (single full-width back-wall library) -----
+          Wrapped in a y-rotated group so the books face -z (toward the
+          player walking in from the door), matching the front-wall
+          flanking shelves. Without this rotation the player sees only
+          the dark frame-box back of the shelf and Suri reported it
+          looked like a flat wall. */}
+      <group position={[shelfX, 0, shelfZ]} rotation={[0, Math.PI, 0]}>
+        <Bookshelf
+          x={0}
+          z={0}
+          rows={5}
+          booksPerRow={16}
+          width={SHELF_FULL_WIDTH}
+          depth={0.38}
+          rowSpacing={0.46}
+          baseY={0.3}
+          plankColor={WOOD_MID}
+          bookColors={DUSTY_SPINES}
+          backPanelColor={WOOD_DEEP}
+          withFrameBox
+          frameBoxColor={WOOD_DEEP}
+          frameBoxHeight={2.5}
+          frameBoxY={1.35}
+          seed={0xb001a5}
+          heroBookCount={10}
+          edgeColor={edgeColor}
+        />
+      </group>
       {/* Blog interactable plane REMOVED — replaced by per-book interactables
           on the new front-wall shelves (see below). */}
 
@@ -637,6 +645,10 @@ export function BookRoom() {
           so it appears to "move with the perspective" as the player
           walks around it. Pointer-events disabled so clicks pass
           through to the chair interactable behind it. */}
+      {/* "Press F to sit" floating sign — hidden once the player IS
+          seated, otherwise the sign sits where the camera is sitting and
+          the letters fill the entire FP view. */}
+      {!seated && (
       <Html
         position={[chairX, 1.55, chairZ + 0.05]}
         center
@@ -663,6 +675,7 @@ export function BookRoom() {
           Press <kbd style={{ background: '#f5c678', color: '#1a1208', padding: '0 5px', borderRadius: '3px', fontWeight: 800 }}>F</kbd> to sit
         </div>
       </Html>
+      )}
 
       {/* "Press F to sit" sign removed — replaced by the small corner
           hint in HUD (BookRoomCornerHint) so it stays out of the scene

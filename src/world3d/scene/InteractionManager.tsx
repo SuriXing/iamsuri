@@ -117,6 +117,14 @@ export function InteractionManager(): null {
       // camera + locks WASD walk). Pressing F again stands up.
       if (s.fpActive && s.viewMode === 'book' && key === 'f') {
         if (s.seated) {
+          // Teleport player off the chair before standing — the chair has
+          // a 0.96×0.86 collider centered on (chairX, chairZ). Without
+          // this, the avatar stands up INSIDE the collider and every WASD
+          // direction is rejected, leaving them stuck.
+          const room = ROOM_BY_ID.book;
+          const seatX = room.center.x - 0.2;
+          const seatZ = room.center.z + 0.3;
+          s.setCharPos(seatX, seatZ - 0.95);
           s.standUp();
           return;
         }
@@ -139,6 +147,12 @@ export function InteractionManager(): null {
       // seated guard that returns early).
       if (s.seated && (key === 'w' || key === 'a' || key === 's' || key === 'd' ||
           key === 'arrowup' || key === 'arrowdown' || key === 'arrowleft' || key === 'arrowright')) {
+        // Teleport off the chair (see F-stand-up branch above for the
+        // collider-trap rationale). Same offset so behaviour matches.
+        const room = ROOM_BY_ID.book;
+        const seatX = room.center.x - 0.2;
+        const seatZ = room.center.z + 0.3;
+        s.setCharPos(seatX, seatZ - 0.95);
         s.standUp();
         return;
       }

@@ -27,8 +27,13 @@ export function EnterPrompt3D() {
     const el = elRef.current;
     if (!el) return;
 
+    // Show whenever the player is in the corridor (viewMode === 'overview')
+    // and a door is nearby. The previous `!s.fpActive` guard hid the sign
+    // the moment the player started walking — first WASD press flips fpActive
+    // to true, so in practice the sign only appeared during the follow-cam
+    // intro and never when the user actually approached a door on foot.
     const showable =
-      s.viewMode === 'overview' && !s.fpActive && s.nearbyRoom !== null;
+      s.viewMode === 'overview' && s.nearbyRoom !== null;
     if (!showable) {
       if (el.classList.contains('active')) {
         el.classList.remove('active');

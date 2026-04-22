@@ -41,7 +41,10 @@ export function EnterPrompt3D() {
     if (id === null) return;
     const room = ROOM_BY_ID[id];
     if (groupRef.current) {
-      groupRef.current.position.set(room.door.x, 2.4, room.door.z);
+      // Float well ABOVE the doorframe (doors are ~2m tall) so the sign
+      // is never occluded by the door lintel. Was y=2.4 which sat right
+      // on the frame and got hidden as the player walked up to the door.
+      groupRef.current.position.set(room.door.x, 3.6, room.door.z);
     }
 
     const locked = !s.unlockedDoors.has(id);

@@ -16,9 +16,11 @@ const ROOM_NUMBER_KEYS: Record<string, RoomId> = {
 };
 // Measured against each room's DOOR position, not the room center.
 // The door is the only point the character can physically reach from the
-// hallway (walls block them from the room center). 1.6 is generous enough
-// to cover the corridor in front of each door without overlapping siblings.
-const PROXIMITY_THRESHOLD = 1.6;
+// hallway (walls block them from the room center). Bumped 1.6 → 3.2 so
+// the floating "Press U to open/close" sign appears well before the player
+// crosses the auto-enter threshold — otherwise the sign only flashed for
+// a fraction of a second and most users never saw it.
+const PROXIMITY_THRESHOLD = 3.2;
 // Auto-enter: triggered when the player has CROSSED the door plane into
 // the room interior. We detect this with a door-normal dot product
 // (player−door)·(roomCenter−door) > 0, plus a minimum inside-distance to

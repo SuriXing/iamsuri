@@ -225,9 +225,9 @@ export function BookRoom() {
       {/* ----- BOOKSHELF (single full-width back-wall library) -----
           Wrapped in a y-rotated group so the books face -z (toward the
           player walking in from the door), matching the front-wall
-          flanking shelves. Without this rotation the player sees only
-          the dark frame-box back of the shelf and Suri reported it
-          looked like a flat wall. */}
+          flanking shelves. withFrameBox removed — the solid wood box
+          was hiding the books behind a flat dark panel from the
+          player's POV. Now matches the flanking-shelf style exactly. */}
       <group position={[shelfX, 0, shelfZ]} rotation={[0, Math.PI, 0]}>
         <Bookshelf
           x={0}
@@ -241,10 +241,6 @@ export function BookRoom() {
           plankColor={WOOD_MID}
           bookColors={DUSTY_SPINES}
           backPanelColor={WOOD_DEEP}
-          withFrameBox
-          frameBoxColor={WOOD_DEEP}
-          frameBoxHeight={2.5}
-          frameBoxY={1.35}
           seed={0xb001a5}
           heroBookCount={10}
           edgeColor={edgeColor}

@@ -160,27 +160,28 @@
   display: none;
   background: rgba(20, 23, 34, 0.92);
   color: #ffd700;
-  border: 2px solid rgba(255, 215, 0, 0.6);
-  padding: 14px 24px;
-  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.55);
+  padding: 5px 10px;
+  border-radius: 5px;
   font-family: 'Courier New', monospace;
-  font-size: 1.05rem;
-  letter-spacing: 1.5px;
+  font-size: 0.7rem;
+  letter-spacing: 1px;
   pointer-events: none;
   backdrop-filter: blur(6px);
-  box-shadow: 0 0 18px rgba(255, 215, 0, 0.3);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.22);
   white-space: nowrap;
 }
 .enter-prompt.active { display: block; }
 .enter-prompt kbd {
   background: rgba(255, 215, 0, 0.2);
   border: 1px solid rgba(255, 215, 0, 0.6);
-  padding: 2px 8px;
+  padding: 1px 5px;
   border-radius: 3px;
   color: #ffffff;
-  margin: 0 4px;
+  margin: 0 3px;
   font-family: inherit;
   font-weight: bold;
+  font-size: 0.68rem;
 }
 .enter-prompt.locked {
   color: #ff7080;

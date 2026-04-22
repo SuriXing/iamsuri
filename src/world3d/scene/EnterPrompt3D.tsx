@@ -32,10 +32,12 @@ function DoorSign({ id }: { id: RoomId }) {
 
 export function EnterPrompt3D() {
   const viewMode = useWorldStore((s) => s.viewMode);
-  // Hide ALL signs once the player is inside any room — they're back to
-  // the corridor view soon enough, no need to render 4 floating tags
-  // through the walls of the room they're standing in.
-  if (viewMode !== 'overview') return null;
+  const fpActive = useWorldStore((s) => s.fpActive);
+  // Only show the door labels once the player is actually walking the
+  // corridor in first-person. The wide top-down overview (before any
+  // WASD press) is already information-rich; layering 4 banners on top
+  // of it just clutters the bird's-eye composition.
+  if (viewMode !== 'overview' || !fpActive) return null;
   return (
     <>
       {ROOMS.map((r) => (

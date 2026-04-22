@@ -7,8 +7,8 @@ export function BottomHint() {
   if (viewMode === 'overview') {
     return (
       <div id="hint">
-        WASD / arrows to walk &middot; walk to a door, press <b>U</b> to open
-        &middot; drag to orbit
+        WASD / arrows to walk &middot; walk to a door, press <b>U</b> to
+        open / close &middot; drag to orbit
       </div>
     );
   }

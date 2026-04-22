@@ -50,8 +50,13 @@ export function EnterPrompt3D() {
     if (nameRef.current) nameRef.current.textContent = room.label;
 
     if (!el.classList.contains('active')) el.classList.add('active');
-    if (locked) el.classList.add('locked');
-    else el.classList.remove('locked');
+    if (locked) {
+      el.classList.add('locked');
+      el.classList.remove('unlocked');
+    } else {
+      el.classList.remove('locked');
+      el.classList.add('unlocked');
+    }
   });
 
   return (

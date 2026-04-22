@@ -194,6 +194,20 @@
   background: rgba(255, 80, 100, 0.25);
   border-color: rgba(255, 80, 100, 0.8);
 }
+/* Unlocked = door is currently open. Tinted teal/green so the user
+ * reads "this is a different action than opening" at a glance. */
+.enter-prompt.unlocked {
+  color: #6eecc8;
+  border-color: rgba(110, 236, 200, 0.6);
+  box-shadow: 0 0 18px rgba(110, 236, 200, 0.35);
+}
+.enter-prompt.unlocked::before {
+  content: '🚪 ';
+}
+.enter-prompt.unlocked kbd {
+  background: rgba(110, 236, 200, 0.22);
+  border-color: rgba(110, 236, 200, 0.7);
+}
 
 /* ── Theme toggle + view switcher ─────────────────────── */
 #theme-toggle {

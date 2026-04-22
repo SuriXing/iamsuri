@@ -15,12 +15,9 @@ const ROOM_NUMBER_KEYS: Record<string, RoomId> = {
   '4': 'idealab',
 };
 // Measured against each room's DOOR position, not the room center.
-// The door is the only point the character can physically reach from the
-// hallway (walls block them from the room center). Bumped 1.6 → 3.2 so
-// the floating "Press U to open/close" sign appears well before the player
-// crosses the auto-enter threshold — otherwise the sign only flashed for
-// a fraction of a second and most users never saw it.
-const PROXIMITY_THRESHOLD = 3.2;
+// 2.0m gives the floating sign a usable visibility window before the
+// player crosses the door plane and auto-enter fires.
+const PROXIMITY_THRESHOLD = 2.0;
 // Auto-enter: triggered when the player has CROSSED the door plane into
 // the room interior. We detect this with a door-normal dot product
 // (player−door)·(roomCenter−door) > 0, plus a minimum inside-distance to
@@ -183,6 +180,13 @@ export function InteractionManager(): null {
           fpTransitionRef.pending = { yaw: fpYaw };
           // fall through so the move-key still registers the same frame
         }
+      }
+
+      // U / E / number keys: must work in BOTH follow-cam (pre-walk) and
+      // first-person modes. Previously these were nested inside the
+      // !fpActive block above, so the moment a user pressed W to start
+      // walking (which flips fpActive=true), U stopped doing anything.
+      if (s.viewMode === 'overview') {
         // U: toggle the nearby door — unlock if locked, close if unlocked.
         if (key === 'u' && s.nearbyRoom) {
           if (s.unlockedDoors.has(s.nearbyRoom)) {

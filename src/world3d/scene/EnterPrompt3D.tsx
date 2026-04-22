@@ -1,81 +1,46 @@
-import { useRef } from 'react';
 import { Html } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
 import { useWorldStore } from '../store/worldStore';
-import { ROOM_BY_ID } from '../data/rooms';
+import { ROOMS, ROOM_BY_ID } from '../data/rooms';
+import type { RoomId } from '../data/rooms';
 
 /**
- * Floating door open/close hint anchored to the nearby door. Shows
- * "Press U to open <Room>" when the door is locked, and "Press U to
- * close <Room>" when the door is unlocked. NEVER shows the "Press E
- * to enter" message — per user request, the room-entry hint was
- * removed.
+ * One permanent door-state sign per room, anchored above each doorframe.
+ * The sign always reads either "Press U to open <Room>" (locked) or
+ * "Press U to close <Room>" (unlocked). Color cues:
+ *   🔒 red  → locked, U will open it
+ *   🚪 teal → open, U will close it
  *
- * The DOM is always mounted (drei `<Html>`) — the `.active` class is
- * toggled imperatively in `useFrame` to mirror legacy behaviour without
- * causing React re-renders every frame.
+ * Using individual <DoorSign> components subscribed to the per-room
+ * unlocked-state means each sign re-renders only when its own door
+ * toggles, not on every player movement frame.
  */
-export function EnterPrompt3D() {
-  const groupRef = useRef<THREE.Group>(null);
-  const elRef = useRef<HTMLDivElement>(null);
-  const verbRef = useRef<HTMLSpanElement>(null);
-  const nameRef = useRef<HTMLSpanElement>(null);
-
-  useFrame(() => {
-    const s = useWorldStore.getState();
-    const el = elRef.current;
-    if (!el) return;
-
-    // Show whenever the player is in the corridor (viewMode === 'overview')
-    // and a door is nearby. The previous `!s.fpActive` guard hid the sign
-    // the moment the player started walking — first WASD press flips fpActive
-    // to true, so in practice the sign only appeared during the follow-cam
-    // intro and never when the user actually approached a door on foot.
-    const showable =
-      s.viewMode === 'overview' && s.nearbyRoom !== null;
-    if (!showable) {
-      if (el.classList.contains('active')) {
-        el.classList.remove('active');
-        el.classList.remove('locked');
-      }
-      return;
-    }
-
-    const id = s.nearbyRoom;
-    if (id === null) return;
-    const room = ROOM_BY_ID[id];
-    if (groupRef.current) {
-      // Sit right on top of the doorframe lintel (~2.2m). 2.7 puts the
-      // sign anchor just above the door so it visually "labels" that
-      // exact door rather than floating off in the sky.
-      groupRef.current.position.set(room.door.x, 2.7, room.door.z);
-    }
-
-    const locked = !s.unlockedDoors.has(id);
-    // Both states use the U key — toggle.
-    if (verbRef.current) verbRef.current.textContent = locked ? 'open' : 'close';
-    if (nameRef.current) nameRef.current.textContent = room.label;
-
-    if (!el.classList.contains('active')) el.classList.add('active');
-    if (locked) {
-      el.classList.add('locked');
-      el.classList.remove('unlocked');
-    } else {
-      el.classList.remove('locked');
-      el.classList.add('unlocked');
-    }
-  });
-
+function DoorSign({ id }: { id: RoomId }) {
+  const room = ROOM_BY_ID[id];
+  const unlocked = useWorldStore((s) => s.unlockedDoors.has(id));
+  const cls = unlocked ? 'enter-prompt active unlocked' : 'enter-prompt active locked';
+  const verb = unlocked ? 'close' : 'open';
   return (
-    <group ref={groupRef} position={[0, 3, 0]}>
+    <group position={[room.door.x, 2.7, room.door.z]}>
       <Html center zIndexRange={[55, 0]} pointerEvents="none">
-        <div id="enter-prompt" ref={elRef} className="enter-prompt">
-          Press <kbd>U</kbd> to{' '}
-          <span id="enter-prompt-verb" ref={verbRef}>open</span>{' '}
-          <span id="enter-prompt-name" ref={nameRef}>Room</span>
+        <div className={cls}>
+          Press <kbd>U</kbd> to {verb} {room.label}
         </div>
       </Html>
     </group>
+  );
+}
+
+export function EnterPrompt3D() {
+  const viewMode = useWorldStore((s) => s.viewMode);
+  // Hide ALL signs once the player is inside any room — they're back to
+  // the corridor view soon enough, no need to render 4 floating tags
+  // through the walls of the room they're standing in.
+  if (viewMode !== 'overview') return null;
+  return (
+    <>
+      {ROOMS.map((r) => (
+        <DoorSign key={r.id} id={r.id} />
+      ))}
+    </>
   );
 }

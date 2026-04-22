@@ -28,18 +28,12 @@ const PROXIMITY_THRESHOLD = 2.0;
 // little past the door plane, AND less than AUTO_EXIT_DIST below so the
 // two regions can't both fire on the same straight walk.
 const AUTO_ENTER_INSIDE = 0.4;
-// Auto-unlock distance — when the character walks within this radius of
-// a door we silently unlock it so they can keep walking through. Removes
-// the "press U to unlock then E to enter" friction; doors still render
-// their lock state and can be re-locked, but proximity is enough to open.
-const AUTO_UNLOCK_DIST = 1.4;
-// When the player explicitly U-closes a door, we record it here so the
-// auto-unlock proximity check below stops re-opening it on the very next
-// frame (which made U feel broken — door would visually close then snap
-// back open). The flag is cleared once the player walks beyond
-// USER_LOCK_RESET_DIST so re-approach still auto-opens.
+// Auto-unlock REMOVED — it raced the U-close action and re-opened
+// doors the player had just closed. Door state is now fully under
+// player control via U. The userClosedDoors set is kept as an empty
+// vestige so the U handler below still compiles (the .add()/.delete()
+// calls become no-ops).
 const userClosedDoors = new Set<RoomId>();
-const USER_LOCK_RESET_DIST = 2.2;
 // Auto-exit (FP mode): when the character walks past the doorway INTO
 // the hallway from inside a room, drop them back to overview/follow mode.
 // Measured against the room's door position. Larger than AUTO_ENTER_DIST
@@ -319,21 +313,12 @@ export function InteractionManager(): null {
       followCamYawHintRef.current = null;
     }
 
-    // Auto-unlock: any door the character walks up to silently unlocks,
-    // UNLESS the player just U-closed it — in that case we wait until
-    // they walk past USER_LOCK_RESET_DIST before allowing re-auto-open.
-    if (s.introPhase === 'follow' && nearest && nearestDist < AUTO_UNLOCK_DIST && !s.unlockedDoors.has(nearest) && !userClosedDoors.has(nearest)) {
-      s.unlockDoor(nearest);
-    }
-    // Reset the user-closed flag for any door the player has walked away
-    // from — re-approach will then auto-open as normal.
-    if (userClosedDoors.size > 0) {
-      for (const id of userClosedDoors) {
-        const r = ROOM_BY_ID[id];
-        const d = Math.hypot(s.charPos.x - r.door.x, s.charPos.z - r.door.z);
-        if (d > USER_LOCK_RESET_DIST) userClosedDoors.delete(id);
-      }
-    }
+    // Auto-unlock REMOVED: it raced the U-close action — when the player
+    // stood at the doorway and pressed U to close, the very next frame's
+    // proximity check re-opened the door before they could walk away. The
+    // floating "Press U to open" sign solves discoverability without the
+    // race. userClosedDoors set kept as a no-op vestige so the U handler
+    // above still compiles (cheap; can be removed later in a cleanup pass).
 
     // Auto-enter: if character is well INSIDE a room (closer to the
     // room center than the doorway, AND past the auto-enter threshold),

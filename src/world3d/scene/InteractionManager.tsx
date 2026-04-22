@@ -187,15 +187,28 @@ export function InteractionManager(): null {
       // !fpActive block above, so the moment a user pressed W to start
       // walking (which flips fpActive=true), U stopped doing anything.
       if (s.viewMode === 'overview') {
-        // U: toggle the nearby door — unlock if locked, close if unlocked.
-        if (key === 'u' && s.nearbyRoom) {
-          if (s.unlockedDoors.has(s.nearbyRoom)) {
-            s.lockDoor(s.nearbyRoom);
-            // Block proximity auto-unlock until the player walks away.
-            userClosedDoors.add(s.nearbyRoom);
-          } else {
-            s.unlockDoor(s.nearbyRoom);
-            userClosedDoors.delete(s.nearbyRoom);
+        // U: toggle the door on the wall the player is currently closest
+        // to. We DON'T gate on PROXIMITY_THRESHOLD here — even if the
+        // player is mid-corridor, U should open whichever door their
+        // current position is nearest. nearbyRoom (gated by 2m) only
+        // drives the floating sign; the key handler ignores that gate.
+        if (key === 'u') {
+          let target: RoomId | null = null;
+          let best = Infinity;
+          for (const r of ROOMS) {
+            const dx = s.charPos.x - r.door.x;
+            const dz = s.charPos.z - r.door.z;
+            const d = Math.hypot(dx, dz);
+            if (d < best) { best = d; target = r.id; }
+          }
+          if (target) {
+            if (s.unlockedDoors.has(target)) {
+              s.lockDoor(target);
+              userClosedDoors.add(target);
+            } else {
+              s.unlockDoor(target);
+              userClosedDoors.delete(target);
+            }
           }
           return;
         }

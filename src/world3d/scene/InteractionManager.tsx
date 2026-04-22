@@ -200,14 +200,27 @@ export function InteractionManager(): null {
         // player is mid-corridor, U should open whichever door their
         // current position is nearest. nearbyRoom (gated by 2m) only
         // drives the floating sign; the key handler ignores that gate.
+        // U: toggle the door the player is currently FACING the most.
+        // Previous behaviour ("nearest door") was ambiguous in the
+        // central hallway — two doors were almost equidistant and the
+        // player couldn't tell which one U would target. New rule: pick
+        // the door whose direction-from-player has the highest dot
+        // product with the camera look vector. The look vector follows
+        // FP convention: look = (-sin(fpYaw), -cos(fpYaw)). Falls back
+        // to char-facing in third-person mode (look pre-FP). Door must
+        // be IN FRONT of the camera (dot > 0) to be eligible.
         if (key === 'u') {
+          const yaw = s.fpActive ? s.fpYaw : s.charFacing;
+          const lookX = -Math.sin(yaw);
+          const lookZ = -Math.cos(yaw);
           let target: RoomId | null = null;
-          let best = Infinity;
+          let bestDot = 0;
           for (const r of ROOMS) {
-            const dx = s.charPos.x - r.door.x;
-            const dz = s.charPos.z - r.door.z;
-            const d = Math.hypot(dx, dz);
-            if (d < best) { best = d; target = r.id; }
+            const dx = r.door.x - s.charPos.x;
+            const dz = r.door.z - s.charPos.z;
+            const len = Math.hypot(dx, dz) || 1;
+            const dot = (dx * lookX + dz * lookZ) / len;
+            if (dot > bestDot) { bestDot = dot; target = r.id; }
           }
           if (target) {
             if (s.unlockedDoors.has(target)) {

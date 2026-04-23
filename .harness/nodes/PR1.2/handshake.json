@@ -1,0 +1,10 @@
+{
+  "node": "PR1.2",
+  "verdict": "PASS",
+  "summary": "Added architectural shell: 8 floor planks + entry rug w/ cyan border, baseboards on all 4 walls, METAL top trim/cove, and recessed ceiling cove panel with static emissive inner panel.",
+  "artifacts": [
+    {"path": "src/world3d/scene/rooms/ProductRoom.tsx", "kind": "code", "summary": "added planks/rug/baseboards/cove/ceiling-cove"}
+  ],
+  "build_ok": true,
+  "interactable_count_preserved": true
+}

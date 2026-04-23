@@ -193,11 +193,100 @@ export function ProductRoom() {
 
   return (
     <group>
-      {/* ----- FLOOR STAGE — single rectangular slab ----- */}
+      {/* ----- FLOOR STAGE — base slab (kept as backing) + 8 planks ----- */}
       <mesh position={[ox, 0.18, oz]}>
         <boxGeometry args={[ROOM, 0.02, ROOM]} />
-        <meshPhongMaterial color={bandTints[0]} flatShading />
+        <meshPhongMaterial color={SLATE_DEEP} flatShading />
+      </mesh>
+      {/* 8 planks running along z-axis (player-facing direction), alternating tints */}
+      {Array.from({ length: 8 }, (_, i) => {
+        const px = ox + (i - 3.5) * 0.6;
+        const tint = bandTints[i % 3];
+        return (
+          <mesh key={`plank-${i}`} position={[px, 0.215, oz]}>
+            <boxGeometry args={[0.58, 0.04, ROOM - 0.04]} />
+            <meshPhongMaterial color={tint} flatShading />
+            <Edges color={edgeColor} lineWidth={1} />
+          </mesh>
+        );
+      })}
+      {/* Entry rug at door (-z side) */}
+      <mesh position={[ox, 0.255, oz - 1.6]}>
+        <boxGeometry args={[2.0, 0.005, 1.2]} />
+        <meshPhongMaterial color={SLATE_LIGHT} flatShading />
+      </mesh>
+      {/* Rug border (4 thin strips inset 0.04m, slightly above to avoid z-fight) */}
+      <mesh position={[ox, 0.26, oz - 1.6 - 0.58]}>
+        <boxGeometry args={[1.92, 0.006, 0.04]} />
+        <meshPhongMaterial color={CYAN_DIM} emissive={CYAN_DIM} emissiveIntensity={0.6} flatShading />
+      </mesh>
+      <mesh position={[ox, 0.26, oz - 1.6 + 0.58]}>
+        <boxGeometry args={[1.92, 0.006, 0.04]} />
+        <meshPhongMaterial color={CYAN_DIM} emissive={CYAN_DIM} emissiveIntensity={0.6} flatShading />
+      </mesh>
+      <mesh position={[ox - 0.98, 0.26, oz - 1.6]}>
+        <boxGeometry args={[0.04, 0.006, 1.12]} />
+        <meshPhongMaterial color={CYAN_DIM} emissive={CYAN_DIM} emissiveIntensity={0.6} flatShading />
+      </mesh>
+      <mesh position={[ox + 0.98, 0.26, oz - 1.6]}>
+        <boxGeometry args={[0.04, 0.006, 1.12]} />
+        <meshPhongMaterial color={CYAN_DIM} emissive={CYAN_DIM} emissiveIntensity={0.6} flatShading />
+      </mesh>
+
+      {/* ----- BASEBOARDS — all 4 walls, inside face at y=0.25 ----- */}
+      <mesh position={[ox, 0.25, oz - 2.45]}>
+        <boxGeometry args={[ROOM, 0.12, 0.05]} />
+        <meshPhongMaterial color={SLATE_DEEP} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh position={[ox, 0.25, oz + 2.45]}>
+        <boxGeometry args={[ROOM, 0.12, 0.05]} />
+        <meshPhongMaterial color={SLATE_DEEP} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh position={[ox - 2.45, 0.25, oz]}>
+        <boxGeometry args={[0.05, 0.12, ROOM]} />
+        <meshPhongMaterial color={SLATE_DEEP} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh position={[ox + 2.45, 0.25, oz]}>
+        <boxGeometry args={[0.05, 0.12, ROOM]} />
+        <meshPhongMaterial color={SLATE_DEEP} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+
+      {/* ----- TOP TRIM / COVE — all 4 walls at y=2.85, METAL ----- */}
+      <mesh position={[ox, 2.85, oz - 2.45]}>
+        <boxGeometry args={[ROOM, 0.12, 0.05]} />
+        <meshPhongMaterial color={METAL} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh position={[ox, 2.85, oz + 2.45]}>
+        <boxGeometry args={[ROOM, 0.12, 0.05]} />
+        <meshPhongMaterial color={METAL} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh position={[ox - 2.45, 2.85, oz]}>
+        <boxGeometry args={[0.05, 0.12, ROOM]} />
+        <meshPhongMaterial color={METAL} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      <mesh position={[ox + 2.45, 2.85, oz]}>
+        <boxGeometry args={[0.05, 0.12, ROOM]} />
+        <meshPhongMaterial color={METAL} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+
+      {/* ----- CEILING RECESSED LIGHT COVE PANEL ----- */}
+      <mesh position={[ox, 2.92, oz]}>
+        <boxGeometry args={[3.0, 0.04, 3.0]} />
+        <meshPhongMaterial color={SLATE_DEEP} flatShading />
+        <Edges color={edgeColor} lineWidth={1} />
+      </mesh>
+      {/* Inset white-cool inner panel (static emissive — no pulse) */}
+      <mesh position={[ox, 2.895, oz]}>
+        <boxGeometry args={[2.9, 0.02, 2.9]} />
+        <meshPhongMaterial color={WHITE_COOL} emissive={WHITE_COOL} emissiveIntensity={0.4} flatShading />
       </mesh>
 
       {/* ----- DESK (top + trim + tapered legs) ----- */}

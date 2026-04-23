@@ -1,16 +1,14 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { registerCollider, unregisterCollider } from '../colliders';
 import { Edges, Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 // Named imports — namespace import defeats tree-shaking of three.
-import { Mesh, PointLight } from 'three';
+import { Mesh } from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
 import { ROOM } from '../../constants';
 import { PRODUCT_ROOM_CONTENT, PROJECT_SHOWCASE_ENTRIES } from '../../../data/productRoom';
 import { useWorldStore } from '../../store/worldStore';
 import type { InteractableData } from '../../store/worldStore';
-
-const PRODUCT_COLORS: ReadonlyArray<string> = PRODUCT_ROOM_CONTENT.showcaseCubeColors;
 
 const PROBLEM_SOLVER: InteractableData = PRODUCT_ROOM_CONTENT.dialogues.problemSolver;
 const MENTOR_TABLE: InteractableData = PRODUCT_ROOM_CONTENT.dialogues.mentorTable;
@@ -25,7 +23,6 @@ const WHITE_COOL = '#e6ecf2';
 const CYAN = '#22d3ee';
 const CYAN_DIM = '#0ea5b7';
 const CABLE_BLACK = '#0f172a';
-const RACK_BLACK = '#14181f';
 const WOOD_WARM = '#8a6f4d';
 
 // PR1.7: cool-palette overrides for warm data accents (D3). Data file
@@ -36,36 +33,15 @@ const COOL_ACCENT_OVERRIDE: Record<string, string> = {
   '#fb7185': '#c4b5fd', // coral pink → lavender
 };
 
-// Desk leg positions (tapered via two stacked chunks).
-const DESK_LEGS: ReadonlyArray<readonly [number, number]> = [
-  [-0.9, -0.35],
-  [0.9, -0.35],
-  [-0.9, 0.35],
-  [0.9, 0.35],
-];
-
 // ---- Micro-anim constants (module-scope = zero per-frame alloc) ----
-const FAN_SPEED = 6.0;
 // PR1.8 hero focal: rotating logo cube spin rate (rad/s, ≤0.5).
 const HERO_CUBE_SPIN_SPEED = 0.4;
 
 // PR1.4: 3 explicit slate plank tiers (BookRoom-style discrete pattern).
 const PLANK_TIERS: ReadonlyArray<string> = ['#1e293b', '#334155', '#475569'];
 
-// Server rack LED layout: [dy, dx, color] relative to rack top.
-const RACK_LEDS: ReadonlyArray<readonly [number, number, string]> = [
-  [0.0, 0.0, '#22d3ee'],
-  [0.08, 0.0, '#22d3ee'],
-  [0.0, -0.18, '#ef4444'],
-  [0.08, -0.18, '#22c55e'],
-  [0.0, -0.36, '#22c55e'],
-  [0.08, -0.36, '#facc15'],
-];
-
-// PR1.7: 6 unified project stations (D6). Order = 2 dialogue-rich +
-// 4 PROJECT_SHOWCASE_ENTRIES. Variants give per-station silhouette
-// variation (D1) — vary plinth h/w, monitor w/h, top material, optional
-// stacked second screen.
+// PR1.11 (D1): per-station silhouette variation — 4 stations now
+// (one per PROJECT_SHOWCASE_ENTRIES entry, no duplicates).
 interface StationVariant {
   plinthH: number;
   plinthW: number;
@@ -79,8 +55,6 @@ const STATION_VARIANTS: ReadonlyArray<StationVariant> = [
   { plinthH: 0.95, plinthW: 0.62, monitorW: 0.55, monitorH: 0.70, top: 'wood' },
   { plinthH: 0.78, plinthW: 0.74, monitorW: 0.85, monitorH: 0.55, top: 'slate' },
   { plinthH: 0.92, plinthW: 0.70, monitorW: 0.85, monitorH: 0.40, top: 'metal', stacked: true },
-  { plinthH: 0.82, plinthW: 0.70, monitorW: 0.92, monitorH: 0.46, top: 'slate' },
-  { plinthH: 0.90, plinthW: 0.66, monitorW: 0.70, monitorH: 0.56, top: 'wood' },
 ];
 
 // PR1.7: shallow V z-stagger (D4). Outer stations toward door (smaller z),
@@ -100,31 +74,38 @@ interface StationConfig {
   accent: string;
 }
 
+// PR1.11 (PM-1 fix): STATIONS derives PURELY from PROJECT_SHOWCASE_ENTRIES
+// (no prepended dialogue stations). For entries that match the legacy
+// dialogue ids, hydrate body/link from the canonical
+// PRODUCT_ROOM_CONTENT.dialogues so the rich pitch is preserved.
 function buildStations(): ReadonlyArray<StationConfig> {
-  const dialogue: StationConfig[] = [
-    {
-      id: 'station-problem-solver-rich',
-      title: PROBLEM_SOLVER.title,
-      body: PROBLEM_SOLVER.body,
-      link: PROBLEM_SOLVER.link,
-      accent: '#22d3ee',
-    },
-    {
-      id: 'station-mentor-table-rich',
-      title: MENTOR_TABLE.title,
-      body: MENTOR_TABLE.body,
-      link: MENTOR_TABLE.link,
-      accent: '#22c55e',
-    },
-  ];
-  const fromEntries: StationConfig[] = PROJECT_SHOWCASE_ENTRIES.map((e) => ({
-    id: `station-${e.id}`,
-    title: e.title,
-    body: e.pitch,
-    link: e.link,
-    accent: COOL_ACCENT_OVERRIDE[e.accent] ?? e.accent,
-  }));
-  return [...dialogue, ...fromEntries];
+  return PROJECT_SHOWCASE_ENTRIES.map((e) => {
+    if (e.id === 'problem-solver') {
+      return {
+        id: `station-${e.id}`,
+        title: PROBLEM_SOLVER.title,
+        body: PROBLEM_SOLVER.body,
+        ...(PROBLEM_SOLVER.link ? { link: PROBLEM_SOLVER.link } : {}),
+        accent: e.accent,
+      };
+    }
+    if (e.id === 'mentor-table') {
+      return {
+        id: `station-${e.id}`,
+        title: MENTOR_TABLE.title,
+        body: MENTOR_TABLE.body,
+        ...(MENTOR_TABLE.link ? { link: MENTOR_TABLE.link } : {}),
+        accent: e.accent,
+      };
+    }
+    return {
+      id: `station-${e.id}`,
+      title: e.title,
+      body: e.pitch,
+      ...(e.link ? { link: e.link } : {}),
+      accent: COOL_ACCENT_OVERRIDE[e.accent] ?? e.accent,
+    };
+  });
 }
 
 const STATIONS: ReadonlyArray<StationConfig> = buildStations();
@@ -144,51 +125,38 @@ export function ProductRoom() {
   const theme = useWorldStore((s) => s.theme);
   const edgeColor = theme === 'dark' ? '#0a0a14' : '#5a4830';
 
-  // Refs for surviving animations (fan + rack LEDs + hero cube).
-  const fanRef = useRef<Mesh>(null);
-  const rackLedRefs = useRef<Array<Mesh | null>>([]);
-  const accentLightRef = useRef<PointLight>(null);
   // PR1.8 hero focal: rotating logo cube inside glass display case.
   const heroCubeRef = useRef<Mesh>(null);
 
-  // PR1.8: gate idle rotation on prefers-reduced-motion. Mirrors the
-  // BookRoom globe intent — when user opts out of motion, hero cube
-  // stays at its static angle (no useFrame work for it).
-  const prefersReducedMotion = useMemo(() => {
+  // PR1.11 (F-R-4 fix): subscribe to prefers-reduced-motion changes
+  // instead of reading once via useMemo. User toggling OS setting
+  // mid-session now stops/resumes hero rotation without a remount.
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return false;
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
 
   useFrame(({ clock }) => {
     const vm = useWorldStore.getState().viewMode;
     if (vm !== 'overview' && vm !== 'product') return;
-    const t = clock.getElapsedTime();
-    const fan = fanRef.current;
-    if (fan) fan.rotation.z = t * FAN_SPEED;
     // PR1.8 hero focal: Y-axis rotation only, gated on reduced-motion.
     // No emissiveIntensity / scale changes per spec.
     if (!prefersReducedMotion) {
       const cube = heroCubeRef.current;
-      if (cube) cube.rotation.y = t * HERO_CUBE_SPIN_SPEED;
+      if (cube) cube.rotation.y = clock.getElapsedTime() * HERO_CUBE_SPIN_SPEED;
     }
   });
 
-  // Desk geometry.
-  const deskX = ox;
-  const deskZ = oz - 0.3;
-  const deskY = 0.76;
-
-  // Server rack location (left back).
-  const rackX = ox - 1.55;
-  const rackZ = oz - 1.6;
-
-  // Crate stack location (right back).
-  const crateX = ox + 1.55;
-  const crateZ = oz - 1.55;
-
-  // Furniture colliders (player-only). PR1.7: station colliders now
-  // computed from STATIONS length + STATION_SPAN with z-stagger; hx
-  // widened 0.4 → 0.45 to cover the wider monitor bezel (F1).
+  // Furniture colliders (player-only). PR1.11: legacy desk/rack/crate
+  // colliders deleted along with their geometry. Only station + hero
+  // colliders remain.
   useEffect(() => {
     const stationItems = STATIONS.map((_, i) => ({
       id: `pr-station-${i}`,
@@ -198,18 +166,14 @@ export function ProductRoom() {
       hz: 0.3,
     }));
     const items = [
-      { id: 'pr-desk',  x: deskX,  z: deskZ,  hx: 0.85, hz: 0.45 },
-      { id: 'pr-rack',  x: rackX,  z: rackZ,  hx: 0.4,  hz: 0.4  },
-      { id: 'pr-crate', x: crateX, z: crateZ, hx: 0.45, hz: 0.45 },
       // PR1.8: hero focal pedestal — playerOnly so avatar bounces
       // off the glass case but camera wall-clip ignores it.
-      // registerCollider invocation is shared with siblings below.
       { id: 'pr-hero',  x: ox,     z: oz + 2.05, hx: 0.30, hz: 0.30 },
       ...stationItems,
     ];
     for (const it of items) registerCollider({ ...it, playerOnly: true });
     return () => { for (const it of items) unregisterCollider(it.id); };
-  }, [deskX, deskZ, rackX, rackZ, crateX, crateZ, ox, oz]);
+  }, [ox, oz]);
 
   return (
     <group>
@@ -229,24 +193,25 @@ export function ProductRoom() {
           </mesh>
         );
       })}
-      {/* Entry rug at door (-z side) */}
+      {/* Entry rug at door (-z side). PR1.11 (F-R-4 fix): borders lifted
+          to y=0.27 (1cm above rug top 0.2575) to clear sub-cm overlap. */}
       <mesh position={[ox, 0.255, oz - 1.6]}>
         <boxGeometry args={[2.0, 0.005, 1.2]} />
         <meshPhongMaterial color={SLATE_LIGHT} flatShading />
       </mesh>
-      <mesh position={[ox, 0.26, oz - 1.6 - 0.58]}>
+      <mesh position={[ox, 0.27, oz - 1.6 - 0.58]}>
         <boxGeometry args={[1.92, 0.006, 0.04]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
-      <mesh position={[ox, 0.26, oz - 1.6 + 0.58]}>
+      <mesh position={[ox, 0.27, oz - 1.6 + 0.58]}>
         <boxGeometry args={[1.92, 0.006, 0.04]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
-      <mesh position={[ox - 0.98, 0.26, oz - 1.6]}>
+      <mesh position={[ox - 0.98, 0.27, oz - 1.6]}>
         <boxGeometry args={[0.04, 0.006, 1.12]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
-      <mesh position={[ox + 0.98, 0.26, oz - 1.6]}>
+      <mesh position={[ox + 0.98, 0.27, oz - 1.6]}>
         <boxGeometry args={[0.04, 0.006, 1.12]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
@@ -316,236 +281,12 @@ export function ProductRoom() {
         );
       })}
 
-      {/* ----- DESK (top + trim + tapered legs) -----
-          PR1.7 (D6): legacy ScreenStand dual monitors removed; their
-          PROBLEM_SOLVER + MENTOR_TABLE dialogues now live on the unified
-          station row (stations 0 & 1). Desk stays as a workstation prop
-          but no longer carries interactables. */}
-      <mesh position={[deskX, deskY, deskZ]}>
-        <boxGeometry args={[2.2, 0.08, 0.95]} />
-        <meshPhongMaterial color={SLATE_MID} flatShading />
-        <Edges color={edgeColor} lineWidth={1.2} />
-      </mesh>
-      <mesh position={[deskX, deskY - 0.06, deskZ]}>
-        <boxGeometry args={[2.18, 0.03, 0.93]} />
-        <meshPhongMaterial color={SLATE_LIGHT} flatShading />
-      </mesh>
-      {DESK_LEGS.map(([dx, dz], i) => (
-        <mesh key={`leg-top-${i}`} position={[deskX + dx, deskY - 0.25, deskZ + dz]}>
-          <boxGeometry args={[0.08, 0.42, 0.08]} />
-          <meshPhongMaterial color={METAL} flatShading />
-        </mesh>
-      ))}
-      {DESK_LEGS.map(([dx, dz], i) => (
-        <mesh key={`leg-bot-${i}`} position={[deskX + dx, deskY - 0.6, deskZ + dz]}>
-          <boxGeometry args={[0.06, 0.28, 0.06]} />
-          <meshPhongMaterial color={METAL_LIGHT} flatShading />
-        </mesh>
-      ))}
-      <mesh position={[deskX, deskY - 0.15, deskZ - 0.3]}>
-        <boxGeometry args={[1.8, 0.04, 0.12]} />
-        <meshPhongMaterial color={CABLE_BLACK} flatShading />
-      </mesh>
-
-      {/* ----- KEYBOARD + MOUSE + MOUSEPAD ON DESK ----- */}
-      <mesh position={[deskX, deskY + 0.055, deskZ + 0.15]}>
-        <boxGeometry args={[0.85, 0.03, 0.26]} />
-        <meshPhongMaterial color={SLATE_DEEP} flatShading />
-        <Edges color={edgeColor} lineWidth={1} />
-      </mesh>
-      <mesh position={[deskX, deskY + 0.075, deskZ + 0.08]}>
-        <boxGeometry args={[0.8, 0.01, 0.06]} />
-        <meshPhongMaterial color={CABLE_BLACK} flatShading />
-      </mesh>
-      <mesh position={[deskX, deskY + 0.075, deskZ + 0.16]}>
-        <boxGeometry args={[0.8, 0.01, 0.06]} />
-        <meshPhongMaterial color={CABLE_BLACK} flatShading />
-      </mesh>
-      <mesh position={[deskX, deskY + 0.075, deskZ + 0.24]}>
-        <boxGeometry args={[0.65, 0.01, 0.06]} />
-        <meshPhongMaterial color={CABLE_BLACK} flatShading />
-      </mesh>
-      <mesh position={[deskX + 0.6, deskY + 0.045, deskZ + 0.2]}>
-        <boxGeometry args={[0.32, 0.01, 0.24]} />
-        <meshPhongMaterial color={SLATE_LIGHT} flatShading />
-      </mesh>
-      <mesh position={[deskX + 0.6, deskY + 0.07, deskZ + 0.2]}>
-        <boxGeometry args={[0.08, 0.04, 0.12]} />
-        <meshPhongMaterial color={WHITE_COOL} flatShading />
-        <Edges color={edgeColor} lineWidth={1} />
-      </mesh>
-
-      {/* ----- LAPTOP (closed) ----- */}
-      <mesh position={[deskX - 0.75, deskY + 0.06, deskZ + 0.05]} rotation={[0, 0.1, 0]}>
-        <boxGeometry args={[0.42, 0.03, 0.3]} />
-        <meshPhongMaterial color="#0f172a" flatShading />
-        <Edges color={edgeColor} lineWidth={1} />
-      </mesh>
-      <mesh position={[deskX - 0.75, deskY + 0.076, deskZ + 0.05]}>
-        <boxGeometry args={[0.06, 0.002, 0.06]} />
-        <meshPhongMaterial color={CYAN} emissive={CYAN} emissiveIntensity={1.5} flatShading />
-      </mesh>
-
-      {/* ----- COFFEE MUG ----- */}
-      <mesh position={[deskX + 0.9, deskY + 0.125, deskZ - 0.15]}>
-        <cylinderGeometry args={[0.07, 0.065, 0.17, 10]} />
-        <meshPhongMaterial color={WHITE_COOL} flatShading />
-        <Edges color={edgeColor} lineWidth={1} />
-      </mesh>
-      <mesh position={[deskX + 0.9, deskY + 0.205, deskZ - 0.15]}>
-        <cylinderGeometry args={[0.06, 0.06, 0.01, 10]} />
-        <meshPhongMaterial color="#5a3a1a" flatShading />
-      </mesh>
-
-      {/* ----- HEADPHONES (boxy) ----- */}
-      <mesh position={[deskX - 0.9, deskY + 0.135, deskZ - 0.2]}>
-        <boxGeometry args={[0.04, 0.16, 0.18]} />
-        <meshPhongMaterial color={SLATE_DEEP} flatShading />
-      </mesh>
-      <mesh position={[deskX - 0.78, deskY + 0.2, deskZ - 0.2]}>
-        <boxGeometry args={[0.22, 0.02, 0.04]} />
-        <meshPhongMaterial color={SLATE_DEEP} flatShading />
-      </mesh>
-      <mesh position={[deskX - 0.66, deskY + 0.135, deskZ - 0.2]}>
-        <boxGeometry args={[0.04, 0.16, 0.18]} />
-        <meshPhongMaterial color={SLATE_DEEP} flatShading />
-      </mesh>
-
-      {/* ----- STICKY NOTES ----- */}
-      <mesh position={[deskX - 0.3, deskY + 0.051, deskZ - 0.3]} rotation={[0, 0.2, 0]}>
-        <boxGeometry args={[0.1, 0.005, 0.1]} />
-        <meshPhongMaterial color="#facc15" emissive="#facc15" emissiveIntensity={0.3} flatShading />
-      </mesh>
-      <mesh position={[deskX - 0.18, deskY + 0.053, deskZ - 0.28]} rotation={[0, -0.15, 0]}>
-        <boxGeometry args={[0.09, 0.005, 0.09]} />
-        <meshPhongMaterial color={CYAN} emissive={CYAN} emissiveIntensity={0.3} flatShading />
-      </mesh>
-      <mesh position={[deskX - 0.08, deskY + 0.052, deskZ - 0.31]}>
-        <boxGeometry args={[0.09, 0.005, 0.09]} />
-        <meshPhongMaterial color="#fb7185" emissive="#fb7185" emissiveIntensity={0.3} flatShading />
-      </mesh>
-
-      {/* ----- USB DRIVES ----- */}
-      <mesh position={[deskX + 0.35, deskY + 0.07, deskZ - 0.32]}>
-        <boxGeometry args={[0.04, 0.04, 0.1]} />
-        <meshPhongMaterial color={METAL_LIGHT} flatShading />
-      </mesh>
-      <mesh position={[deskX + 0.43, deskY + 0.07, deskZ - 0.32]}>
-        <boxGeometry args={[0.04, 0.04, 0.1]} />
-        <meshPhongMaterial color={CYAN} emissive={CYAN} emissiveIntensity={0.5} flatShading />
-      </mesh>
-
-      {/* ----- RUBBER DUCK (debug buddy) ----- */}
-      <mesh position={[deskX + 0.15, deskY + 0.09, deskZ - 0.32]}>
-        <boxGeometry args={[0.09, 0.08, 0.12]} />
-        <meshPhongMaterial color="#facc15" emissive="#facc15" emissiveIntensity={0.3} flatShading />
-        <Edges color={edgeColor} lineWidth={1} />
-      </mesh>
-      <mesh position={[deskX + 0.15, deskY + 0.15, deskZ - 0.34]}>
-        <boxGeometry args={[0.07, 0.06, 0.08]} />
-        <meshPhongMaterial color="#facc15" emissive="#facc15" emissiveIntensity={0.3} flatShading />
-      </mesh>
-      <mesh position={[deskX + 0.19, deskY + 0.15, deskZ - 0.39]}>
-        <boxGeometry args={[0.04, 0.02, 0.03]} />
-        <meshPhongMaterial color="#f97316" flatShading />
-      </mesh>
-
-      {/* ----- SERVER RACK (hero) ----- */}
-      <mesh position={[rackX, 0.8, rackZ]}>
-        <boxGeometry args={[0.8, 1.5, 0.6]} />
-        <meshPhongMaterial color={RACK_BLACK} flatShading />
-        <Edges color={edgeColor} lineWidth={1.2} />
-      </mesh>
-      <mesh position={[rackX, 0.8, rackZ + 0.305]}>
-        <boxGeometry args={[0.7, 1.4, 0.02]} />
-        <meshPhongMaterial color="#1a1f28" flatShading />
-        <Edges color={edgeColor} lineWidth={1} />
-      </mesh>
-      <mesh position={[rackX, 1.56, rackZ]}>
-        <boxGeometry args={[0.78, 0.04, 0.58]} />
-        <meshPhongMaterial color={METAL} flatShading />
-      </mesh>
-      {[0.2, 0.55, 0.9, 1.25].map((y, i) => (
-        <mesh key={`slot-${i}`} position={[rackX, y, rackZ + 0.31]}>
-          <boxGeometry args={[0.66, 0.24, 0.02]} />
-          <meshPhongMaterial color={i % 2 === 0 ? '#242a34' : '#1b1f27'} flatShading />
-          <Edges color={edgeColor} lineWidth={1} />
-        </mesh>
-      ))}
-      {RACK_LEDS.map(([dy, dx, color], i) => (
-        <mesh
-          key={`led-${i}`}
-          ref={(el) => {
-            rackLedRefs.current[i] = el;
-          }}
-          position={[rackX + 0.26 + dx, 1.36 + dy, rackZ + 0.325]}
-        >
-          <boxGeometry args={[0.03, 0.03, 0.012]} />
-          <meshPhongMaterial color={color} emissive={color} emissiveIntensity={2.5} flatShading />
-        </mesh>
-      ))}
-      <mesh position={[rackX + 0.41, 0.7, rackZ]}>
-        <boxGeometry args={[0.02, 0.28, 0.28]} />
-        <meshPhongMaterial color="#14181f" flatShading />
-      </mesh>
-      <mesh ref={fanRef} position={[rackX + 0.422, 0.7, rackZ]} rotation={[0, Math.PI / 2, 0]}>
-        <boxGeometry args={[0.22, 0.04, 0.04]} />
-        <meshPhongMaterial color={METAL} flatShading />
-      </mesh>
-      <mesh position={[rackX + 0.35, 0.18, rackZ + 0.35]}>
-        <cylinderGeometry args={[0.08, 0.08, 0.06, 10]} />
-        <meshPhongMaterial color={CABLE_BLACK} flatShading />
-      </mesh>
-      <mesh position={[rackX + 0.35, 0.23, rackZ + 0.35]}>
-        <cylinderGeometry args={[0.07, 0.07, 0.04, 10]} />
-        <meshPhongMaterial color={CABLE_BLACK} flatShading />
-      </mesh>
-
-      {/* ----- SHIPPING CRATES (stacked) ----- */}
-      <mesh position={[crateX, 0.33, crateZ]}>
-        <boxGeometry args={[0.72, 0.48, 0.6]} />
-        <meshPhongMaterial color="#6b5a42" flatShading />
-        <Edges color={edgeColor} lineWidth={1.2} />
-      </mesh>
-      <mesh position={[crateX, 0.58, crateZ]}>
-        <boxGeometry args={[0.73, 0.04, 0.61]} />
-        <meshPhongMaterial color="#8a7354" flatShading />
-      </mesh>
-      <mesh position={[crateX - 0.1, 0.92, crateZ - 0.05]} rotation={[0, 0.15, 0]}>
-        <boxGeometry args={[0.56, 0.4, 0.5]} />
-        <meshPhongMaterial color="#7a6746" flatShading />
-        <Edges color={edgeColor} lineWidth={1.2} />
-      </mesh>
-      <mesh position={[crateX, 0.4, crateZ + 0.305]}>
-        <boxGeometry args={[0.22, 0.12, 0.01]} />
-        <meshPhongMaterial color={CYAN} emissive={CYAN} emissiveIntensity={0.7} flatShading />
-      </mesh>
-
-      {/* ----- PRODUCT CUBES ON DESK ----- */}
-      {PRODUCT_COLORS.map((c, i) => (
-        <mesh
-          key={c}
-          position={[deskX - 0.5 + i * 0.5, deskY + 0.13, deskZ - 0.05]}
-          rotation={[0, (Math.PI / 6) * i, 0]}
-        >
-          <boxGeometry args={[0.18, 0.18, 0.18]} />
-          <meshPhongMaterial color={c} emissive={c} emissiveIntensity={0.5} flatShading />
-          <Edges color={edgeColor} lineWidth={1} />
-        </mesh>
-      ))}
-
-      {/* ----- PROJECT STATIONS — unified row of 6 along back wall (+z).
-          PR1.7 (D1/D2/D3/D4/D5/D6, F1/F2/F3/F4):
-            - 6 stations: 2 dialogue-rich (PROBLEM_SOLVER, MENTOR_TABLE)
-              + 4 PROJECT_SHOWCASE_ENTRIES — replaces legacy desk monitors.
-            - x positions computed from N/STATION_SPAN (scales with N).
-            - z stagger ±0.15 m (shallow V opening toward door).
-            - Per-station silhouette via STATION_VARIANTS (plinth h/w,
-              monitor w/h, top material, optional stacked screen).
-            - Cool-palette accent override (mint / lavender) for warm
-              data accents.
-            - Readable label via drei <Html transform> (D2).
-            - Foot kick raised above plank top; collider hx widened. ----- */}
+      {/* ----- PROJECT STATIONS — unified row of 4 along back wall (+z).
+          PR1.11 (PM-1 fix): now derives 1:1 from PROJECT_SHOWCASE_ENTRIES.
+          No duplicates; PROBLEM_SOLVER + MENTOR_TABLE rich dialogues are
+          mapped onto the matching entries by id. Legacy desk + dual
+          monitors + server rack + crates + product cubes deleted (PM-2 /
+          designer F-1) — the station row is the sole midground now. ----- */}
       {STATIONS.map((s, i) => {
         const v = STATION_VARIANTS[i] ?? STATION_VARIANTS[0];
         const sx = stationX(i, ox);
@@ -555,10 +296,11 @@ export function ProductRoom() {
           body: s.body,
           ...(s.link ? { link: s.link } : {}),
         };
-        // Plank top is at y=0.245; foot kick spans 0.25–0.30 (clear).
-        const footY = 0.275;
-        // Plinth body sits on top of foot kick (y=0.30).
-        const plinthBaseY = 0.30;
+        // PR1.11 (F-R-1 fix): foot kick raised to y=0.305 (≥1cm above
+        // plank top y=0.245 → 6cm clearance).
+        const footY = 0.305;
+        // Plinth body sits on top of foot kick (y=0.33).
+        const plinthBaseY = 0.33;
         const plinthCenterY = plinthBaseY + v.plinthH / 2;
         const trimY = plinthBaseY + v.plinthH + 0.02;
         const monitorY = plinthBaseY + v.plinthH + 0.40;
@@ -569,7 +311,7 @@ export function ProductRoom() {
 
         return (
           <group key={s.id}>
-            {/* Foot kick — y=0.275 (5mm above plank top 0.245), F4 fix */}
+            {/* Foot kick — y=0.305 (6cm above plank top 0.245), F-R-1 fix */}
             <mesh position={[sx, footY, sz]}>
               <boxGeometry args={[v.plinthW + 0.04, 0.05, 0.59]} />
               <meshPhongMaterial color={SLATE_DEEP} flatShading />
@@ -598,7 +340,9 @@ export function ProductRoom() {
               <Edges color={edgeColor} lineWidth={1.2} />
             </mesh>
             {/* Screen face — interactable. F3: pushed 4cm in front of bezel
-                front (bezel front at sz-0.03; screen at sz-0.07). */}
+                front (bezel front at sz-0.03; screen at sz-0.07).
+                PR1.11 (F-2 fix): emissive lowered 1.6 → 1.0 so hero
+                cube (now 1.6) dominates the visual hierarchy. */}
             <mesh
               position={[sx, monitorY, sz - 0.07]}
               onUpdate={(m) => {
@@ -609,7 +353,7 @@ export function ProductRoom() {
               <meshPhongMaterial
                 color="#0a1830"
                 emissive={s.accent}
-                emissiveIntensity={1.6}
+                emissiveIntensity={1.0}
                 flatShading
               />
               <Edges color={edgeColor} lineWidth={1} />
@@ -621,7 +365,7 @@ export function ProductRoom() {
                 <meshPhongMaterial
                   color="#0a1830"
                   emissive={s.accent}
-                  emissiveIntensity={1.4}
+                  emissiveIntensity={0.9}
                   flatShading
                 />
                 <Edges color={edgeColor} lineWidth={1} />
@@ -665,7 +409,19 @@ export function ProductRoom() {
               <meshPhongMaterial color={CABLE_BLACK} flatShading />
             </mesh>
 
-            {/* Lived-in props (D5) — sprinkled on selected stations */}
+            {/* Lived-in props (D5) — sprinkled on selected stations.
+                PR1.11 polish: stations 0 & 2 also get small props so all
+                4 stations carry distinct silhouette detail. */}
+            {i === 0 && (
+              // small white coffee mug on plinth
+              <group>
+                <mesh position={[sx + 0.18, plinthBaseY + v.plinthH + 0.085, sz + 0.05]}>
+                  <cylinderGeometry args={[0.05, 0.045, 0.10, 10]} />
+                  <meshPhongMaterial color={WHITE_COOL} flatShading />
+                  <Edges color={edgeColor} lineWidth={1} />
+                </mesh>
+              </group>
+            )}
             {i === 1 && (
               // knocked-over mug coaster (flat disc, slightly rotated)
               <mesh
@@ -674,6 +430,16 @@ export function ProductRoom() {
               >
                 <cylinderGeometry args={[0.06, 0.06, 0.005, 12]} />
                 <meshPhongMaterial color={SLATE_DEEP} flatShading />
+              </mesh>
+            )}
+            {i === 2 && (
+              // small gold trophy block
+              <mesh
+                position={[sx - 0.20, plinthBaseY + v.plinthH + 0.085, sz + 0.04]}
+              >
+                <boxGeometry args={[0.06, 0.12, 0.04]} />
+                <meshPhongMaterial color="#facc15" emissive="#facc15" emissiveIntensity={0.25} flatShading />
+                <Edges color={edgeColor} lineWidth={1} />
               </mesh>
             )}
             {i === 3 && (
@@ -686,27 +452,19 @@ export function ProductRoom() {
                 <meshPhongMaterial color={CYAN_DIM} flatShading />
               </mesh>
             )}
-            {i === 4 && (
-              // folded paper (slightly rotated)
-              <mesh
-                position={[sx + 0.18, plinthBaseY + v.plinthH + 0.045, sz + 0.04]}
-                rotation={[0.06, -0.2, 0]}
-              >
-                <boxGeometry args={[0.12, 0.005, 0.16]} />
-                <meshPhongMaterial color={WHITE_COOL} flatShading />
-                <Edges color={edgeColor} lineWidth={1} />
-              </mesh>
-            )}
           </group>
         );
       })}
 
       {/* ----- PR1.8 HERO FOCAL — glass display case w/ rotating logo cube -----
-          Anchors the back-wall composition between stations 2 & 3. Pedestal
+          Anchors the back-wall composition behind the station row. Pedestal
           + brushed-metal cap + 4 thin transparent glass walls + glass top +
           floating cyan cube. Cube spins on Y only (≤0.5 rad/s), gated on
           prefers-reduced-motion. NO emissiveIntensity / scale changes per
-          zero-brightness-motion rule. Collider registered above (pr-hero). */}
+          zero-brightness-motion rule. Collider registered above (pr-hero).
+          PR1.11 (F-2 fix): cube emissive boosted 0.9 → 1.6 (still STATIC,
+          no per-frame change) so the hero outranks the 4 station screens
+          (now 1.0). */}
       {(() => {
         const hx = ox;
         const hz = oz + 2.05;
@@ -762,7 +520,7 @@ export function ProductRoom() {
               <Edges color={edgeColor} lineWidth={1} />
             </mesh>
             {/* Logo cube — floats inside, spins on Y only. Static emissive
-                (no per-frame brightness). */}
+                (no per-frame brightness). PR1.11 (F-2 fix): 0.9 → 1.6. */}
             <mesh
               ref={heroCubeRef}
               position={[hx, caseBaseY + caseH / 2, hz]}
@@ -771,7 +529,7 @@ export function ProductRoom() {
               <meshPhongMaterial
                 color={CYAN}
                 emissive={CYAN}
-                emissiveIntensity={0.9}
+                emissiveIntensity={1.6}
                 flatShading
               />
               <Edges color={edgeColor} lineWidth={1.2} />
@@ -780,32 +538,17 @@ export function ProductRoom() {
         );
       })()}
 
-      {/* ----- SHOWCASE WALL SHELF (brushed-metal beneath the cards) ----- */}
-      <mesh position={[ox, 2.08, oz - 2.4]}>
-        <boxGeometry args={[4.0, 0.04, 0.18]} />
-        <meshPhongMaterial color={METAL_LIGHT} flatShading />
-        <Edges color={edgeColor} lineWidth={1} />
-      </mesh>
-      <mesh position={[ox, 2.05, oz - 2.4]}>
-        <boxGeometry args={[4.0, 0.02, 0.16]} />
-        <meshPhongMaterial color={CYAN_DIM} emissive={CYAN_DIM} emissiveIntensity={0.6} flatShading />
-      </mesh>
-
-      {/* ----- PR1.9 LAYERED LIGHTING (≤8 point lights) -----
-          Key (top-down warm cream) + fill (cool lavender bounce, opposite
-          side) + hero accent (cyan on display case) + 5 per-station
-          accents. Stations 0 & 1 (both cool cyan/green, adjacent on the
-          left) share one mint-cyan accent so total stays at 8. All
-          colors live on the cool-tech / cozy palette — no #FFFFFF, no
-          per-frame intensity changes. accentLightRef preserved so the
-          server-rack cyan accent still has a stable handle for any
-          future ref-based work. */}
-      {/* 1. Key — top-down warm cream wash, centered on room */}
+      {/* ----- PR1.11 LAYERED LIGHTING (≤8 point lights; now 5) -----
+          Stations went 6 → 4, so per-station accents shrink with them.
+          Final budget: 1 key + 1 fill + 1 hero accent + 1 shared(0+1) +
+          2 per-station(2,3) = 6 lights. PR1.11 (F-3 fix): key restored
+          to cool white #e6ecf2 per design-note (was warm #ffd9b0). */}
+      {/* 1. Key — top-down COOL white wash, centered on room */}
       <pointLight
         position={[ox, 2.7, oz]}
-        color="#ffd9b0"
-        intensity={0.8}
-        distance={6}
+        color="#e6ecf2"
+        intensity={0.9}
+        distance={9}
       />
       {/* 2. Fill — soft cool lavender bounce on entry side (opposite key) */}
       <pointLight
@@ -816,7 +559,6 @@ export function ProductRoom() {
       />
       {/* 3. Hero accent — cyan on the glass display case + logo cube */}
       <pointLight
-        ref={accentLightRef}
         position={[ox, 1.5, oz + 1.7]}
         color={CYAN}
         intensity={0.7}
@@ -829,8 +571,8 @@ export function ProductRoom() {
         intensity={0.35}
         distance={3.5}
       />
-      {/* 5–8. Per-station accents for stations 2..5 (within 1.5m each) */}
-      {[2, 3, 4, 5].map((i) => (
+      {/* 5–6. Per-station accents for stations 2 & 3 (within 1.5m each) */}
+      {[2, 3].map((i) => (
         <pointLight
           key={`station-accent-${i}`}
           position={[stationX(i, ox), 2.0, oz + 1.4]}

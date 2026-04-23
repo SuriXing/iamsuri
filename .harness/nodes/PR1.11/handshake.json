@@ -1,0 +1,30 @@
+{
+  "node": "PR1.11",
+  "unit": "fix-final",
+  "verdict": "PASS",
+  "summary": "PR1.11 deploy-polish: dedupe stations 6→4 (derive purely from PROJECT_SHOWCASE_ENTRIES; map dialogue rich-body onto matching ids), delete legacy desk+rack+crates+product cubes, delete dead -z wall shelf, anchor hero (emissive 0.9→1.6) over station screens (1.6→1.0), restore cool key light (#ffd9b0→#e6ecf2), bump foot-kick clearance to 3.5cm, lift rug borders 1cm, gate reduced-motion via MQ change event. data/productRoom.ts untouched. Build green.",
+  "artifacts": [
+    "src/world3d/scene/rooms/ProductRoom.tsx",
+    ".harness/nodes/PR1.11/run_1/fix-log.md"
+  ],
+  "metrics": {
+    "stations_before": 6,
+    "stations_after": 4,
+    "interactables_runtime": 4,
+    "userData_interactable_source_lines": 1,
+    "pointLight_count": 6,
+    "loc_before": 845,
+    "loc_after": 586,
+    "loc_delta": -259,
+    "build": "✓ built in 228ms"
+  },
+  "out_of_scope_respected": [
+    "src/data/productRoom.ts",
+    "BookRoom",
+    "IdeaLab",
+    "MyRoom",
+    "InteractionManager",
+    "EnterPrompt3D",
+    "corridor"
+  ]
+}

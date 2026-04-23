@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { registerCollider, unregisterCollider } from '../colliders';
-import { Edges } from '@react-three/drei';
+import { Edges, Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 // Named imports — namespace import defeats tree-shaking of three.
 import { Mesh, PointLight } from 'three';
@@ -26,6 +26,15 @@ const CYAN = '#22d3ee';
 const CYAN_DIM = '#0ea5b7';
 const CABLE_BLACK = '#0f172a';
 const RACK_BLACK = '#14181f';
+const WOOD_WARM = '#8a6f4d';
+
+// PR1.7: cool-palette overrides for warm data accents (D3). Data file
+// stays canonical (brand truth); the room re-temperatures the warm
+// accents toward the cool slate axis at render time.
+const COOL_ACCENT_OVERRIDE: Record<string, string> = {
+  '#facc15': '#5eead4', // saturated yellow → mint
+  '#fb7185': '#c4b5fd', // coral pink → lavender
+};
 
 // Desk leg positions (tapered via two stacked chunks).
 const DESK_LEGS: ReadonlyArray<readonly [number, number]> = [
@@ -36,18 +45,10 @@ const DESK_LEGS: ReadonlyArray<readonly [number, number]> = [
 ];
 
 // ---- Micro-anim constants (module-scope = zero per-frame alloc) ----
-// Zero-brightness-motion pass: power LED + rack LED + accent light
-// pulse animations all removed. Only physical motion (fan rotation +
-// scanline position bob) remains.
 const FAN_SPEED = 6.0;
-const SCANLINE_BASE_Y = 1.88;
-const SCANLINE_AMPLITUDE = 0.22;
-const SCANLINE_SPEED = 2.3;
 const ACCENT_LIGHT_BASE = 0.7;
 
-// PR1.4: 3 explicit slate plank tiers (BookRoom-style discrete pattern)
-// replacing the ±6% RNG jitter that collapsed all planks to one perceptual
-// value. Tones span ~30% lightness so OUT-5 ≥3-tier check passes.
+// PR1.4: 3 explicit slate plank tiers (BookRoom-style discrete pattern).
 const PLANK_TIERS: ReadonlyArray<string> = ['#1e293b', '#334155', '#475569'];
 
 // Server rack LED layout: [dy, dx, color] relative to rack top.
@@ -60,64 +61,78 @@ const RACK_LEDS: ReadonlyArray<readonly [number, number, string]> = [
   [0.08, -0.36, '#facc15'],
 ];
 
-interface ScreenStandProps {
-  x: number;
-  oz: number;
-  interactable: InteractableData;
-  liveDotRef: React.RefObject<Mesh | null>;
-  barRef: React.RefObject<Mesh | null>;
-  edgeColor: string;
+// PR1.7: 6 unified project stations (D6). Order = 2 dialogue-rich +
+// 4 PROJECT_SHOWCASE_ENTRIES. Variants give per-station silhouette
+// variation (D1) — vary plinth h/w, monitor w/h, top material, optional
+// stacked second screen.
+interface StationVariant {
+  plinthH: number;
+  plinthW: number;
+  monitorW: number;
+  monitorH: number;
+  top: 'slate' | 'wood' | 'metal';
+  stacked?: boolean;
+}
+const STATION_VARIANTS: ReadonlyArray<StationVariant> = [
+  { plinthH: 0.85, plinthW: 0.70, monitorW: 0.95, monitorH: 0.45, top: 'slate' },
+  { plinthH: 0.95, plinthW: 0.62, monitorW: 0.55, monitorH: 0.70, top: 'wood' },
+  { plinthH: 0.78, plinthW: 0.74, monitorW: 0.85, monitorH: 0.55, top: 'slate' },
+  { plinthH: 0.92, plinthW: 0.70, monitorW: 0.85, monitorH: 0.40, top: 'metal', stacked: true },
+  { plinthH: 0.82, plinthW: 0.70, monitorW: 0.92, monitorH: 0.46, top: 'slate' },
+  { plinthH: 0.90, plinthW: 0.66, monitorW: 0.70, monitorH: 0.56, top: 'wood' },
+];
+
+// PR1.7: shallow V z-stagger (D4). Outer stations toward door (smaller z),
+// center stations away (larger z). Returns ±0.15 m max around oz+1.55.
+function stationDz(i: number, n: number): number {
+  if (n <= 1) return 0;
+  const half = (n - 1) / 2;
+  const dist = Math.abs(i - half) / half; // 0 center, 1 edge
+  return -0.15 + (1 - dist) * 0.30;
 }
 
-function ScreenStand({ x, oz, interactable, liveDotRef, barRef, edgeColor }: ScreenStandProps) {
-  return (
-    <group>
-      {/* Stand post */}
-      <mesh position={[x, 1.0, oz - 0.42]}>
-        <boxGeometry args={[0.12, 0.6, 0.12]} />
-        <meshPhongMaterial color={METAL} flatShading />
-        <Edges color={edgeColor} lineWidth={1} />
-      </mesh>
-      {/* Base plate */}
-      <mesh position={[x, 0.73, oz - 0.42]}>
-        <boxGeometry args={[0.38, 0.05, 0.26]} />
-        <meshPhongMaterial color={METAL_LIGHT} flatShading />
-        <Edges color={edgeColor} lineWidth={1} />
-      </mesh>
-      {/* Monitor bezel */}
-      <mesh position={[x, 1.55, oz - 0.42]}>
-        <boxGeometry args={[1.1, 0.76, 0.08]} />
-        <meshPhongMaterial color={SLATE_DEEP} flatShading />
-        <Edges color={edgeColor} lineWidth={1.2} />
-      </mesh>
-      {/* Screen (interactable) */}
-      <mesh
-        position={[x, 1.55, oz - 0.37]}
-        onUpdate={(m) => {
-          m.userData.interactable = interactable;
-        }}
-      >
-        <boxGeometry args={[0.96, 0.62, 0.02]} />
-        <meshPhongMaterial color="#0a1830" emissive={CYAN} emissiveIntensity={1.8} flatShading />
-        <Edges color={edgeColor} lineWidth={1} />
-      </mesh>
-      {/* Under-bezel brand bar */}
-      <mesh position={[x, 1.14, oz - 0.37]}>
-        <boxGeometry args={[0.6, 0.03, 0.01]} />
-        <meshPhongMaterial color={CYAN_DIM} emissive={CYAN_DIM} emissiveIntensity={0.8} flatShading />
-      </mesh>
-      {/* Scanline bar — vertical sweep via useFrame */}
-      <mesh ref={barRef} position={[x, SCANLINE_BASE_Y, oz - 0.36]}>
-        <boxGeometry args={[0.9, 0.02, 0.01]} />
-        <meshPhongMaterial color={CYAN} emissive={CYAN} emissiveIntensity={2.2} flatShading />
-      </mesh>
-      {/* Power LED — blinks via ref */}
-      <mesh ref={liveDotRef} position={[x + 0.46, 1.88, oz - 0.36]}>
-        <boxGeometry args={[0.05, 0.05, 0.02]} />
-        <meshPhongMaterial color={CYAN} emissive={CYAN} emissiveIntensity={4.0} flatShading />
-      </mesh>
-    </group>
-  );
+interface StationConfig {
+  id: string;
+  title: string;
+  body: string;
+  link?: string;
+  accent: string;
+}
+
+function buildStations(): ReadonlyArray<StationConfig> {
+  const dialogue: StationConfig[] = [
+    {
+      id: 'station-problem-solver-rich',
+      title: PROBLEM_SOLVER.title,
+      body: PROBLEM_SOLVER.body,
+      link: PROBLEM_SOLVER.link,
+      accent: '#22d3ee',
+    },
+    {
+      id: 'station-mentor-table-rich',
+      title: MENTOR_TABLE.title,
+      body: MENTOR_TABLE.body,
+      link: MENTOR_TABLE.link,
+      accent: '#22c55e',
+    },
+  ];
+  const fromEntries: StationConfig[] = PROJECT_SHOWCASE_ENTRIES.map((e) => ({
+    id: `station-${e.id}`,
+    title: e.title,
+    body: e.pitch,
+    link: e.link,
+    accent: COOL_ACCENT_OVERRIDE[e.accent] ?? e.accent,
+  }));
+  return [...dialogue, ...fromEntries];
+}
+
+const STATIONS: ReadonlyArray<StationConfig> = buildStations();
+const STATION_SPAN = 4.2; // back-wall span used for x layout
+const STATION_STRIDE =
+  STATIONS.length > 1 ? STATION_SPAN / (STATIONS.length - 1) : 0;
+
+function stationX(i: number, ox: number): number {
+  return ox + (i - (STATIONS.length - 1) / 2) * STATION_STRIDE;
 }
 
 export function ProductRoom() {
@@ -128,11 +143,7 @@ export function ProductRoom() {
   const theme = useWorldStore((s) => s.theme);
   const edgeColor = theme === 'dark' ? '#0a0a14' : '#5a4830';
 
-  // All refs — declared in stable order, top of component.
-  const dot1Ref = useRef<Mesh>(null);
-  const dot2Ref = useRef<Mesh>(null);
-  const bar1Ref = useRef<Mesh>(null);
-  const bar2Ref = useRef<Mesh>(null);
+  // Refs for surviving animations (fan + rack LEDs).
   const fanRef = useRef<Mesh>(null);
   const rackLedRefs = useRef<Array<Mesh | null>>([]);
   const accentLightRef = useRef<PointLight>(null);
@@ -141,18 +152,9 @@ export function ProductRoom() {
     const vm = useWorldStore.getState().viewMode;
     if (vm !== 'overview' && vm !== 'product') return;
     const t = clock.getElapsedTime();
-    // intensity mutations all removed. Only physical motion remains
-    // (fan rotation + scanline position bob).
     const fan = fanRef.current;
     if (fan) fan.rotation.z = t * FAN_SPEED;
-    const b1 = bar1Ref.current;
-    if (b1) b1.position.y = SCANLINE_BASE_Y + Math.sin(t * SCANLINE_SPEED) * SCANLINE_AMPLITUDE;
-    const b2 = bar2Ref.current;
-    if (b2) b2.position.y = SCANLINE_BASE_Y + Math.sin(t * SCANLINE_SPEED + 1.3) * SCANLINE_AMPLITUDE;
   });
-
-  const leftX = ox - 0.95;
-  const rightX = ox + 0.95;
 
   // Desk geometry.
   const deskX = ox;
@@ -167,33 +169,34 @@ export function ProductRoom() {
   const crateX = ox + 1.55;
   const crateZ = oz - 1.55;
 
-  // Furniture colliders (player-only).
+  // Furniture colliders (player-only). PR1.7: station colliders now
+  // computed from STATIONS length + STATION_SPAN with z-stagger; hx
+  // widened 0.4 → 0.45 to cover the wider monitor bezel (F1).
   useEffect(() => {
+    const stationItems = STATIONS.map((_, i) => ({
+      id: `pr-station-${i}`,
+      x: stationX(i, ox),
+      z: oz + 1.55 + stationDz(i, STATIONS.length),
+      hx: 0.45,
+      hz: 0.3,
+    }));
     const items = [
       { id: 'pr-desk',  x: deskX,  z: deskZ,  hx: 0.85, hz: 0.45 },
       { id: 'pr-rack',  x: rackX,  z: rackZ,  hx: 0.4,  hz: 0.4  },
       { id: 'pr-crate', x: crateX, z: crateZ, hx: 0.45, hz: 0.45 },
-      // PR1.5: 4 station plinths on back wall (+z side) at oz+1.55.
-      { id: 'pr-station-0', x: ox - 1.65, z: oz + 1.55, hx: 0.4, hz: 0.3 },
-      { id: 'pr-station-1', x: ox - 0.55, z: oz + 1.55, hx: 0.4, hz: 0.3 },
-      { id: 'pr-station-2', x: ox + 0.55, z: oz + 1.55, hx: 0.4, hz: 0.3 },
-      { id: 'pr-station-3', x: ox + 1.65, z: oz + 1.55, hx: 0.4, hz: 0.3 },
-    ] as const;
+      ...stationItems,
+    ];
     for (const it of items) registerCollider({ ...it, playerOnly: true });
     return () => { for (const it of items) unregisterCollider(it.id); };
   }, [deskX, deskZ, rackX, rackZ, crateX, crateZ, ox, oz]);
 
   return (
     <group>
-      {/* ----- FLOOR STAGE — base slab (kept as backing) + 8 planks ----- */}
+      {/* ----- FLOOR STAGE — base slab + 8 planks ----- */}
       <mesh position={[ox, 0.18, oz]}>
         <boxGeometry args={[ROOM, 0.02, ROOM]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
-      {/* 8 planks running along z-axis (player-facing direction).
-          PR1.4: y bumped 0.215 → 0.225 (10mm above base slab top at 0.19,
-          clears precision noise) and tints now use 3 explicit slate
-          constants (PLANK_TIERS) instead of ±6% RNG jitter. */}
       {Array.from({ length: 8 }, (_, i) => {
         const px = ox + (i - 3.5) * 0.6;
         const tint = PLANK_TIERS[i % 3];
@@ -210,8 +213,6 @@ export function ProductRoom() {
         <boxGeometry args={[2.0, 0.005, 1.2]} />
         <meshPhongMaterial color={SLATE_LIGHT} flatShading />
       </mesh>
-      {/* Rug border — PR1.4: was cyan emissive (read as LED strip).
-          Now non-emissive deep slate textile trim — woven border feel. */}
       <mesh position={[ox, 0.26, oz - 1.6 - 0.58]}>
         <boxGeometry args={[1.92, 0.006, 0.04]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
@@ -229,9 +230,7 @@ export function ProductRoom() {
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
 
-      {/* ----- BASEBOARDS — all 4 walls, inside face at y=0.25.
-          PR1.4: side pieces shortened to ROOM-0.10 so the front/back
-          full-length pieces own the corners (no co-planar overlap). ----- */}
+      {/* ----- BASEBOARDS ----- */}
       <mesh position={[ox, 0.25, oz - 2.45]}>
         <boxGeometry args={[ROOM, 0.12, 0.05]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
@@ -253,8 +252,7 @@ export function ProductRoom() {
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
 
-      {/* ----- TOP TRIM / COVE — all 4 walls at y=2.85, METAL.
-          PR1.4: same corner cleanup as baseboards above. ----- */}
+      {/* ----- TOP TRIM / COVE ----- */}
       <mesh position={[ox, 2.85, oz - 2.45]}>
         <boxGeometry args={[ROOM, 0.12, 0.05]} />
         <meshPhongMaterial color={METAL} flatShading />
@@ -282,18 +280,11 @@ export function ProductRoom() {
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      {/* PR1.4: subdivided 3x3 coffer grid (was a single 2.9x2.9 emissive
-          panel that read as office fluorescent). Each small panel sits in
-          a slate frame so the ceiling reads as architectural coffer. Top
-          face of each inner panel at 2.89 — 1cm clear of outer cove
-          bottom (2.90). */}
       {Array.from({ length: 9 }, (_, i) => {
         const col = i % 3;
         const row = Math.floor(i / 3);
-        // 3x3 grid spans 2.7m with 0.06m gaps between panels (slate frame
-        // showing through from the outer dark panel above).
-        const cell = 0.86; // panel size
-        const step = 0.92; // center-to-center
+        const cell = 0.86;
+        const step = 0.92;
         const cx = ox + (col - 1) * step;
         const cz = oz + (row - 1) * step;
         return (
@@ -304,7 +295,11 @@ export function ProductRoom() {
         );
       })}
 
-      {/* ----- DESK (top + trim + tapered legs) ----- */}
+      {/* ----- DESK (top + trim + tapered legs) -----
+          PR1.7 (D6): legacy ScreenStand dual monitors removed; their
+          PROBLEM_SOLVER + MENTOR_TABLE dialogues now live on the unified
+          station row (stations 0 & 1). Desk stays as a workstation prop
+          but no longer carries interactables. */}
       <mesh position={[deskX, deskY, deskZ]}>
         <boxGeometry args={[2.2, 0.08, 0.95]} />
         <meshPhongMaterial color={SLATE_MID} flatShading />
@@ -326,29 +321,10 @@ export function ProductRoom() {
           <meshPhongMaterial color={METAL_LIGHT} flatShading />
         </mesh>
       ))}
-      {/* Cable tray under desk */}
       <mesh position={[deskX, deskY - 0.15, deskZ - 0.3]}>
         <boxGeometry args={[1.8, 0.04, 0.12]} />
         <meshPhongMaterial color={CABLE_BLACK} flatShading />
       </mesh>
-
-      {/* ----- DUAL MONITORS ----- */}
-      <ScreenStand
-        x={leftX}
-        oz={oz}
-        interactable={PROBLEM_SOLVER}
-        liveDotRef={dot1Ref}
-        barRef={bar1Ref}
-        edgeColor={edgeColor}
-      />
-      <ScreenStand
-        x={rightX}
-        oz={oz}
-        interactable={MENTOR_TABLE}
-        liveDotRef={dot2Ref}
-        barRef={bar2Ref}
-        edgeColor={edgeColor}
-      />
 
       {/* ----- KEYBOARD + MOUSE + MOUSEPAD ON DESK ----- */}
       <mesh position={[deskX, deskY + 0.055, deskZ + 0.15]}>
@@ -468,7 +444,6 @@ export function ProductRoom() {
         <boxGeometry args={[0.78, 0.04, 0.58]} />
         <meshPhongMaterial color={METAL} flatShading />
       </mesh>
-      {/* Horizontal server slots */}
       {[0.2, 0.55, 0.9, 1.25].map((y, i) => (
         <mesh key={`slot-${i}`} position={[rackX, y, rackZ + 0.31]}>
           <boxGeometry args={[0.66, 0.24, 0.02]} />
@@ -476,7 +451,6 @@ export function ProductRoom() {
           <Edges color={edgeColor} lineWidth={1} />
         </mesh>
       ))}
-      {/* Rack LEDs — blink via refs */}
       {RACK_LEDS.map(([dy, dx, color], i) => (
         <mesh
           key={`led-${i}`}
@@ -489,7 +463,6 @@ export function ProductRoom() {
           <meshPhongMaterial color={color} emissive={color} emissiveIntensity={2.5} flatShading />
         </mesh>
       ))}
-      {/* Fan — side vent with spinning blade */}
       <mesh position={[rackX + 0.41, 0.7, rackZ]}>
         <boxGeometry args={[0.02, 0.28, 0.28]} />
         <meshPhongMaterial color="#14181f" flatShading />
@@ -498,7 +471,6 @@ export function ProductRoom() {
         <boxGeometry args={[0.22, 0.04, 0.04]} />
         <meshPhongMaterial color={METAL} flatShading />
       </mesh>
-      {/* Cable coil on floor beside rack */}
       <mesh position={[rackX + 0.35, 0.18, rackZ + 0.35]}>
         <cylinderGeometry args={[0.08, 0.08, 0.06, 10]} />
         <meshPhongMaterial color={CABLE_BLACK} flatShading />
@@ -523,7 +495,6 @@ export function ProductRoom() {
         <meshPhongMaterial color="#7a6746" flatShading />
         <Edges color={edgeColor} lineWidth={1.2} />
       </mesh>
-      {/* Crate label (cyan sticker) */}
       <mesh position={[crateX, 0.4, crateZ + 0.305]}>
         <boxGeometry args={[0.22, 0.12, 0.01]} />
         <meshPhongMaterial color={CYAN} emissive={CYAN} emissiveIntensity={0.7} flatShading />
@@ -535,7 +506,6 @@ export function ProductRoom() {
           key={c}
           position={[deskX - 0.5 + i * 0.5, deskY + 0.13, deskZ - 0.05]}
           rotation={[0, (Math.PI / 6) * i, 0]}
-         
         >
           <boxGeometry args={[0.18, 0.18, 0.18]} />
           <meshPhongMaterial color={c} emissive={c} emissiveIntensity={0.5} flatShading />
@@ -543,240 +513,172 @@ export function ProductRoom() {
         </mesh>
       ))}
 
-      {/* ----- PROJECT STATIONS — 4 distinct stations along back wall (+z).
-          PR1.5: replaces the flat back-wall card grid. Each station =
-          plinth + monitor (faces -z toward door) + label sign + accent bar
-          + 1 unique decorative prop (mug / sticky stack / trophy / books).
-          Plinth colliders registered playerOnly above. ----- */}
-      {(() => {
-        const stationZ = oz + 1.55;
-        // x positions match design-note: ox-1.65, -0.55, +0.55, +1.65.
-        const stationX = [-1.65, -0.55, 0.55, 1.65];
-        return PROJECT_SHOWCASE_ENTRIES.map((entry, i) => {
-          const sx = ox + stationX[i];
-          const interactable: InteractableData = {
-            title: entry.title,
-            body: entry.pitch,
-            ...(entry.link ? { link: entry.link } : {}),
-          };
-          // Monitor faces -z (toward player on entry). Screen face is on
-          // the -z side of the bezel: stationZ - 0.04.
-          return (
-            <group key={`station-${entry.id}`}>
-              {/* Plinth base (slate, BookRoom-style two-tier) */}
-              <mesh position={[sx, 0.625, stationZ]}>
-                <boxGeometry args={[0.7, 0.85, 0.55]} />
-                <meshPhongMaterial color={SLATE_MID} flatShading />
-                <Edges color={edgeColor} lineWidth={1.2} />
-              </mesh>
-              {/* Plinth top trim band */}
-              <mesh position={[sx, 1.06, stationZ]}>
-                <boxGeometry args={[0.72, 0.04, 0.57]} />
-                <meshPhongMaterial color={SLATE_LIGHT} flatShading />
-                <Edges color={edgeColor} lineWidth={1} />
-              </mesh>
-              {/* Plinth foot kick */}
-              <mesh position={[sx, 0.225, stationZ]}>
-                <boxGeometry args={[0.74, 0.05, 0.59]} />
-                <meshPhongMaterial color={SLATE_DEEP} flatShading />
-              </mesh>
-              {/* Monitor bezel — faces -z */}
-              <mesh position={[sx, 1.45, stationZ]}>
-                <boxGeometry args={[0.85, 0.55, 0.06]} />
-                <meshPhongMaterial color={SLATE_DEEP} flatShading />
-                <Edges color={edgeColor} lineWidth={1.2} />
-              </mesh>
-              {/* Screen face (interactable, emissive) — slightly forward on -z */}
-              <mesh
-                position={[sx, 1.45, stationZ - 0.04]}
-                onUpdate={(m) => {
-                  m.userData.interactable = interactable;
-                }}
-              >
-                <boxGeometry args={[0.74, 0.44, 0.02]} />
+      {/* ----- PROJECT STATIONS — unified row of 6 along back wall (+z).
+          PR1.7 (D1/D2/D3/D4/D5/D6, F1/F2/F3/F4):
+            - 6 stations: 2 dialogue-rich (PROBLEM_SOLVER, MENTOR_TABLE)
+              + 4 PROJECT_SHOWCASE_ENTRIES — replaces legacy desk monitors.
+            - x positions computed from N/STATION_SPAN (scales with N).
+            - z stagger ±0.15 m (shallow V opening toward door).
+            - Per-station silhouette via STATION_VARIANTS (plinth h/w,
+              monitor w/h, top material, optional stacked screen).
+            - Cool-palette accent override (mint / lavender) for warm
+              data accents.
+            - Readable label via drei <Html transform> (D2).
+            - Foot kick raised above plank top; collider hx widened. ----- */}
+      {STATIONS.map((s, i) => {
+        const v = STATION_VARIANTS[i] ?? STATION_VARIANTS[0];
+        const sx = stationX(i, ox);
+        const sz = oz + 1.55 + stationDz(i, STATIONS.length);
+        const interactable: InteractableData = {
+          title: s.title,
+          body: s.body,
+          ...(s.link ? { link: s.link } : {}),
+        };
+        // Plank top is at y=0.245; foot kick spans 0.25–0.30 (clear).
+        const footY = 0.275;
+        // Plinth body sits on top of foot kick (y=0.30).
+        const plinthBaseY = 0.30;
+        const plinthCenterY = plinthBaseY + v.plinthH / 2;
+        const trimY = plinthBaseY + v.plinthH + 0.02;
+        const monitorY = plinthBaseY + v.plinthH + 0.40;
+        const topColor =
+          v.top === 'wood' ? WOOD_WARM :
+          v.top === 'metal' ? METAL_LIGHT :
+          SLATE_LIGHT;
+
+        return (
+          <group key={s.id}>
+            {/* Foot kick — y=0.275 (5mm above plank top 0.245), F4 fix */}
+            <mesh position={[sx, footY, sz]}>
+              <boxGeometry args={[v.plinthW + 0.04, 0.05, 0.59]} />
+              <meshPhongMaterial color={SLATE_DEEP} flatShading />
+            </mesh>
+            {/* Plinth body — varies in height + width per variant (D1) */}
+            <mesh position={[sx, plinthCenterY, sz]}>
+              <boxGeometry args={[v.plinthW, v.plinthH, 0.55]} />
+              <meshPhongMaterial color={SLATE_MID} flatShading />
+              <Edges color={edgeColor} lineWidth={1.2} />
+            </mesh>
+            {/* Top trim band — material varies (slate / wood / metal, D1) */}
+            <mesh position={[sx, trimY, sz]}>
+              <boxGeometry args={[v.plinthW + 0.02, 0.04, 0.57]} />
+              <meshPhongMaterial color={topColor} flatShading />
+              <Edges color={edgeColor} lineWidth={1} />
+            </mesh>
+            {/* Monitor neck */}
+            <mesh position={[sx, monitorY - v.monitorH / 2 - 0.12, sz + 0.02]}>
+              <boxGeometry args={[0.08, 0.18, 0.08]} />
+              <meshPhongMaterial color={METAL} flatShading />
+            </mesh>
+            {/* Monitor bezel — faces -z */}
+            <mesh position={[sx, monitorY, sz]}>
+              <boxGeometry args={[v.monitorW, v.monitorH, 0.06]} />
+              <meshPhongMaterial color={SLATE_DEEP} flatShading />
+              <Edges color={edgeColor} lineWidth={1.2} />
+            </mesh>
+            {/* Screen face — interactable. F3: pushed 4cm in front of bezel
+                front (bezel front at sz-0.03; screen at sz-0.07). */}
+            <mesh
+              position={[sx, monitorY, sz - 0.07]}
+              onUpdate={(m) => {
+                m.userData.interactable = interactable;
+              }}
+            >
+              <boxGeometry args={[v.monitorW - 0.11, v.monitorH - 0.11, 0.02]} />
+              <meshPhongMaterial
+                color="#0a1830"
+                emissive={s.accent}
+                emissiveIntensity={1.6}
+                flatShading
+              />
+              <Edges color={edgeColor} lineWidth={1} />
+            </mesh>
+            {/* Optional stacked secondary screen (variant 3 only) */}
+            {v.stacked && (
+              <mesh position={[sx, monitorY + v.monitorH / 2 + 0.20, sz - 0.07]}>
+                <boxGeometry args={[v.monitorW - 0.30, 0.22, 0.02]} />
                 <meshPhongMaterial
                   color="#0a1830"
-                  emissive={entry.accent}
-                  emissiveIntensity={1.6}
-                  flatShading
-                />
-                <Edges color={edgeColor} lineWidth={1} />
-              </mesh>
-              {/* Monitor stand neck */}
-              <mesh position={[sx, 1.18, stationZ + 0.02]}>
-                <boxGeometry args={[0.08, 0.18, 0.08]} />
-                <meshPhongMaterial color={METAL} flatShading />
-              </mesh>
-              {/* Label plate under monitor (faces -z) */}
-              <mesh position={[sx, 1.13, stationZ - 0.27]}>
-                <boxGeometry args={[0.7, 0.12, 0.02]} />
-                <meshPhongMaterial color={SLATE_LIGHT} flatShading />
-                <Edges color={edgeColor} lineWidth={1} />
-              </mesh>
-              {/* Accent brand bar on label (per-station color) */}
-              <mesh position={[sx, 1.08, stationZ - 0.281]}>
-                <boxGeometry args={[0.6, 0.025, 0.005]} />
-                <meshPhongMaterial
-                  color={entry.accent}
-                  emissive={entry.accent}
-                  emissiveIntensity={1.2}
-                  flatShading
-                />
-              </mesh>
-              {/* Title block on label (small dark ticks suggesting text) */}
-              {[-0.18, -0.06, 0.06, 0.18].map((dx, k) => (
-                <mesh
-                  key={`title-tick-${k}`}
-                  position={[sx + dx, 1.155, stationZ - 0.281]}
-                >
-                  <boxGeometry args={[0.08, 0.02, 0.005]} />
-                  <meshPhongMaterial color={SLATE_DEEP} flatShading />
-                </mesh>
-              ))}
-              {/* Per-station accent strip on plinth front (visual accent
-                  light proxy — cheap glow without a real point light) */}
-              <mesh position={[sx, 0.45, stationZ - 0.281]}>
-                <boxGeometry args={[0.5, 0.025, 0.005]} />
-                <meshPhongMaterial
-                  color={entry.accent}
-                  emissive={entry.accent}
+                  emissive={s.accent}
                   emissiveIntensity={1.4}
                   flatShading
                 />
+                <Edges color={edgeColor} lineWidth={1} />
               </mesh>
+            )}
+            {/* Readable project label — drei <Html transform> (D2).
+                Faces -z (toward door). pointer-events: none. Sized to
+                read from ~3m. */}
+            <Html
+              transform
+              position={[sx, monitorY - v.monitorH / 2 - 0.18, sz - 0.08]}
+              rotation={[0, Math.PI, 0]}
+              distanceFactor={1}
+              pointerEvents="none"
+              zIndexRange={[10, 0]}
+            >
+              <div
+                style={{
+                  color: WHITE_COOL,
+                  background: 'rgba(15, 23, 42, 0.88)',
+                  border: `1px solid ${s.accent}`,
+                  padding: '4px 14px',
+                  fontFamily: 'system-ui, sans-serif',
+                  fontSize: '34px',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  whiteSpace: 'nowrap',
+                  userSelect: 'none',
+                  borderRadius: '4px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+                }}
+              >
+                {s.title}
+              </div>
+            </Html>
 
-              {/* ----- Per-station decorative prop (varies by index) ----- */}
-              {i === 0 && (
-                <>
-                  {/* Coffee mug — white ceramic + brown coffee surface */}
-                  <mesh position={[sx + 0.22, 1.16, stationZ + 0.05]}>
-                    <cylinderGeometry args={[0.06, 0.055, 0.13, 10]} />
-                    <meshPhongMaterial color={WHITE_COOL} flatShading />
-                    <Edges color={edgeColor} lineWidth={1} />
-                  </mesh>
-                  <mesh position={[sx + 0.22, 1.225, stationZ + 0.05]}>
-                    <cylinderGeometry args={[0.05, 0.05, 0.008, 10]} />
-                    <meshPhongMaterial color="#5a3a1a" flatShading />
-                  </mesh>
-                  {/* Mug handle (boxy) */}
-                  <mesh position={[sx + 0.29, 1.16, stationZ + 0.05]}>
-                    <boxGeometry args={[0.02, 0.07, 0.015]} />
-                    <meshPhongMaterial color={WHITE_COOL} flatShading />
-                  </mesh>
-                </>
-              )}
-              {i === 1 && (
-                <>
-                  {/* Sticky-note stack — 3 colored squares offset */}
-                  <mesh
-                    position={[sx + 0.2, 1.095, stationZ + 0.04]}
-                    rotation={[0, 0.18, 0]}
-                  >
-                    <boxGeometry args={[0.11, 0.012, 0.11]} />
-                    <meshPhongMaterial
-                      color="#facc15"
-                      emissive="#facc15"
-                      emissiveIntensity={0.3}
-                      flatShading
-                    />
-                  </mesh>
-                  <mesh
-                    position={[sx + 0.21, 1.108, stationZ + 0.06]}
-                    rotation={[0, -0.12, 0]}
-                  >
-                    <boxGeometry args={[0.1, 0.012, 0.1]} />
-                    <meshPhongMaterial
-                      color={CYAN}
-                      emissive={CYAN}
-                      emissiveIntensity={0.3}
-                      flatShading
-                    />
-                  </mesh>
-                  <mesh
-                    position={[sx + 0.19, 1.121, stationZ + 0.05]}
-                    rotation={[0, 0.05, 0]}
-                  >
-                    <boxGeometry args={[0.1, 0.012, 0.1]} />
-                    <meshPhongMaterial
-                      color="#fb7185"
-                      emissive="#fb7185"
-                      emissiveIntensity={0.3}
-                      flatShading
-                    />
-                  </mesh>
-                </>
-              )}
-              {i === 2 && (
-                <>
-                  {/* Mini trophy — gold cup on dark base */}
-                  <mesh position={[sx + 0.22, 1.115, stationZ + 0.05]}>
-                    <boxGeometry args={[0.1, 0.04, 0.1]} />
-                    <meshPhongMaterial color={SLATE_DEEP} flatShading />
-                    <Edges color={edgeColor} lineWidth={1} />
-                  </mesh>
-                  <mesh position={[sx + 0.22, 1.18, stationZ + 0.05]}>
-                    <cylinderGeometry args={[0.045, 0.03, 0.09, 10]} />
-                    <meshPhongMaterial
-                      color="#facc15"
-                      emissive="#facc15"
-                      emissiveIntensity={0.5}
-                      flatShading
-                    />
-                  </mesh>
-                  {/* Trophy handles */}
-                  <mesh position={[sx + 0.275, 1.18, stationZ + 0.05]}>
-                    <boxGeometry args={[0.012, 0.05, 0.012]} />
-                    <meshPhongMaterial color="#facc15" flatShading />
-                  </mesh>
-                  <mesh position={[sx + 0.165, 1.18, stationZ + 0.05]}>
-                    <boxGeometry args={[0.012, 0.05, 0.012]} />
-                    <meshPhongMaterial color="#facc15" flatShading />
-                  </mesh>
-                </>
-              )}
-              {i === 3 && (
-                <>
-                  {/* Mini book stack — 3 books in different colors */}
-                  <mesh position={[sx + 0.2, 1.115, stationZ + 0.05]}>
-                    <boxGeometry args={[0.18, 0.04, 0.13]} />
-                    <meshPhongMaterial color="#3b82f6" flatShading />
-                    <Edges color={edgeColor} lineWidth={1} />
-                  </mesh>
-                  <mesh
-                    position={[sx + 0.2, 1.155, stationZ + 0.04]}
-                    rotation={[0, 0.08, 0]}
-                  >
-                    <boxGeometry args={[0.17, 0.035, 0.12]} />
-                    <meshPhongMaterial color="#16a34a" flatShading />
-                    <Edges color={edgeColor} lineWidth={1} />
-                  </mesh>
-                  <mesh
-                    position={[sx + 0.21, 1.19, stationZ + 0.06]}
-                    rotation={[0, -0.05, 0]}
-                  >
-                    <boxGeometry args={[0.16, 0.03, 0.12]} />
-                    <meshPhongMaterial color="#fb7185" flatShading />
-                    <Edges color={edgeColor} lineWidth={1} />
-                  </mesh>
-                  {/* Bookmark ribbon */}
-                  <mesh position={[sx + 0.27, 1.21, stationZ + 0.06]}>
-                    <boxGeometry args={[0.012, 0.005, 0.05]} />
-                    <meshPhongMaterial color={CYAN} flatShading />
-                  </mesh>
-                </>
-              )}
+            {/* Cable coil under EVERY plinth (lived-in mess, D5). Slight
+                size variation by index. */}
+            <mesh position={[sx - 0.28, 0.265, sz + 0.18]}>
+              <cylinderGeometry args={[0.05 + (i % 3) * 0.008, 0.05, 0.04, 10]} />
+              <meshPhongMaterial color={CABLE_BLACK} flatShading />
+            </mesh>
 
-              {/* Cable coil tucked behind plinth on left side (varies offset) */}
-              {i % 2 === 0 && (
-                <mesh position={[sx - 0.28, 0.265, stationZ + 0.18]}>
-                  <cylinderGeometry args={[0.05, 0.05, 0.04, 10]} />
-                  <meshPhongMaterial color={CABLE_BLACK} flatShading />
-                </mesh>
-              )}
-            </group>
-          );
-        });
-      })()}
+            {/* Lived-in props (D5) — sprinkled on selected stations */}
+            {i === 1 && (
+              // knocked-over mug coaster (flat disc, slightly rotated)
+              <mesh
+                position={[sx - 0.18, plinthBaseY + v.plinthH + 0.045, sz + 0.05]}
+                rotation={[0, 0.3, 0]}
+              >
+                <cylinderGeometry args={[0.06, 0.06, 0.005, 12]} />
+                <meshPhongMaterial color={SLATE_DEEP} flatShading />
+              </mesh>
+            )}
+            {i === 3 && (
+              // pen on plinth edge
+              <mesh
+                position={[sx + 0.20, plinthBaseY + v.plinthH + 0.045, sz - 0.18]}
+                rotation={[0, 0.4, Math.PI / 2]}
+              >
+                <cylinderGeometry args={[0.008, 0.008, 0.13, 8]} />
+                <meshPhongMaterial color={CYAN_DIM} flatShading />
+              </mesh>
+            )}
+            {i === 4 && (
+              // folded paper (slightly rotated)
+              <mesh
+                position={[sx + 0.18, plinthBaseY + v.plinthH + 0.045, sz + 0.04]}
+                rotation={[0.06, -0.2, 0]}
+              >
+                <boxGeometry args={[0.12, 0.005, 0.16]} />
+                <meshPhongMaterial color={WHITE_COOL} flatShading />
+                <Edges color={edgeColor} lineWidth={1} />
+              </mesh>
+            )}
+          </group>
+        );
+      })}
 
       {/* ----- SHOWCASE WALL SHELF (brushed-metal beneath the cards) ----- */}
       <mesh position={[ox, 2.08, oz - 2.4]}>
@@ -797,7 +699,6 @@ export function ProductRoom() {
         distance={6}
         position={[rackX, 1.4, rackZ + 0.4]}
       />
-      {/* Secondary stage light */}
       <pointLight position={[ox, 2.0, oz + 0.5]} color="#60a5fa" intensity={0.35} distance={8} />
     </group>
   );

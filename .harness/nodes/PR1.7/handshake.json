@@ -1,0 +1,19 @@
+{
+  "unit": "PR1.7",
+  "name": "fix-stations",
+  "verdict": "PASS",
+  "summary": "Unified 6-station back-wall row (2 dialogue + 4 entries), removed legacy desk monitors, added drei <Html transform> readable labels, varied silhouettes via STATION_VARIANTS (height/width/material/stacked), cool-palette accent override (mint/lavender), z-stagger ±0.15m, lived-in mess (cable coils + coaster/pen/paper), widened collider hx 0.4→0.45, computed stationX (scales with N), foot kick raised above plank top, accent offsets ≥4cm.",
+  "interactables_runtime_count": 6,
+  "interactables_source_assignments": 1,
+  "build": "green",
+  "files_changed": [
+    "src/world3d/scene/rooms/ProductRoom.tsx"
+  ],
+  "artifacts": [
+    ".harness/nodes/PR1.7/run_1/fix-log.md"
+  ],
+  "deferred": [
+    "PR1.8 hero focal piece (glass case + rotating logo cube)",
+    "PR1.9 layered point lighting per design-note"
+  ]
+}

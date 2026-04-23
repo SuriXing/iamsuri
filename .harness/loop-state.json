@@ -1,0 +1,113 @@
+{
+  "tick": 12,
+  "unit": "PR1.12",
+  "description": "Deployed to prod; screenshot captured; loop COMPLETE",
+  "status": "completed",
+  "artifacts": [
+    ".harness/nodes/PR1.12/handshake.json",
+    ".harness/nodes/PR1.12/run_1/screenshot-product-room-after.png"
+  ],
+  "next_unit": null,
+  "blockers": [],
+  "review_of_previous": "",
+  "plan_file": ".harness/plan.md",
+  "units_total": 12,
+  "unit_ids": [
+    "PR1.1",
+    "PR1.2",
+    "PR1.3",
+    "PR1.4",
+    "PR1.5",
+    "PR1.6",
+    "PR1.7",
+    "PR1.8",
+    "PR1.9",
+    "PR1.10",
+    "PR1.11",
+    "PR1.12"
+  ],
+  "_written_by": "opc-harness",
+  "_plan_hash": "2b3393fc230653b0",
+  "_last_modified": "2026-04-23T02:08:44.078Z",
+  "_git_head": "a1b076ac4c61d68c3ba62c2a7855c7fa7336f7e2",
+  "_tick_history": [
+    {
+      "unit": "PR1.1",
+      "tick": 1,
+      "status": "completed"
+    },
+    {
+      "unit": "PR1.2",
+      "tick": 2,
+      "status": "completed"
+    },
+    {
+      "unit": "PR1.3",
+      "tick": 3,
+      "status": "completed",
+      "verdict": "PASS"
+    },
+    {
+      "unit": "PR1.4",
+      "tick": 4,
+      "status": "completed"
+    },
+    {
+      "unit": "PR1.5",
+      "tick": 5,
+      "status": "completed"
+    },
+    {
+      "unit": "PR1.6",
+      "tick": 6,
+      "status": "completed",
+      "verdict": "PASS"
+    },
+    {
+      "unit": "PR1.7",
+      "tick": 7,
+      "status": "completed"
+    },
+    {
+      "unit": "PR1.8",
+      "tick": 8,
+      "status": "completed"
+    },
+    {
+      "unit": "PR1.9",
+      "tick": 9,
+      "status": "completed"
+    },
+    {
+      "unit": "PR1.10",
+      "tick": 10,
+      "status": "completed",
+      "verdict": "PASS"
+    },
+    {
+      "unit": "PR1.11",
+      "tick": 11,
+      "status": "completed"
+    },
+    {
+      "unit": "PR1.12",
+      "tick": 12,
+      "status": "completed"
+    }
+  ],
+  "_max_total_ticks": 36,
+  "_started_at": "2026-04-23T00:40:18.514Z",
+  "_max_duration_hours": 24,
+  "_write_nonce": "1ac31e1785b82abf",
+  "_external_validators": {
+    "pre_commit_hooks": false,
+    "test_script": false,
+    "lint_script": true,
+    "typecheck_script": false
+  },
+  "_last_review_evals": {
+    ".harness/nodes/PR1.10/run_1/eval-frontend.md": "e3d81cd4cacede95",
+    ".harness/nodes/PR1.10/run_1/eval-designer.md": "68effdd5954d680a",
+    ".harness/nodes/PR1.10/run_1/eval-pm.md": "13b0dda508b7a0b0"
+  }
+}

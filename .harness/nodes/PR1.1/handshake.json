@@ -1,0 +1,9 @@
+{
+  "node": "PR1.1",
+  "status": "completed",
+  "verdict": "PASS",
+  "summary": "Design note written covering station layout, hero focal, surfaces, and lighting plan.",
+  "artifacts": [
+    { "type": "design-note", "path": ".harness/design-note.md", "description": "Implementer-ready design spec" }
+  ]
+}

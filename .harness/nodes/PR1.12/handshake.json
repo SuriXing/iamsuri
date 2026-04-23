@@ -1,0 +1,16 @@
+{
+  "node": "PR1.12",
+  "verdict": "PASS_WITH_NOTE",
+  "summary": "Production deploy succeeded (https://iamsuri.ai/3d, dpl_EG3zrhvRrfb7ZmvaQJVscoZMTdbi). Screenshot captured from inside Product Room via dev-server + __worldStore teleport. Visible: 4-station row, hero glass case on back wall, ceiling cove, planks/baseboards/trim. NOTE: monitor labels render mirrored from the door-entry POV — stations may be facing +z (back wall) instead of -z (player on entry). This is a real OUT-1 bug worth a follow-up unit.",
+  "artifacts": [
+    {"path": ".harness/nodes/PR1.12/run_1/screenshot-product-room-after.png", "kind": "screenshot", "summary": "Inside Product Room from door entry POV showing stations + hero + shell"}
+  ],
+  "production_url": "https://iamsuri.ai/3d",
+  "deployment_id": "dpl_EG3zrhvRrfb7ZmvaQJVscoZMTdbi",
+  "screenshot_size_bytes": 248678,
+  "follow_up_recommendations": [
+    "Stations appear to face +z (back wall) instead of -z (player). Verify by checking the rotation of the monitor mesh in PROJECT_STATIONS.map.",
+    "Consider screenshotting from FP camera looking +z (behind stations) for the canonical hero shot.",
+    "Hero cube glow visible but small — designer F-2 (boost hero brightness) may need re-evaluation in deployed view."
+  ]
+}

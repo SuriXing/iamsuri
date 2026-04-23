@@ -161,14 +161,14 @@ export function ProductRoom() {
     const stationItems = STATIONS.map((_, i) => ({
       id: `pr-station-${i}`,
       x: stationX(i, ox),
-      z: oz + 1.55 + stationDz(i, STATIONS.length),
+      z: oz - 1.55 + stationDz(i, STATIONS.length),
       hx: 0.45,
       hz: 0.3,
     }));
     const items = [
       // PR1.8: hero focal pedestal — playerOnly so avatar bounces
       // off the glass case but camera wall-clip ignores it.
-      { id: 'pr-hero',  x: ox,     z: oz + 2.05, hx: 0.30, hz: 0.30 },
+      { id: 'pr-hero',  x: ox,     z: oz - 2.05, hx: 0.30, hz: 0.30 },
       ...stationItems,
     ];
     for (const it of items) registerCollider({ ...it, playerOnly: true });
@@ -193,25 +193,25 @@ export function ProductRoom() {
           </mesh>
         );
       })}
-      {/* Entry rug at door (-z side). PR1.11 (F-R-4 fix): borders lifted
+      {/* Entry rug at door (+z side). PR1.11 (F-R-4 fix): borders lifted
           to y=0.27 (1cm above rug top 0.2575) to clear sub-cm overlap. */}
-      <mesh position={[ox, 0.255, oz - 1.6]}>
+      <mesh position={[ox, 0.255, oz + 1.6]}>
         <boxGeometry args={[2.0, 0.005, 1.2]} />
         <meshPhongMaterial color={SLATE_LIGHT} flatShading />
       </mesh>
-      <mesh position={[ox, 0.27, oz - 1.6 - 0.58]}>
+      <mesh position={[ox, 0.27, oz + 1.6 - 0.58]}>
         <boxGeometry args={[1.92, 0.006, 0.04]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
-      <mesh position={[ox, 0.27, oz - 1.6 + 0.58]}>
+      <mesh position={[ox, 0.27, oz + 1.6 + 0.58]}>
         <boxGeometry args={[1.92, 0.006, 0.04]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
-      <mesh position={[ox - 0.98, 0.27, oz - 1.6]}>
+      <mesh position={[ox - 0.98, 0.27, oz + 1.6]}>
         <boxGeometry args={[0.04, 0.006, 1.12]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
-      <mesh position={[ox + 0.98, 0.27, oz - 1.6]}>
+      <mesh position={[ox + 0.98, 0.27, oz + 1.6]}>
         <boxGeometry args={[0.04, 0.006, 1.12]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
@@ -290,7 +290,7 @@ export function ProductRoom() {
       {STATIONS.map((s, i) => {
         const v = STATION_VARIANTS[i] ?? STATION_VARIANTS[0];
         const sx = stationX(i, ox);
-        const sz = oz + 1.55 + stationDz(i, STATIONS.length);
+        const sz = oz - 1.55 + stationDz(i, STATIONS.length);
         const interactable: InteractableData = {
           title: s.title,
           body: s.body,
@@ -329,7 +329,7 @@ export function ProductRoom() {
               <Edges color={edgeColor} lineWidth={1} />
             </mesh>
             {/* Monitor neck */}
-            <mesh position={[sx, monitorY - v.monitorH / 2 - 0.12, sz + 0.02]}>
+            <mesh position={[sx, monitorY - v.monitorH / 2 - 0.12, sz - 0.02]}>
               <boxGeometry args={[0.08, 0.18, 0.08]} />
               <meshPhongMaterial color={METAL} flatShading />
             </mesh>
@@ -344,7 +344,7 @@ export function ProductRoom() {
                 PR1.11 (F-2 fix): emissive lowered 1.6 → 1.0 so hero
                 cube (now 1.6) dominates the visual hierarchy. */}
             <mesh
-              position={[sx, monitorY, sz - 0.07]}
+              position={[sx, monitorY, sz + 0.07]}
               onUpdate={(m) => {
                 m.userData.interactable = interactable;
               }}
@@ -360,7 +360,7 @@ export function ProductRoom() {
             </mesh>
             {/* Optional stacked secondary screen (variant 3 only) */}
             {v.stacked && (
-              <mesh position={[sx, monitorY + v.monitorH / 2 + 0.20, sz - 0.07]}>
+              <mesh position={[sx, monitorY + v.monitorH / 2 + 0.20, sz + 0.07]}>
                 <boxGeometry args={[v.monitorW - 0.30, 0.22, 0.02]} />
                 <meshPhongMaterial
                   color="#0a1830"
@@ -376,8 +376,8 @@ export function ProductRoom() {
                 read from ~3m. */}
             <Html
               transform
-              position={[sx, monitorY - v.monitorH / 2 - 0.18, sz - 0.08]}
-              rotation={[0, Math.PI, 0]}
+              position={[sx, monitorY - v.monitorH / 2 - 0.18, sz + 0.08]}
+              rotation={[0, 0, 0]}
               distanceFactor={1}
               pointerEvents="none"
               zIndexRange={[10, 0]}
@@ -467,7 +467,7 @@ export function ProductRoom() {
           (now 1.0). */}
       {(() => {
         const hx = ox;
-        const hz = oz + 2.05;
+        const hz = oz - 2.05;
         // Pedestal y=0..0.6 ; cap at 0.62 ; glass case body 0.65..1.25
         const caseW = 0.45;
         const caseH = 0.6;
@@ -552,21 +552,21 @@ export function ProductRoom() {
       />
       {/* 2. Fill — soft cool lavender bounce on entry side (opposite key) */}
       <pointLight
-        position={[ox, 2.4, oz - 1.6]}
+        position={[ox, 2.4, oz + 1.6]}
         color="#93c5fd"
         intensity={0.4}
         distance={9}
       />
       {/* 3. Hero accent — cyan on the glass display case + logo cube */}
       <pointLight
-        position={[ox, 1.5, oz + 1.7]}
+        position={[ox, 1.5, oz - 1.7]}
         color={CYAN}
         intensity={0.7}
         distance={5}
       />
       {/* 4. Stations 0+1 shared accent (mint-cyan blend of cyan + green) */}
       <pointLight
-        position={[stationX(0, ox) + STATION_STRIDE / 2, 2.0, oz + 1.4]}
+        position={[stationX(0, ox) + STATION_STRIDE / 2, 2.0, oz - 1.4]}
         color="#5eead4"
         intensity={0.35}
         distance={3.5}
@@ -575,7 +575,7 @@ export function ProductRoom() {
       {[2, 3].map((i) => (
         <pointLight
           key={`station-accent-${i}`}
-          position={[stationX(i, ox), 2.0, oz + 1.4]}
+          position={[stationX(i, ox), 2.0, oz - 1.4]}
           color={STATIONS[i]?.accent ?? CYAN}
           intensity={0.35}
           distance={3.5}

@@ -1,14 +1,13 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { registerCollider, unregisterCollider } from '../colliders';
 import { Edges } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 // Named imports — namespace import defeats tree-shaking of three.
-import { Color, Mesh, PointLight } from 'three';
+import { Mesh, PointLight } from 'three';
 import { ROOM_BY_ID } from '../../data/rooms';
 import { ROOM } from '../../constants';
 import { PRODUCT_ROOM_CONTENT, PROJECT_SHOWCASE_ENTRIES } from '../../../data/productRoom';
 import { useWorldStore } from '../../store/worldStore';
-import { makeRng } from '../../util/rand';
 import type { InteractableData } from '../../store/worldStore';
 
 const PRODUCT_COLORS: ReadonlyArray<string> = PRODUCT_ROOM_CONTENT.showcaseCubeColors;
@@ -46,8 +45,10 @@ const SCANLINE_AMPLITUDE = 0.22;
 const SCANLINE_SPEED = 2.3;
 const ACCENT_LIGHT_BASE = 0.7;
 
-// Deterministic seed for band tints.
-const BAND_SEED = 0xc0de01;
+// PR1.4: 3 explicit slate plank tiers (BookRoom-style discrete pattern)
+// replacing the ±6% RNG jitter that collapsed all planks to one perceptual
+// value. Tones span ~30% lightness so OUT-5 ≥3-tier check passes.
+const PLANK_TIERS: ReadonlyArray<string> = ['#1e293b', '#334155', '#475569'];
 
 // Server rack LED layout: [dy, dx, color] relative to rack top.
 const RACK_LEDS: ReadonlyArray<readonly [number, number, string]> = [
@@ -127,20 +128,6 @@ export function ProductRoom() {
   const theme = useWorldStore((s) => s.theme);
   const edgeColor = theme === 'dark' ? '#0a0a14' : '#5a4830';
 
-  // Deterministic floor-band tints (stable per-mount, no per-frame alloc).
-  const bandTints = useMemo<ReadonlyArray<string>>(() => {
-    const rng = makeRng(BAND_SEED);
-    const base = new Color(SLATE_DEEP);
-    const out: string[] = [];
-    for (let i = 0; i < 3; i++) {
-      const c = base.clone();
-      const jitter = (rng() - 0.5) * 0.12;
-      c.offsetHSL(0, 0, jitter);
-      out.push('#' + c.getHexString());
-    }
-    return out;
-  }, []);
-
   // All refs — declared in stable order, top of component.
   const dot1Ref = useRef<Mesh>(null);
   const dot2Ref = useRef<Mesh>(null);
@@ -198,12 +185,15 @@ export function ProductRoom() {
         <boxGeometry args={[ROOM, 0.02, ROOM]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
-      {/* 8 planks running along z-axis (player-facing direction), alternating tints */}
+      {/* 8 planks running along z-axis (player-facing direction).
+          PR1.4: y bumped 0.215 → 0.225 (10mm above base slab top at 0.19,
+          clears precision noise) and tints now use 3 explicit slate
+          constants (PLANK_TIERS) instead of ±6% RNG jitter. */}
       {Array.from({ length: 8 }, (_, i) => {
         const px = ox + (i - 3.5) * 0.6;
-        const tint = bandTints[i % 3];
+        const tint = PLANK_TIERS[i % 3];
         return (
-          <mesh key={`plank-${i}`} position={[px, 0.215, oz]}>
+          <mesh key={`plank-${i}`} position={[px, 0.225, oz]}>
             <boxGeometry args={[0.58, 0.04, ROOM - 0.04]} />
             <meshPhongMaterial color={tint} flatShading />
             <Edges color={edgeColor} lineWidth={1} />
@@ -215,25 +205,28 @@ export function ProductRoom() {
         <boxGeometry args={[2.0, 0.005, 1.2]} />
         <meshPhongMaterial color={SLATE_LIGHT} flatShading />
       </mesh>
-      {/* Rug border (4 thin strips inset 0.04m, slightly above to avoid z-fight) */}
+      {/* Rug border — PR1.4: was cyan emissive (read as LED strip).
+          Now non-emissive deep slate textile trim — woven border feel. */}
       <mesh position={[ox, 0.26, oz - 1.6 - 0.58]}>
         <boxGeometry args={[1.92, 0.006, 0.04]} />
-        <meshPhongMaterial color={CYAN_DIM} emissive={CYAN_DIM} emissiveIntensity={0.6} flatShading />
+        <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
       <mesh position={[ox, 0.26, oz - 1.6 + 0.58]}>
         <boxGeometry args={[1.92, 0.006, 0.04]} />
-        <meshPhongMaterial color={CYAN_DIM} emissive={CYAN_DIM} emissiveIntensity={0.6} flatShading />
+        <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
       <mesh position={[ox - 0.98, 0.26, oz - 1.6]}>
         <boxGeometry args={[0.04, 0.006, 1.12]} />
-        <meshPhongMaterial color={CYAN_DIM} emissive={CYAN_DIM} emissiveIntensity={0.6} flatShading />
+        <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
       <mesh position={[ox + 0.98, 0.26, oz - 1.6]}>
         <boxGeometry args={[0.04, 0.006, 1.12]} />
-        <meshPhongMaterial color={CYAN_DIM} emissive={CYAN_DIM} emissiveIntensity={0.6} flatShading />
+        <meshPhongMaterial color={SLATE_DEEP} flatShading />
       </mesh>
 
-      {/* ----- BASEBOARDS — all 4 walls, inside face at y=0.25 ----- */}
+      {/* ----- BASEBOARDS — all 4 walls, inside face at y=0.25.
+          PR1.4: side pieces shortened to ROOM-0.10 so the front/back
+          full-length pieces own the corners (no co-planar overlap). ----- */}
       <mesh position={[ox, 0.25, oz - 2.45]}>
         <boxGeometry args={[ROOM, 0.12, 0.05]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
@@ -245,17 +238,18 @@ export function ProductRoom() {
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       <mesh position={[ox - 2.45, 0.25, oz]}>
-        <boxGeometry args={[0.05, 0.12, ROOM]} />
+        <boxGeometry args={[0.05, 0.12, ROOM - 0.10]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       <mesh position={[ox + 2.45, 0.25, oz]}>
-        <boxGeometry args={[0.05, 0.12, ROOM]} />
+        <boxGeometry args={[0.05, 0.12, ROOM - 0.10]} />
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
 
-      {/* ----- TOP TRIM / COVE — all 4 walls at y=2.85, METAL ----- */}
+      {/* ----- TOP TRIM / COVE — all 4 walls at y=2.85, METAL.
+          PR1.4: same corner cleanup as baseboards above. ----- */}
       <mesh position={[ox, 2.85, oz - 2.45]}>
         <boxGeometry args={[ROOM, 0.12, 0.05]} />
         <meshPhongMaterial color={METAL} flatShading />
@@ -267,12 +261,12 @@ export function ProductRoom() {
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       <mesh position={[ox - 2.45, 2.85, oz]}>
-        <boxGeometry args={[0.05, 0.12, ROOM]} />
+        <boxGeometry args={[0.05, 0.12, ROOM - 0.10]} />
         <meshPhongMaterial color={METAL} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
       <mesh position={[ox + 2.45, 2.85, oz]}>
-        <boxGeometry args={[0.05, 0.12, ROOM]} />
+        <boxGeometry args={[0.05, 0.12, ROOM - 0.10]} />
         <meshPhongMaterial color={METAL} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
@@ -283,11 +277,27 @@ export function ProductRoom() {
         <meshPhongMaterial color={SLATE_DEEP} flatShading />
         <Edges color={edgeColor} lineWidth={1} />
       </mesh>
-      {/* Inset white-cool inner panel (static emissive — no pulse) */}
-      <mesh position={[ox, 2.895, oz]}>
-        <boxGeometry args={[2.9, 0.02, 2.9]} />
-        <meshPhongMaterial color={WHITE_COOL} emissive={WHITE_COOL} emissiveIntensity={0.4} flatShading />
-      </mesh>
+      {/* PR1.4: subdivided 3x3 coffer grid (was a single 2.9x2.9 emissive
+          panel that read as office fluorescent). Each small panel sits in
+          a slate frame so the ceiling reads as architectural coffer. Top
+          face of each inner panel at 2.89 — 1cm clear of outer cove
+          bottom (2.90). */}
+      {Array.from({ length: 9 }, (_, i) => {
+        const col = i % 3;
+        const row = Math.floor(i / 3);
+        // 3x3 grid spans 2.7m with 0.06m gaps between panels (slate frame
+        // showing through from the outer dark panel above).
+        const cell = 0.86; // panel size
+        const step = 0.92; // center-to-center
+        const cx = ox + (col - 1) * step;
+        const cz = oz + (row - 1) * step;
+        return (
+          <mesh key={`coffer-${i}`} position={[cx, 2.88, cz]}>
+            <boxGeometry args={[cell, 0.02, cell]} />
+            <meshPhongMaterial color={WHITE_COOL} emissive={WHITE_COOL} emissiveIntensity={0.4} flatShading />
+          </mesh>
+        );
+      })}
 
       {/* ----- DESK (top + trim + tapered legs) ----- */}
       <mesh position={[deskX, deskY, deskZ]}>

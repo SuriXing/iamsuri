@@ -1,0 +1,18 @@
+{
+  "node": "PR1.4",
+  "unit": "fix-surface",
+  "verdict": "PASS",
+  "summary": "Closed all 5 PR1.3 ITERATE findings on ProductRoom shell: planks now use 3 explicit slate constants (PLANK_TIERS) with y bumped to 0.225 (15mm above base), rug border switched from cyan emissive to non-emissive deep slate textile trim, ceiling cove subdivided into 3x3 coffer grid, and baseboard/top-trim side pieces shortened to ROOM-0.10 so corners no longer co-plane.",
+  "build": "pass",
+  "interactables": 2,
+  "constraints": {
+    "no_new_useframe_alloc": true,
+    "stations_and_hero_untouched": true,
+    "module_scope_constants_only": true
+  },
+  "artifacts": [
+    "src/world3d/scene/rooms/ProductRoom.tsx",
+    ".harness/nodes/PR1.4/run_1/fix-log.md",
+    ".harness/nodes/PR1.4/handshake.json"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "unit": "PR1.9",
+  "title": "lighting-pass",
+  "verdict": "PASS",
+  "summary": "Replaced ad-hoc 2-light setup with layered lighting per design-note: 1 key (warm cream #ffd9b0, top-down at room center, intensity 0.8 / dist 6), 1 fill (cool lavender #93c5fd, entry-side bounce, 0.4 / 9), 1 hero accent (cyan #22d3ee on glass display case, 0.7 / 5), and 5 per-station accents (1 shared mint-cyan #5eead4 covering stations 0+1, plus per-station accents on stations 2-5 driven by STATIONS[i].accent). Total runtime <pointLight> = 8 (cap). grep count = 5 JSX tags (one is a .map over 4 indices). All static — no per-frame intensity. No #FFFFFF. accentLightRef preserved on hero accent. Removed unused ACCENT_LIGHT_BASE constant.",
+  "artifacts": {
+    "file": "src/world3d/scene/rooms/ProductRoom.tsx",
+    "pointLightTagCount": 5,
+    "pointLightRuntimeCount": 8,
+    "userDataInteractableCount": 1,
+    "buildResult": "exit 0",
+    "colorTokens": ["#ffd9b0 (key, warm cream)", "#93c5fd (fill, cool lavender)", "#22d3ee CYAN (hero accent)", "#5eead4 (shared station 0+1 mint)", "STATIONS[i].accent (per-station 2..5)"]
+  }
+}

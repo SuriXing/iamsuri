@@ -46,7 +46,6 @@ const DESK_LEGS: ReadonlyArray<readonly [number, number]> = [
 
 // ---- Micro-anim constants (module-scope = zero per-frame alloc) ----
 const FAN_SPEED = 6.0;
-const ACCENT_LIGHT_BASE = 0.7;
 // PR1.8 hero focal: rotating logo cube spin rate (rad/s, ≤0.5).
 const HERO_CUBE_SPIN_SPEED = 0.4;
 
@@ -792,15 +791,54 @@ export function ProductRoom() {
         <meshPhongMaterial color={CYAN_DIM} emissive={CYAN_DIM} emissiveIntensity={0.6} flatShading />
       </mesh>
 
-      {/* ----- CYAN ACCENT POINT LIGHT near server rack ----- */}
+      {/* ----- PR1.9 LAYERED LIGHTING (≤8 point lights) -----
+          Key (top-down warm cream) + fill (cool lavender bounce, opposite
+          side) + hero accent (cyan on display case) + 5 per-station
+          accents. Stations 0 & 1 (both cool cyan/green, adjacent on the
+          left) share one mint-cyan accent so total stays at 8. All
+          colors live on the cool-tech / cozy palette — no #FFFFFF, no
+          per-frame intensity changes. accentLightRef preserved so the
+          server-rack cyan accent still has a stable handle for any
+          future ref-based work. */}
+      {/* 1. Key — top-down warm cream wash, centered on room */}
+      <pointLight
+        position={[ox, 2.7, oz]}
+        color="#ffd9b0"
+        intensity={0.8}
+        distance={6}
+      />
+      {/* 2. Fill — soft cool lavender bounce on entry side (opposite key) */}
+      <pointLight
+        position={[ox, 2.4, oz - 1.6]}
+        color="#93c5fd"
+        intensity={0.4}
+        distance={9}
+      />
+      {/* 3. Hero accent — cyan on the glass display case + logo cube */}
       <pointLight
         ref={accentLightRef}
+        position={[ox, 1.5, oz + 1.7]}
         color={CYAN}
-        intensity={ACCENT_LIGHT_BASE}
-        distance={6}
-        position={[rackX, 1.4, rackZ + 0.4]}
+        intensity={0.7}
+        distance={5}
       />
-      <pointLight position={[ox, 2.0, oz + 0.5]} color="#60a5fa" intensity={0.35} distance={8} />
+      {/* 4. Stations 0+1 shared accent (mint-cyan blend of cyan + green) */}
+      <pointLight
+        position={[stationX(0, ox) + STATION_STRIDE / 2, 2.0, oz + 1.4]}
+        color="#5eead4"
+        intensity={0.35}
+        distance={3.5}
+      />
+      {/* 5–8. Per-station accents for stations 2..5 (within 1.5m each) */}
+      {[2, 3, 4, 5].map((i) => (
+        <pointLight
+          key={`station-accent-${i}`}
+          position={[stationX(i, ox), 2.0, oz + 1.4]}
+          color={STATIONS[i]?.accent ?? CYAN}
+          intensity={0.35}
+          distance={3.5}
+        />
+      ))}
     </group>
   );
 }

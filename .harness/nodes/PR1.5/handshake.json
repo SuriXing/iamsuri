@@ -1,0 +1,19 @@
+{
+  "unit": "PR1.5",
+  "name": "project-stations",
+  "verdict": "PASS",
+  "summary": "Replaced flat back-wall card grid with 4 distinct project stations along oz+1.55. Each station has plinth (slate two-tier + foot kick) + monitor bezel facing -z + emissive screen (interactable, accent-colored) + monitor neck + label plate w/ accent brand bar + title-tick block + plinth front accent strip + 1 unique decorative prop. Decor varies per station: (0) coffee mug w/ handle, (1) stacked sticky notes (yellow/cyan/pink), (2) gold trophy on dark base w/ handles, (3) book stack (blue/green/pink) w/ cyan bookmark. Cable coil added on even-index stations for further variation. 4 new playerOnly colliders registered (hx 0.4, hz 0.3 per design-note). Existing PROBLEM_SOLVER + MENTOR_TABLE desk monitor interactables preserved (count stays at 2 — design-note collapse-to-stations is deferred to PR1.8/PR1.9 as it touches hero/lighting; PR1.5 scope is per-station rendering only). All monitors face -z toward door. No per-frame allocations added. Build green.",
+  "artifacts": {
+    "modified": [
+      "src/world3d/scene/rooms/ProductRoom.tsx"
+    ]
+  },
+  "checks": {
+    "build": "pass",
+    "userData_interactable_count": 2,
+    "PROJECT_SHOWCASE_ENTRIES_map_count": 1,
+    "stations_visually_distinct": true,
+    "monitors_face_minus_z": true,
+    "playerOnly_colliders_added": 4
+  }
+}

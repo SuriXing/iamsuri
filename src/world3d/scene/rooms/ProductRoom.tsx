@@ -173,10 +173,15 @@ export function ProductRoom() {
       { id: 'pr-desk',  x: deskX,  z: deskZ,  hx: 0.85, hz: 0.45 },
       { id: 'pr-rack',  x: rackX,  z: rackZ,  hx: 0.4,  hz: 0.4  },
       { id: 'pr-crate', x: crateX, z: crateZ, hx: 0.45, hz: 0.45 },
+      // PR1.5: 4 station plinths on back wall (+z side) at oz+1.55.
+      { id: 'pr-station-0', x: ox - 1.65, z: oz + 1.55, hx: 0.4, hz: 0.3 },
+      { id: 'pr-station-1', x: ox - 0.55, z: oz + 1.55, hx: 0.4, hz: 0.3 },
+      { id: 'pr-station-2', x: ox + 0.55, z: oz + 1.55, hx: 0.4, hz: 0.3 },
+      { id: 'pr-station-3', x: ox + 1.65, z: oz + 1.55, hx: 0.4, hz: 0.3 },
     ] as const;
     for (const it of items) registerCollider({ ...it, playerOnly: true });
     return () => { for (const it of items) unregisterCollider(it.id); };
-  }, [deskX, deskZ, rackX, rackZ, crateX, crateZ]);
+  }, [deskX, deskZ, rackX, rackZ, crateX, crateZ, ox, oz]);
 
   return (
     <group>
@@ -538,58 +543,236 @@ export function ProductRoom() {
         </mesh>
       ))}
 
-      {/* ----- PROJECT SHOWCASE WALL — 4 product cards on back wall (-Z) ----- */}
-      {/* Mount on the inside face of the -Z wall above the crates. Cards
-          face +Z (toward the player who walks in from the +Z door). */}
+      {/* ----- PROJECT STATIONS — 4 distinct stations along back wall (+z).
+          PR1.5: replaces the flat back-wall card grid. Each station =
+          plinth + monitor (faces -z toward door) + label sign + accent bar
+          + 1 unique decorative prop (mug / sticky stack / trophy / books).
+          Plinth colliders registered playerOnly above. ----- */}
       {(() => {
-        const wallZ = oz - 2.42;
-        const cardY = 2.45;
-        const cardW = 0.74;
-        const cardH = 0.58;
-        const spacing = 0.95;
-        // Even spacing centered on ox: offsets [-1.5, -0.5, 0.5, 1.5] * spacing.
-        const offsets = [-1.5, -0.5, 0.5, 1.5];
+        const stationZ = oz + 1.55;
+        // x positions match design-note: ox-1.65, -0.55, +0.55, +1.65.
+        const stationX = [-1.65, -0.55, 0.55, 1.65];
         return PROJECT_SHOWCASE_ENTRIES.map((entry, i) => {
-          const cx = ox + offsets[i] * spacing;
+          const sx = ox + stationX[i];
           const interactable: InteractableData = {
             title: entry.title,
             body: entry.pitch,
             ...(entry.link ? { link: entry.link } : {}),
           };
+          // Monitor faces -z (toward player on entry). Screen face is on
+          // the -z side of the bezel: stationZ - 0.04.
           return (
-            <group key={`showcase-${entry.id}`} position={[cx, cardY, wallZ]}>
-              {/* Card backplate (dark slate) */}
-              <mesh position={[0, 0, 0]}>
-                <boxGeometry args={[cardW, cardH, 0.04]} />
+            <group key={`station-${entry.id}`}>
+              {/* Plinth base (slate, BookRoom-style two-tier) */}
+              <mesh position={[sx, 0.625, stationZ]}>
+                <boxGeometry args={[0.7, 0.85, 0.55]} />
+                <meshPhongMaterial color={SLATE_MID} flatShading />
+                <Edges color={edgeColor} lineWidth={1.2} />
+              </mesh>
+              {/* Plinth top trim band */}
+              <mesh position={[sx, 1.06, stationZ]}>
+                <boxGeometry args={[0.72, 0.04, 0.57]} />
+                <meshPhongMaterial color={SLATE_LIGHT} flatShading />
+                <Edges color={edgeColor} lineWidth={1} />
+              </mesh>
+              {/* Plinth foot kick */}
+              <mesh position={[sx, 0.225, stationZ]}>
+                <boxGeometry args={[0.74, 0.05, 0.59]} />
+                <meshPhongMaterial color={SLATE_DEEP} flatShading />
+              </mesh>
+              {/* Monitor bezel — faces -z */}
+              <mesh position={[sx, 1.45, stationZ]}>
+                <boxGeometry args={[0.85, 0.55, 0.06]} />
                 <meshPhongMaterial color={SLATE_DEEP} flatShading />
                 <Edges color={edgeColor} lineWidth={1.2} />
               </mesh>
-              {/* Inner accent panel (colored, slightly inset) */}
-              <mesh position={[0, 0.04, 0.025]}>
-                <boxGeometry args={[cardW * 0.85, cardH * 0.55, 0.012]} />
-                <meshPhongMaterial color={entry.accent} emissive={entry.accent} emissiveIntensity={0.85} flatShading />
-              </mesh>
-              {/* Bottom brand bar */}
-              <mesh position={[0, -cardH / 2 + 0.08, 0.025]}>
-                <boxGeometry args={[cardW * 0.85, 0.06, 0.012]} />
-                <meshPhongMaterial color={entry.accent} emissive={entry.accent} emissiveIntensity={1.4} flatShading />
-              </mesh>
-              {/* Corner LED dot (top-right) */}
-              <mesh position={[cardW / 2 - 0.08, cardH / 2 - 0.08, 0.03]}>
-                <boxGeometry args={[0.05, 0.05, 0.015]} />
-                <meshPhongMaterial color={CYAN} emissive={CYAN} emissiveIntensity={2.5} flatShading />
-              </mesh>
-              {/* Invisible interactable hit box */}
+              {/* Screen face (interactable, emissive) — slightly forward on -z */}
               <mesh
-                position={[0, 0, 0.05]}
-                visible={false}
+                position={[sx, 1.45, stationZ - 0.04]}
                 onUpdate={(m) => {
                   m.userData.interactable = interactable;
                 }}
               >
-                <boxGeometry args={[cardW, cardH, 0.04]} />
-                <meshBasicMaterial transparent opacity={0} />
+                <boxGeometry args={[0.74, 0.44, 0.02]} />
+                <meshPhongMaterial
+                  color="#0a1830"
+                  emissive={entry.accent}
+                  emissiveIntensity={1.6}
+                  flatShading
+                />
+                <Edges color={edgeColor} lineWidth={1} />
               </mesh>
+              {/* Monitor stand neck */}
+              <mesh position={[sx, 1.18, stationZ + 0.02]}>
+                <boxGeometry args={[0.08, 0.18, 0.08]} />
+                <meshPhongMaterial color={METAL} flatShading />
+              </mesh>
+              {/* Label plate under monitor (faces -z) */}
+              <mesh position={[sx, 1.13, stationZ - 0.27]}>
+                <boxGeometry args={[0.7, 0.12, 0.02]} />
+                <meshPhongMaterial color={SLATE_LIGHT} flatShading />
+                <Edges color={edgeColor} lineWidth={1} />
+              </mesh>
+              {/* Accent brand bar on label (per-station color) */}
+              <mesh position={[sx, 1.08, stationZ - 0.281]}>
+                <boxGeometry args={[0.6, 0.025, 0.005]} />
+                <meshPhongMaterial
+                  color={entry.accent}
+                  emissive={entry.accent}
+                  emissiveIntensity={1.2}
+                  flatShading
+                />
+              </mesh>
+              {/* Title block on label (small dark ticks suggesting text) */}
+              {[-0.18, -0.06, 0.06, 0.18].map((dx, k) => (
+                <mesh
+                  key={`title-tick-${k}`}
+                  position={[sx + dx, 1.155, stationZ - 0.281]}
+                >
+                  <boxGeometry args={[0.08, 0.02, 0.005]} />
+                  <meshPhongMaterial color={SLATE_DEEP} flatShading />
+                </mesh>
+              ))}
+              {/* Per-station accent strip on plinth front (visual accent
+                  light proxy — cheap glow without a real point light) */}
+              <mesh position={[sx, 0.45, stationZ - 0.281]}>
+                <boxGeometry args={[0.5, 0.025, 0.005]} />
+                <meshPhongMaterial
+                  color={entry.accent}
+                  emissive={entry.accent}
+                  emissiveIntensity={1.4}
+                  flatShading
+                />
+              </mesh>
+
+              {/* ----- Per-station decorative prop (varies by index) ----- */}
+              {i === 0 && (
+                <>
+                  {/* Coffee mug — white ceramic + brown coffee surface */}
+                  <mesh position={[sx + 0.22, 1.16, stationZ + 0.05]}>
+                    <cylinderGeometry args={[0.06, 0.055, 0.13, 10]} />
+                    <meshPhongMaterial color={WHITE_COOL} flatShading />
+                    <Edges color={edgeColor} lineWidth={1} />
+                  </mesh>
+                  <mesh position={[sx + 0.22, 1.225, stationZ + 0.05]}>
+                    <cylinderGeometry args={[0.05, 0.05, 0.008, 10]} />
+                    <meshPhongMaterial color="#5a3a1a" flatShading />
+                  </mesh>
+                  {/* Mug handle (boxy) */}
+                  <mesh position={[sx + 0.29, 1.16, stationZ + 0.05]}>
+                    <boxGeometry args={[0.02, 0.07, 0.015]} />
+                    <meshPhongMaterial color={WHITE_COOL} flatShading />
+                  </mesh>
+                </>
+              )}
+              {i === 1 && (
+                <>
+                  {/* Sticky-note stack — 3 colored squares offset */}
+                  <mesh
+                    position={[sx + 0.2, 1.095, stationZ + 0.04]}
+                    rotation={[0, 0.18, 0]}
+                  >
+                    <boxGeometry args={[0.11, 0.012, 0.11]} />
+                    <meshPhongMaterial
+                      color="#facc15"
+                      emissive="#facc15"
+                      emissiveIntensity={0.3}
+                      flatShading
+                    />
+                  </mesh>
+                  <mesh
+                    position={[sx + 0.21, 1.108, stationZ + 0.06]}
+                    rotation={[0, -0.12, 0]}
+                  >
+                    <boxGeometry args={[0.1, 0.012, 0.1]} />
+                    <meshPhongMaterial
+                      color={CYAN}
+                      emissive={CYAN}
+                      emissiveIntensity={0.3}
+                      flatShading
+                    />
+                  </mesh>
+                  <mesh
+                    position={[sx + 0.19, 1.121, stationZ + 0.05]}
+                    rotation={[0, 0.05, 0]}
+                  >
+                    <boxGeometry args={[0.1, 0.012, 0.1]} />
+                    <meshPhongMaterial
+                      color="#fb7185"
+                      emissive="#fb7185"
+                      emissiveIntensity={0.3}
+                      flatShading
+                    />
+                  </mesh>
+                </>
+              )}
+              {i === 2 && (
+                <>
+                  {/* Mini trophy — gold cup on dark base */}
+                  <mesh position={[sx + 0.22, 1.115, stationZ + 0.05]}>
+                    <boxGeometry args={[0.1, 0.04, 0.1]} />
+                    <meshPhongMaterial color={SLATE_DEEP} flatShading />
+                    <Edges color={edgeColor} lineWidth={1} />
+                  </mesh>
+                  <mesh position={[sx + 0.22, 1.18, stationZ + 0.05]}>
+                    <cylinderGeometry args={[0.045, 0.03, 0.09, 10]} />
+                    <meshPhongMaterial
+                      color="#facc15"
+                      emissive="#facc15"
+                      emissiveIntensity={0.5}
+                      flatShading
+                    />
+                  </mesh>
+                  {/* Trophy handles */}
+                  <mesh position={[sx + 0.275, 1.18, stationZ + 0.05]}>
+                    <boxGeometry args={[0.012, 0.05, 0.012]} />
+                    <meshPhongMaterial color="#facc15" flatShading />
+                  </mesh>
+                  <mesh position={[sx + 0.165, 1.18, stationZ + 0.05]}>
+                    <boxGeometry args={[0.012, 0.05, 0.012]} />
+                    <meshPhongMaterial color="#facc15" flatShading />
+                  </mesh>
+                </>
+              )}
+              {i === 3 && (
+                <>
+                  {/* Mini book stack — 3 books in different colors */}
+                  <mesh position={[sx + 0.2, 1.115, stationZ + 0.05]}>
+                    <boxGeometry args={[0.18, 0.04, 0.13]} />
+                    <meshPhongMaterial color="#3b82f6" flatShading />
+                    <Edges color={edgeColor} lineWidth={1} />
+                  </mesh>
+                  <mesh
+                    position={[sx + 0.2, 1.155, stationZ + 0.04]}
+                    rotation={[0, 0.08, 0]}
+                  >
+                    <boxGeometry args={[0.17, 0.035, 0.12]} />
+                    <meshPhongMaterial color="#16a34a" flatShading />
+                    <Edges color={edgeColor} lineWidth={1} />
+                  </mesh>
+                  <mesh
+                    position={[sx + 0.21, 1.19, stationZ + 0.06]}
+                    rotation={[0, -0.05, 0]}
+                  >
+                    <boxGeometry args={[0.16, 0.03, 0.12]} />
+                    <meshPhongMaterial color="#fb7185" flatShading />
+                    <Edges color={edgeColor} lineWidth={1} />
+                  </mesh>
+                  {/* Bookmark ribbon */}
+                  <mesh position={[sx + 0.27, 1.21, stationZ + 0.06]}>
+                    <boxGeometry args={[0.012, 0.005, 0.05]} />
+                    <meshPhongMaterial color={CYAN} flatShading />
+                  </mesh>
+                </>
+              )}
+
+              {/* Cable coil tucked behind plinth on left side (varies offset) */}
+              {i % 2 === 0 && (
+                <mesh position={[sx - 0.28, 0.265, stationZ + 0.18]}>
+                  <cylinderGeometry args={[0.05, 0.05, 0.04, 10]} />
+                  <meshPhongMaterial color={CABLE_BLACK} flatShading />
+                </mesh>
+              )}
             </group>
           );
         });

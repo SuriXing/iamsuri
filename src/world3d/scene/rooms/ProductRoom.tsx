@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { registerCollider, unregisterCollider } from '../colliders';
 import { Edges, Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
@@ -47,6 +47,8 @@ const DESK_LEGS: ReadonlyArray<readonly [number, number]> = [
 // ---- Micro-anim constants (module-scope = zero per-frame alloc) ----
 const FAN_SPEED = 6.0;
 const ACCENT_LIGHT_BASE = 0.7;
+// PR1.8 hero focal: rotating logo cube spin rate (rad/s, ≤0.5).
+const HERO_CUBE_SPIN_SPEED = 0.4;
 
 // PR1.4: 3 explicit slate plank tiers (BookRoom-style discrete pattern).
 const PLANK_TIERS: ReadonlyArray<string> = ['#1e293b', '#334155', '#475569'];
@@ -143,10 +145,20 @@ export function ProductRoom() {
   const theme = useWorldStore((s) => s.theme);
   const edgeColor = theme === 'dark' ? '#0a0a14' : '#5a4830';
 
-  // Refs for surviving animations (fan + rack LEDs).
+  // Refs for surviving animations (fan + rack LEDs + hero cube).
   const fanRef = useRef<Mesh>(null);
   const rackLedRefs = useRef<Array<Mesh | null>>([]);
   const accentLightRef = useRef<PointLight>(null);
+  // PR1.8 hero focal: rotating logo cube inside glass display case.
+  const heroCubeRef = useRef<Mesh>(null);
+
+  // PR1.8: gate idle rotation on prefers-reduced-motion. Mirrors the
+  // BookRoom globe intent — when user opts out of motion, hero cube
+  // stays at its static angle (no useFrame work for it).
+  const prefersReducedMotion = useMemo(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
 
   useFrame(({ clock }) => {
     const vm = useWorldStore.getState().viewMode;
@@ -154,6 +166,12 @@ export function ProductRoom() {
     const t = clock.getElapsedTime();
     const fan = fanRef.current;
     if (fan) fan.rotation.z = t * FAN_SPEED;
+    // PR1.8 hero focal: Y-axis rotation only, gated on reduced-motion.
+    // No emissiveIntensity / scale changes per spec.
+    if (!prefersReducedMotion) {
+      const cube = heroCubeRef.current;
+      if (cube) cube.rotation.y = t * HERO_CUBE_SPIN_SPEED;
+    }
   });
 
   // Desk geometry.
@@ -184,6 +202,10 @@ export function ProductRoom() {
       { id: 'pr-desk',  x: deskX,  z: deskZ,  hx: 0.85, hz: 0.45 },
       { id: 'pr-rack',  x: rackX,  z: rackZ,  hx: 0.4,  hz: 0.4  },
       { id: 'pr-crate', x: crateX, z: crateZ, hx: 0.45, hz: 0.45 },
+      // PR1.8: hero focal pedestal — playerOnly so avatar bounces
+      // off the glass case but camera wall-clip ignores it.
+      // registerCollider invocation is shared with siblings below.
+      { id: 'pr-hero',  x: ox,     z: oz + 2.05, hx: 0.30, hz: 0.30 },
       ...stationItems,
     ];
     for (const it of items) registerCollider({ ...it, playerOnly: true });
@@ -679,6 +701,85 @@ export function ProductRoom() {
           </group>
         );
       })}
+
+      {/* ----- PR1.8 HERO FOCAL — glass display case w/ rotating logo cube -----
+          Anchors the back-wall composition between stations 2 & 3. Pedestal
+          + brushed-metal cap + 4 thin transparent glass walls + glass top +
+          floating cyan cube. Cube spins on Y only (≤0.5 rad/s), gated on
+          prefers-reduced-motion. NO emissiveIntensity / scale changes per
+          zero-brightness-motion rule. Collider registered above (pr-hero). */}
+      {(() => {
+        const hx = ox;
+        const hz = oz + 2.05;
+        // Pedestal y=0..0.6 ; cap at 0.62 ; glass case body 0.65..1.25
+        const caseW = 0.45;
+        const caseH = 0.6;
+        const caseBaseY = 0.65;
+        const caseTopY = caseBaseY + caseH;
+        const wallT = 0.015;
+        return (
+          <group>
+            {/* Pedestal block (slate) */}
+            <mesh position={[hx, 0.30, hz]}>
+              <boxGeometry args={[0.55, 0.6, 0.55]} />
+              <meshPhongMaterial color={SLATE_DEEP} flatShading />
+              <Edges color={edgeColor} lineWidth={1.2} />
+            </mesh>
+            {/* Brushed-metal cap */}
+            <mesh position={[hx, 0.62, hz]}>
+              <boxGeometry args={[0.58, 0.04, 0.58]} />
+              <meshPhongMaterial color={METAL_LIGHT} flatShading />
+              <Edges color={edgeColor} lineWidth={1} />
+            </mesh>
+            {/* Glass case — 4 thin transparent side walls + top */}
+            {/* front (-z) */}
+            <mesh position={[hx, caseBaseY + caseH / 2, hz - caseW / 2]}>
+              <boxGeometry args={[caseW, caseH, wallT]} />
+              <meshPhongMaterial color={WHITE_COOL} transparent opacity={0.18} flatShading />
+              <Edges color={edgeColor} lineWidth={1} />
+            </mesh>
+            {/* back (+z) */}
+            <mesh position={[hx, caseBaseY + caseH / 2, hz + caseW / 2]}>
+              <boxGeometry args={[caseW, caseH, wallT]} />
+              <meshPhongMaterial color={WHITE_COOL} transparent opacity={0.18} flatShading />
+              <Edges color={edgeColor} lineWidth={1} />
+            </mesh>
+            {/* left (-x) */}
+            <mesh position={[hx - caseW / 2, caseBaseY + caseH / 2, hz]}>
+              <boxGeometry args={[wallT, caseH, caseW]} />
+              <meshPhongMaterial color={WHITE_COOL} transparent opacity={0.18} flatShading />
+              <Edges color={edgeColor} lineWidth={1} />
+            </mesh>
+            {/* right (+x) */}
+            <mesh position={[hx + caseW / 2, caseBaseY + caseH / 2, hz]}>
+              <boxGeometry args={[wallT, caseH, caseW]} />
+              <meshPhongMaterial color={WHITE_COOL} transparent opacity={0.18} flatShading />
+              <Edges color={edgeColor} lineWidth={1} />
+            </mesh>
+            {/* top */}
+            <mesh position={[hx, caseTopY, hz]}>
+              <boxGeometry args={[caseW + 0.01, wallT, caseW + 0.01]} />
+              <meshPhongMaterial color={WHITE_COOL} transparent opacity={0.22} flatShading />
+              <Edges color={edgeColor} lineWidth={1} />
+            </mesh>
+            {/* Logo cube — floats inside, spins on Y only. Static emissive
+                (no per-frame brightness). */}
+            <mesh
+              ref={heroCubeRef}
+              position={[hx, caseBaseY + caseH / 2, hz]}
+            >
+              <boxGeometry args={[0.22, 0.22, 0.22]} />
+              <meshPhongMaterial
+                color={CYAN}
+                emissive={CYAN}
+                emissiveIntensity={0.9}
+                flatShading
+              />
+              <Edges color={edgeColor} lineWidth={1.2} />
+            </mesh>
+          </group>
+        );
+      })()}
 
       {/* ----- SHOWCASE WALL SHELF (brushed-metal beneath the cards) ----- */}
       <mesh position={[ox, 2.08, oz - 2.4]}>

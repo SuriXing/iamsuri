@@ -1,0 +1,22 @@
+{
+  "unit": "PR1.8",
+  "name": "hero-focal",
+  "verdict": "PASS",
+  "summary": "Added hero focal piece per design-note: slate pedestal + brushed-metal cap + 4-wall glass display case (opacity 0.18) + glass top + cyan logo cube floating inside. Cube rotates on Y-axis only at 0.4 rad/s (≤0.5 spec cap). Rotation gated on prefers-reduced-motion via window.matchMedia (mirrors BookRoom globe intent). No emissiveIntensity per-frame changes; no scale per-frame changes; static emissive=0.9 on cube. New playerOnly collider 'pr-hero' registered at (ox, oz+2.05) with hx=hz=0.30. Build green.",
+  "position": "(ox, _, oz + 2.05) — center back wall recess",
+  "rotation_rate_rad_per_s": 0.4,
+  "reduced_motion_gated": true,
+  "build": "exit 0",
+  "verifications": {
+    "registerCollider_count_before": 3,
+    "registerCollider_count_after": 4,
+    "userData_interactable_count": 1,
+    "userData_interactable_unchanged": true,
+    "no_emissive_per_frame": true,
+    "no_scale_per_frame": true,
+    "no_new_useFrame_allocations": true
+  },
+  "artifacts": [
+    "src/world3d/scene/rooms/ProductRoom.tsx"
+  ]
+}
